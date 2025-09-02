@@ -134,3 +134,6 @@ CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',') if 
 AUDITLOG_INCLUDE_ALL_MODELS = True
 
 # Django's built-in User model migrations are enabled by default
+MIGRATION_MODULES = {
+    'auth': None,
+}
