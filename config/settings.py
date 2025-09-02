@@ -4,6 +4,10 @@ Django settings for candidatos project.
 
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-your-secret-key-here')
@@ -129,7 +133,4 @@ CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',') if 
 # Audit Log settings
 AUDITLOG_INCLUDE_ALL_MODELS = True
 
-# Disable Django's built-in User model migrations
-MIGRATION_MODULES = {
-    'auth': None,
-}
+# Django's built-in User model migrations are enabled by default
