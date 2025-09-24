@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'auditlog',
+    'drf_spectacular',
     'candidatos',
 ]
 
@@ -124,6 +125,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
     ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 # CORS settings
@@ -132,3 +134,10 @@ CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',') if 
 
 # Audit Log settings
 AUDITLOG_INCLUDE_ALL_MODELS = True
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Candidatos Sigla API',
+    'DESCRIPTION': 'API para o sistema de candidatos de sigla',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}
