@@ -10,6 +10,7 @@ def healthcheck(_request):
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/', include('candidatos.urls')),
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SwaggerFromFileView.as_view(), name='swagger-ui'),
     path('', healthcheck, name='healthcheck'),
 ]

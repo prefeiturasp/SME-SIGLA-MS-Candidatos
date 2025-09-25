@@ -28,22 +28,7 @@ class CandidatoViewSet(viewsets.ModelViewSet):
 
 
 class SwaggerFromFileView(SpectacularSwaggerView):
-    template_name_js = 'drf_spectacular/swagger_ui_inline.js'
-
     def _get_schema_url(self, request):
-        return None
-
-    @cached_property
-    def _schema_dict(self):
-        schema_path = Path(settings.BASE_DIR) / 'schema.yaml'
-        with open(schema_path, 'r', encoding='utf-8') as f:
-            return yaml.safe_load(f)
-
-    def _get_schema(self, request):
-        return self._schema_dict
-
-    def get(self, request, *args, **kwargs):
-        resp = super().get(request, *args, **kwargs)
-        resp.data['schema'] = json.dumps(self._get_schema(request))
-        resp.data['schema_url'] = ''
-        return resp
+        url = super()._get_schema_url(request)
+        url_com_prefixo = f'{settings.MS_PATH}{url}'
+        return url_com_prefixo
