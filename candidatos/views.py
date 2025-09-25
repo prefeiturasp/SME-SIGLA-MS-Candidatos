@@ -8,6 +8,10 @@ from .serializers import (
     CandidatoSerializer, 
 )
 from rest_framework.views import APIView
+from drf_spectacular.views import SpectacularSwaggerView
+from django.utils.functional import cached_property
+import yaml
+import json
 
 
 class CandidatoViewSet(viewsets.ModelViewSet):
@@ -23,12 +27,23 @@ class CandidatoViewSet(viewsets.ModelViewSet):
     ordering = ['nome']
 
 
-class StaticSchemaView(APIView):
-    authentication_classes = []
-    permission_classes = []
+class SwaggerFromFileView(SpectacularSwaggerView):
+    template_name_js = 'drf_spectacular/swagger_ui_inline.js'
 
-    def get(self, request):
+    def _get_schema_url(self, request):
+        return None
+
+    @cached_property
+    def _schema_dict(self):
         schema_path = Path(settings.BASE_DIR) / 'schema.yaml'
-        if not schema_path.exists():
-            raise Http404('schema.yaml não encontrado na raiz do projeto')
-        return FileResponse(open(schema_path, 'rb'), content_type='application/yaml')
+        with open(schema_path, 'r', encoding='utf-8') as f:
+            return yaml.safe_load(f)
+
+    def _get_schema(self, request):
+        return self._schema_dict
+
+    def get(self, request, *args, **kwargs):
+        resp = super().get(request, *args, **kwargs)
+        resp.data['schema'] = json.dumps(self._get_schema(request))
+        resp.data['schema_url'] = ''
+        return resp

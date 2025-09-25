@@ -139,5 +139,5 @@ SPECTACULAR_SETTINGS = {
     'TITLE': 'Candidatos Sigla API',
     'DESCRIPTION': 'API para o sistema de candidatos de sigla',
     'VERSION': '1.0.0',
-    'SERVE_INCLUDE_SCHEMA': False,
+    'SERVE_INCLUDE_SCHEMA': True,
 }
