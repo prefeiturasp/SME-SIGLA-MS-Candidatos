@@ -3,15 +3,10 @@ from django.conf import settings
 from django.http import FileResponse, Http404
 from rest_framework import viewsets, filters
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Candidato
-from .serializers import (
+from candidatos.models import Candidato
+from candidatos.serializers import (
     CandidatoSerializer, 
 )
-from rest_framework.views import APIView
-from drf_spectacular.views import SpectacularSwaggerView
-from django.utils.functional import cached_property
-import yaml
-import json
 
 
 class CandidatoViewSet(viewsets.ModelViewSet):
@@ -25,10 +20,3 @@ class CandidatoViewSet(viewsets.ModelViewSet):
     search_fields = ['nome', 'cpf', 'email', 'cidade']
     ordering_fields = ['nome', 'data_nascimento', 'created_at']
     ordering = ['nome']
-
-
-class SwaggerFromFileView(SpectacularSwaggerView):
-    def _get_schema_url(self, request):
-        url = super()._get_schema_url(request)
-        url_com_prefixo = f'{settings.MS_PATH}{url}'
-        return url_com_prefixo
