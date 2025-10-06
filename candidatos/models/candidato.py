@@ -25,9 +25,16 @@ class Candidato(BaseModel):
     cpf = models.CharField(max_length=14, unique=True)
     email = models.EmailField(unique=True)
     telefone = models.CharField(max_length=20, blank=True)
+    celular = models.CharField(max_length=20, blank=True)
+    rg = models.CharField(max_length=20, blank=True)
+    registro_funcional = models.CharField(max_length=50, blank=True)
+    vinculo = models.CharField(max_length=100, blank=True)
     data_nascimento = models.DateField()
     genero = models.CharField(max_length=1, choices=GENERO_CHOICES, blank=True)
     endereco = models.TextField(blank=True)
+    numero = models.CharField(max_length=20, blank=True)
+    complemento = models.CharField(max_length=100, blank=True)
+    bairro = models.CharField(max_length=120, blank=True)
     cidade = models.CharField(max_length=100, blank=True)
     estado = models.CharField(max_length=2, blank=True)
     cep = models.CharField(max_length=9, blank=True)
@@ -42,5 +49,6 @@ class Candidato(BaseModel):
 
     def __str__(self):
         return self.nome
+    
     
 auditlog.register(Candidato)
