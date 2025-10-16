@@ -30,10 +30,10 @@ class CandidatoAdmin(admin.ModelAdmin):
 
 @admin.register(ConcursoCandidato)
 class ConcursoCandidatoAdmin(admin.ModelAdmin):
-    list_display = ['candidato', 'candidato__nome', 'classificacao', 'classificacao_pcd', 'classificacao_nna', 'lote__concurso_uuid', 'criado_em']
-    list_filter = ['lote__concurso_uuid', 'criado_em']
+    list_display = ['candidato', 'candidato__nome', 'classificacao', 'classificacao_pcd', 'classificacao_nna', 'foi_convocado', 'data_convocacao', 'lote__concurso_uuid', 'criado_em']
+    list_filter = ['lote__concurso_uuid', 'criado_em', 'foi_convocado', 'data_convocacao']
     search_fields = ['candidato__nome', 'lote', 'candidato__cpf', 'candidato__email', 'candidato__telefone', 'candidato__celular']
-    readonly_fields = ['criado_em', 'atualizado_em', 'esta_ativo']
+    readonly_fields = ['uuid', 'criado_em', 'atualizado_em', 'esta_ativo']
     date_hierarchy = 'criado_em'
     list_per_page = 25
 
