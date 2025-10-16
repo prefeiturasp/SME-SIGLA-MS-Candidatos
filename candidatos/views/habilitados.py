@@ -2,6 +2,8 @@ from django.db import models
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.decorators import action
+from django.utils import timezone
 
 from candidatos.models import ConcursoCandidato, ConcursoCandidatosLote
 from candidatos.serializers import ConcursoCandidatoSerializer
@@ -109,3 +111,33 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         )
 
 
+    @action(detail=False, methods=['patch'], url_path='convocar')
+    def convocar(self, request):
+        """
+        Atualiza múltiplos registros de ConcursoCandidato para convocados.
+        Payload esperado:
+        {
+            "concurso_uuid": "...",
+            "candidatos": ["uuid-1", "uuid-2", ...]
+        }
+        """
+        concurso_uuid = request.data.get('concurso_uuid')
+        candidatos = request.data.get('candidatos', [])
+
+        if not concurso_uuid or not isinstance(candidatos, list):
+            return Response({'detail': 'Payload inválido'}, status=status.HTTP_400_BAD_REQUEST)
+
+        lote = (
+            ConcursoCandidatosLote.objects
+            .filter(concurso_uuid=concurso_uuid)
+            .order_by('-criado_em')
+            .first()
+        )
+        if not lote:
+            return Response({'detail': 'Lote não encontrado para o concurso informado'}, status=status.HTTP_404_NOT_FOUND)
+
+        qs = ConcursoCandidato.objects.filter(lote=lote, uuid__in=candidatos)
+        atualizados = list(qs.values_list('uuid', flat=True))
+        qs.update(foi_convocado=True, data_convocacao=timezone.now())
+
+        return Response({'atualizados': [str(u) for u in atualizados], 'total': len(atualizados)})

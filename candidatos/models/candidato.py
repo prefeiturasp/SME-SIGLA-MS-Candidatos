@@ -1,4 +1,5 @@
 from django.db import models
+from datetime import date
 from .base import BaseModel
 from auditlog.models import AuditlogHistoryField
 from auditlog.registry import auditlog
@@ -21,25 +22,25 @@ class Candidato(BaseModel):
         ('N', 'Prefiro não informar'),
     ]
 
-    nome = models.CharField(max_length=200)
-    cpf = models.CharField(max_length=14, unique=True)
-    email = models.EmailField(unique=True)
-    telefone = models.CharField(max_length=20, blank=True)
-    celular = models.CharField(max_length=20, blank=True)
-    rg = models.CharField(max_length=20, blank=True)
-    registro_funcional = models.CharField(max_length=50, blank=True)
-    vinculo = models.CharField(max_length=100, blank=True)
-    data_nascimento = models.DateField()
-    genero = models.CharField(max_length=1, choices=GENERO_CHOICES, blank=True)
-    endereco = models.TextField(blank=True)
-    numero = models.CharField(max_length=20, blank=True)
-    complemento = models.CharField(max_length=100, blank=True)
-    bairro = models.CharField(max_length=120, blank=True)
-    cidade = models.CharField(max_length=100, blank=True)
-    estado = models.CharField(max_length=2, blank=True)
-    cep = models.CharField(max_length=9, blank=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ativo')
-    observacoes = models.TextField(blank=True)
+    nome = models.CharField(max_length=200, verbose_name="Nome")
+    cpf = models.CharField(max_length=14, unique=True, verbose_name="CPF")
+    email = models.EmailField(unique=True, verbose_name="Email")
+    telefone = models.CharField(max_length=20, blank=True, verbose_name="Telefone")
+    celular = models.CharField(max_length=20, blank=True, verbose_name="Celular")
+    rg = models.CharField(max_length=20, blank=True, verbose_name="RG")
+    registro_funcional = models.CharField(max_length=50, blank=True, verbose_name="Registro Funcional")
+    vinculo = models.CharField(max_length=100, blank=True, verbose_name="Vínculo")
+    data_nascimento = models.DateField(default=date.today)
+    genero = models.CharField(max_length=1, choices=GENERO_CHOICES, blank=True, verbose_name="Gênero")
+    endereco = models.TextField(blank=True, verbose_name="Endereço")
+    numero = models.CharField(max_length=20, blank=True, verbose_name="Número")
+    complemento = models.CharField(max_length=100, blank=True, verbose_name="Complemento")
+    bairro = models.CharField(max_length=120, blank=True, verbose_name="Bairro")
+    cidade = models.CharField(max_length=100, blank=True, verbose_name="Cidade")
+    estado = models.CharField(max_length=2, blank=True, verbose_name="Estado")
+    cep = models.CharField(max_length=9, blank=True, verbose_name="CEP")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ativo', verbose_name="Status")
+    observacoes = models.TextField(blank=True, verbose_name="Observações")
     history = AuditlogHistoryField()
 
     class Meta:
