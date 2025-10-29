@@ -9,7 +9,7 @@ class CandidatoAdmin(admin.ModelAdmin):
     search_fields = ['nome', 'cpf', 'email', 'cidade', 'telefone']
     readonly_fields = ['criado_em', 'atualizado_em', 'esta_ativo']
     date_hierarchy = 'criado_em'
-    list_per_page = 25
+    list_per_page = 26
     list_editable = ['status']
 
     fieldsets = (
