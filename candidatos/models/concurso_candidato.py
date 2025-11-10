@@ -11,6 +11,7 @@ class ConcursoCandidato(BaseModel):
     pontos = models.CharField(max_length=20, blank=True, verbose_name="Pontos")
     opcao_concurso = models.CharField(max_length=50, blank=True, verbose_name="Opção de Concurso")
     codigo_cargo = models.CharField(max_length=20, blank=True, verbose_name="Código do Cargo")
+    processo_uuid = models.UUIDField(blank=True, null=True, verbose_name="UUID do Processo")
     cota = models.CharField(max_length=50, blank=True, verbose_name="Cota")
     descricao_cargo = models.CharField(max_length=200, blank=True, verbose_name="Descrição do Cargo")
     df = models.CharField(max_length=50, blank=True, verbose_name="DF")

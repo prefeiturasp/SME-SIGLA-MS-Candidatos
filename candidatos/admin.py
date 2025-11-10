@@ -1,4 +1,4 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 from .models import Candidato, ConcursoCandidato, ConcursoCandidatosLote
 
 @admin.register(Candidato)
@@ -30,12 +30,25 @@ class CandidatoAdmin(admin.ModelAdmin):
 
 @admin.register(ConcursoCandidato)
 class ConcursoCandidatoAdmin(admin.ModelAdmin):
-    list_display = ['candidato', 'candidato__nome', 'classificacao', 'classificacao_pcd', 'classificacao_nna', 'foi_convocado', 'data_convocacao', 'lote__concurso_uuid', 'criado_em']
-    list_filter = ['lote__concurso_uuid', 'criado_em', 'foi_convocado', 'data_convocacao']
+    list_display = ['candidato', 'candidato__nome', 'codigo_cargo', 'processo_uuid', 'classificacao', 'classificacao_pcd', 'classificacao_nna', 'foi_convocado', 'data_convocacao', 'lote__concurso_uuid', 'criado_em']
+    list_filter = ['lote__concurso_uuid', 'criado_em', 'foi_convocado', 'data_convocacao', 'processo_uuid', 'codigo_cargo']
     search_fields = ['candidato__nome', 'lote', 'candidato__cpf', 'candidato__email', 'candidato__telefone', 'candidato__celular']
     readonly_fields = ['uuid', 'criado_em', 'atualizado_em', 'esta_ativo']
     date_hierarchy = 'criado_em'
     list_per_page = 25
+    actions = ['marcar_nao_convocados']
+
+    def marcar_nao_convocados(self, request, queryset):
+        """
+        Ação de admin para marcar registros como não convocados em lote.
+        """
+        qtd = queryset.update(foi_convocado=False, data_convocacao=None)
+        self.message_user(
+            request,
+            f'{qtd} registro(s) marcados como não convocados.',
+            level=messages.SUCCESS
+        )
+    marcar_nao_convocados.short_description = 'Marcar como NÃO convocados (foi_convocado=False)'
 
 @admin.register(ConcursoCandidatosLote)
 class ConcursoCandidatosLoteAdmin(admin.ModelAdmin):
