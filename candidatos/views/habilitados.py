@@ -38,7 +38,13 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         )
         if not lote:
             return ConcursoCandidato.objects.none()
-        qs = qs.filter(lote=lote)
+        # Filtrar apenas candidatos não convocados
+        qs = qs.filter(lote=lote, foi_convocado=False)
+
+        # Filtro opcional por código de cargo
+        codigo_cargo = self.request.query_params.get('codigo_cargo')
+        if codigo_cargo not in (None, ''):
+            qs = qs.filter(codigo_cargo=codigo_cargo)
 
         geral = self.request.query_params.get('geral')
         pcd = self.request.query_params.get('pcd')
@@ -114,17 +120,19 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['patch'], url_path='convocar')
     def convocar(self, request):
         """
-        Atualiza múltiplos registros de ConcursoCandidato para convocados.
+        Atualiza múltiplos registros de ConcursoCandidato quanto ao status de convocação.
         Payload esperado:
         {
             "concurso_uuid": "...",
-            "candidatos": ["uuid-1", "uuid-2", ...]
+            "candidatos": ["uuid-1", "uuid-2", ...],
+            "foi_convocado": true|false   # opcional; default: true
         }
         """
         concurso_uuid = request.data.get('concurso_uuid')
+        processo_uuid = request.data.get('processo_uuid')
         candidatos = request.data.get('candidatos', [])
 
-        if not concurso_uuid or not isinstance(candidatos, list):
+        if not (concurso_uuid or processo_uuid) or not isinstance(candidatos, list):
             return Response({'detail': 'Payload inválido'}, status=status.HTTP_400_BAD_REQUEST)
 
         lote = (
@@ -138,6 +146,38 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
 
         qs = ConcursoCandidato.objects.filter(lote=lote, uuid__in=candidatos)
         atualizados = list(qs.values_list('uuid', flat=True))
-        qs.update(foi_convocado=True, data_convocacao=timezone.now())
+        qs.update(foi_convocado=True, processo_uuid=processo_uuid, data_convocacao=timezone.now())
 
-        return Response({'atualizados': [str(u) for u in atualizados], 'total': len(atualizados)})
+        return Response({
+            'atualizados': [str(u) for u in atualizados],
+            'total': len(atualizados)
+        })
+
+    @action(detail=False, methods=['patch'], url_path='desconvocar')
+    def desconvocar(self, request):
+        """
+        Marca como NÃO convocados todos os registros que pertencem ao processo (lote)
+        informado e correspondem ao código de cargo fornecido.
+
+        Payload esperado:
+        {
+            "processo_uuid": "...",      # ou "concurso_uuid"
+            "codigo_cargo": "12345"
+        }
+        """
+        processo_uuid = request.data.get('processo_uuid') or request.data.get('concurso_uuid')
+        codigo_cargo = request.data.get('codigo_cargo')
+
+        if not processo_uuid or not codigo_cargo:
+            return Response({'detail': 'processo_uuid (ou concurso_uuid) e codigo_cargo são obrigatórios'}, status=status.HTTP_400_BAD_REQUEST)
+
+        qs = ConcursoCandidato.objects.filter(processo_uuid=processo_uuid, codigo_cargo=codigo_cargo, foi_convocado=True)
+        atualizados = list(qs.values_list('uuid', flat=True))
+        qs.update(foi_convocado=False, data_convocacao=None, processo_uuid=None)
+
+        return Response({
+            'desconvocados': [str(u) for u in atualizados],
+            'total': len(atualizados),
+            'processo_uuid': str(processo_uuid),
+            'codigo_cargo': str(codigo_cargo),
+        })
