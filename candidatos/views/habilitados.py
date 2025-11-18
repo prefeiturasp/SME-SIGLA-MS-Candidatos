@@ -6,7 +6,7 @@ from rest_framework.decorators import action
 from django.utils import timezone
 
 from candidatos.models import ConcursoCandidato, ConcursoCandidatosLote
-from candidatos.serializers import ConcursoCandidatoSerializer
+from candidatos.serializers import ConcursoCandidatoSerializer, BuscarPorUuidsSerializer
 
 
 class HabilitadosViewSet(viewsets.ModelViewSet):
@@ -180,4 +180,33 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             'total': len(atualizados),
             'processo_uuid': str(processo_uuid),
             'codigo_cargo': str(codigo_cargo),
+        })
+
+    @action(detail=False, methods=['post'], url_path='buscar-por-uuids')
+    def buscar_por_uuids(self, request):
+        """
+        Busca candidatos habilitados por uma lista de UUIDs.
+        
+        Payload esperado:
+        {
+            "uuids": ["uuid-1", "uuid-2", "uuid-3", ...]
+        }
+        
+        Retorna os dados serializados dos candidatos encontrados.
+        """
+        # Validação usando serializer
+        input_serializer = BuscarPorUuidsSerializer(data=request.data)
+        input_serializer.is_valid(raise_exception=True)
+        
+        uuids = input_serializer.validated_data['uuids']
+        
+        # Busca os candidatos habilitados pelos UUIDs fornecidos
+        queryset = ConcursoCandidato.objects.filter(
+            uuid__in=uuids
+        ).select_related('candidato', 'lote')
+        
+        serializer = self.get_serializer(queryset, many=True)
+        
+        return Response({
+            'results': serializer.data,
         })
