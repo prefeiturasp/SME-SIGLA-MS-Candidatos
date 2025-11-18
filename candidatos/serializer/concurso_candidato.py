@@ -35,3 +35,20 @@ class ConcursoCandidatoSerializer(serializers.ModelSerializer):
         }
 
 
+class BuscarPorUuidsSerializer(serializers.Serializer):
+    """
+    Serializer para validação do payload da action buscar_por_uuids.
+    Valida que uuids é uma lista não vazia de UUIDs válidos.
+    """
+    uuids = serializers.ListField(
+        child=serializers.UUIDField(),
+        min_length=1,
+        error_messages={
+            'required': 'O campo "uuids" é obrigatório',
+            'empty': 'A lista de UUIDs não pode estar vazia',
+            'min_length': 'A lista de UUIDs deve conter pelo menos 1 item',
+            'invalid': 'O campo "uuids" deve ser uma lista de UUIDs válidos'
+        }
+    )
+
+
