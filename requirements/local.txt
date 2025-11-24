@@ -1,0 +1,12 @@
+-r base.txt
+
+# Development tools
+django-debug-toolbar==4.3.0
+django-extensions==3.2.3
+ipython==8.18.1
+
+# Testing
+pytest==7.4.3
+pytest-django==4.7.0
+pytest-cov==4.1.0
+factory-boy==3.3.0
