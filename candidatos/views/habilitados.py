@@ -210,3 +210,70 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         return Response({
             'results': serializer.data,
         })
+
+    @action(detail=False, methods=['get'], url_path='calculados')
+    def calculados(self, request):
+        """
+        Endpoint placeholder para cálculo de sequência de convocação.
+        Por enquanto retorna um dict vazio.
+        """
+        from candidatos.service.calculo_habilitados_service import gerar_sequencia_convocados
+        quantidade = request.query_params.get('quantidade')
+        concurso_uuid = request.query_params.get('concurso_uuid')
+        try:
+            quantidade = int(str(quantidade))
+        except Exception:
+            return Response({'detail': 'Parâmetro quantidade inválido ou ausente'}, status=status.HTTP_400_BAD_REQUEST)
+        if quantidade <= 0:
+            return Response({'detail': 'quantidade deve ser maior que zero'}, status=status.HTTP_400_BAD_REQUEST)
+        if not concurso_uuid:
+            return Response({'detail': 'Parâmetro concurso_uuid é obrigatório'}, status=status.HTTP_400_BAD_REQUEST)
+        lote = (
+            ConcursoCandidatosLote.objects
+            .filter(concurso_uuid=concurso_uuid)
+            .order_by('-criado_em')
+            .first()
+        )
+        if not lote:
+            return Response({'detail': 'Lote não encontrado para o concurso_uuid informado'}, status=status.HTTP_404_NOT_FOUND)
+        itens = gerar_sequencia_convocados(quantidade, lote)
+        serializer = self.get_serializer(itens, many=True)
+        # Monta uma tabela visual com pipes e underlines: duas colunas (Posição | Tipo)
+        linhas_brutas = []
+        for candidato in serializer.data:
+            # Define o tipo com base nas classificações de cota
+            tipo = "GERAL"
+            if candidato.get('classificacao_nna'):
+                tipo = "NNA"
+            elif candidato.get('classificacao_pcd'):
+                tipo = "PCD"
+            posicao = candidato.get('ranking') or candidato.get('classificacao') or ""
+            linhas_brutas.append((str(posicao), tipo))
+
+        # Calcula larguras para alinhamento (posicao direita, tipo esquerda)
+        pos_w = max(len("Posicao"), *(len(p) for p, _ in linhas_brutas)) if linhas_brutas else len("Posicao")
+        tipo_w = max(len("Tipo"), *(len(t) for _, t in linhas_brutas)) if linhas_brutas else len("Tipo")
+
+        header = f"| {'Posicao':>{pos_w}} | {'Tipo':<{tipo_w}} |"
+        underline = f"|{'-'*(pos_w+2)}|{'-'*(tipo_w+2)}|"
+        linhas = [header, underline]
+        for p, t in linhas_brutas:
+            linhas.append(f"| {p:>{pos_w}} | {t:<{tipo_w}} |")
+            linhas.append(underline)
+        tabela = "\n".join(linhas)
+        # print(tabela)
+        # # Salva a mesma tabela em arquivo texto (sobrescrevendo)
+        # try:
+        #     from pathlib import Path
+        #     out_path = Path(__file__).resolve().parent / "tabela_calculados.txt"
+        #     with out_path.open("w", encoding="utf-8") as f:
+        #         f.write(tabela)
+        # except Exception:
+        #     pass
+
+        return Response({
+            'quantidade': quantidade,
+            'concurso_uuid': str(concurso_uuid),
+            'lote_uuid': str(lote.uuid),
+            'results': serializer.data
+        })
