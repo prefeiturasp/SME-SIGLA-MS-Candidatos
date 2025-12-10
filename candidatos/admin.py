@@ -4,7 +4,7 @@ from .models import Candidato, ConcursoCandidato, ConcursoCandidatosLote
 @admin.register(Candidato)
 class CandidatoAdmin(admin.ModelAdmin):
     """Admin configuration for Candidato model"""
-    list_display = ['nome', 'cpf', 'email', 'status', 'cidade', 'estado', 'criado_em']
+    list_display = ['nome', 'cpf', 'uuid', 'email', 'status', 'cidade', 'estado', 'criado_em']
     list_filter = ['status', 'genero', 'cidade', 'estado', 'criado_em', 'esta_ativo']
     search_fields = ['nome', 'cpf', 'email', 'cidade', 'telefone']
     readonly_fields = ['criado_em', 'atualizado_em', 'esta_ativo']

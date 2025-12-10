@@ -1,3 +1,4 @@
+import logging
 from django.db import models
 from rest_framework import viewsets
 from rest_framework.response import Response
@@ -7,6 +8,9 @@ from django.utils import timezone
 
 from candidatos.models import ConcursoCandidato, ConcursoCandidatosLote
 from candidatos.serializers import ConcursoCandidatoSerializer, BuscarPorUuidsSerializer
+from candidatos.service.escolhas_service import EscolhasService
+
+logger = logging.getLogger(__name__)
 
 
 class HabilitadosViewSet(viewsets.ModelViewSet):
@@ -23,12 +27,48 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
     pagination_class = None
 
     def get_queryset(self):
-        qs = super().get_queryset()
+        # get_queryset não é mais usado isoladamente
+        # A lógica foi migrada para a action reposicao
+        return ConcursoCandidato.objects.none()
 
-        concurso_uuid = self.request.query_params.get('concurso_uuid')
+    @action(detail=False, methods=['get'], url_path='reconvocacao')
+    def reconvocacao(self, request):
+        """
+        Endpoint para buscar candidatos habilitados para reconvocação.
+        Suporta GET /habilitados/reconvocacao/?concurso_uuid=<uuid>&geral=<val>&pcd=<val>&nna=<val>
+        - geral -> filtra campo 'classificacao'
+        - pcd   -> filtra campo 'classificacao_pcd'
+        - nna   -> filtra campo 'classificacao_nna'
+        
+        Busca escolhas com situação de reconvocação no microserviço de Escolhas
+        e filtra apenas candidatos cujo uuid está na lista retornada.
+        """
+        # Busca reconvocações no microserviço de Escolhas
+        try:
+            reconvocoes = EscolhasService.buscar_reconvocacoes()
+            # Extrai a lista de candidato_uuid da resposta
+            candidato_uuids = [
+                item.get('candidato_uuid') 
+                for item in reconvocoes 
+                if item.get('candidato_uuid') is not None
+            ]
+        except Exception as exc:
+            logger.error(f"Erro ao buscar reconvocações no microserviço de Escolhas: {exc}")
+            return Response(
+                {'detail': 'Erro ao buscar reconvocações no microserviço de Escolhas'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+        # Se não houver candidatos para reconvocação, retorna vazio
+        if not candidato_uuids:
+            serializer = self.get_serializer([], many=True)
+            return Response(serializer.data)
+
+
+        concurso_uuid = request.query_params.get('concurso_uuid')
         if not concurso_uuid:
             # Sem concurso_uuid não retorna nada
-            return ConcursoCandidato.objects.none()
+            serializer = self.get_serializer([], many=True)
+            return Response(serializer.data)
 
         lote = (
             ConcursoCandidatosLote.objects
@@ -37,22 +77,26 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             .first()
         )
         if not lote:
-            return ConcursoCandidato.objects.none()
-        # Filtrar apenas candidatos não convocados
-        qs = qs.filter(lote=lote, foi_convocado=False)
+            serializer = self.get_serializer([], many=True)
+            return Response(serializer.data)
+        
+        # Filtrar apenas candidatos não convocados E que estão na lista de reconvocações
+        
+        qs = ConcursoCandidato.objects.filter(lote=lote, foi_convocado=True, uuid__in=candidato_uuids).all()
 
         # Filtro opcional por código de cargo
-        codigo_cargo = self.request.query_params.get('codigo_cargo')
+        codigo_cargo = request.query_params.get('codigo_cargo')
         if codigo_cargo not in (None, ''):
             qs = qs.filter(codigo_cargo=codigo_cargo)
 
-        geral = self.request.query_params.get('geral')
-        pcd = self.request.query_params.get('pcd')
-        nna = self.request.query_params.get('nna')
+        geral = request.query_params.get('geral')
+        pcd = request.query_params.get('pcd')
+        nna = request.query_params.get('nna')
 
         # Se nenhum limite foi informado, retorna todos do lote
         if geral in (None, '') and pcd in (None, '') and nna in (None, ''):
-            return qs
+            serializer = self.get_serializer(qs, many=True)
+            return Response(serializer.data)
 
         # Converte valores para int quando possível
         def to_int(value):
@@ -68,7 +112,6 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         # Monta lista respeitando limites por categoria
         ids_incluidos = set()
         resultados = []
-
         if geral_n > 0:
             subset = (
                 qs.exclude(classificacao__isnull=True)
@@ -110,12 +153,75 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             output_field=models.IntegerField(),
         )
 
-        return (
+        qs_final = (
             qs.filter(id__in=resultados)
               .annotate(_prio=prioridade)
               .order_by('_prio', 'classificacao_pcd', 'classificacao_nna', 'classificacao', 'id')
         )
 
+        serializer = self.get_serializer(qs_final, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='reposicao')
+    def reposicao(self, request):
+        """
+        Endpoint para buscar candidatos habilitados para reposição.
+        Busca candidatos que já foram convocados (foi_convocado=True) do lote mais recente do concurso.
+        
+        Suporta GET /habilitados/reposicao/?concurso_uuid=<uuid>&quantidade=<num>
+        - concurso_uuid: UUID do concurso (obrigatório)
+        - quantidade: Quantidade de candidatos a retornar (obrigatório)
+        """
+        concurso_uuid = request.query_params.get('concurso_uuid')
+        quantidade = request.query_params.get('quantidade')
+
+        if not concurso_uuid:
+            return Response(
+                {'detail': 'concurso_uuid é obrigatório'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not quantidade:
+            return Response(
+                {'detail': 'quantidade é obrigatória'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            quantidade = int(quantidade)
+            if quantidade <= 0:
+                return Response(
+                    {'detail': 'quantidade deve ser um número positivo'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except (ValueError, TypeError):
+            return Response(
+                {'detail': 'quantidade deve ser um número válido'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Busca o lote mais recente do concurso
+        lote = (
+            ConcursoCandidatosLote.objects
+            .filter(concurso_uuid=concurso_uuid)
+            .order_by('-criado_em')
+            .first()
+        )
+
+        if not lote:
+            serializer = self.get_serializer([], many=True)
+            return Response(serializer.data)
+
+        # Busca candidatos convocados do lote, limitando pela quantidade
+        qs = (
+            ConcursoCandidato.objects
+            .select_related('candidato', 'lote')
+            .filter(lote=lote, foi_convocado=False)
+            .order_by('classificacao')[:quantidade]
+        )
+
+        serializer = self.get_serializer(qs, many=True)
+        return Response(serializer.data)
 
     @action(detail=False, methods=['patch'], url_path='convocar')
     def convocar(self, request):
