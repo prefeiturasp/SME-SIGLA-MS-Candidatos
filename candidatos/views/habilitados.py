@@ -44,7 +44,6 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         e filtra apenas candidatos cujo uuid está na lista retornada.
         """
         # Busca reconvocações no microserviço de Escolhas
-        # breakpoint()
         try:
             reconvocoes = EscolhasService.buscar_reconvocacoes()
             # Extrai a lista de candidato_uuid da resposta
@@ -59,7 +58,6 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
                 {'detail': 'Erro ao buscar reconvocações no microserviço de Escolhas'},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE
             )
-        # breakpoint()
         # Se não houver candidatos para reconvocação, retorna vazio
         if not candidato_uuids:
             serializer = self.get_serializer([], many=True)
@@ -78,7 +76,6 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             .order_by('-criado_em')
             .first()
         )
-        # breakpoint()
         if not lote:
             serializer = self.get_serializer([], many=True)
             return Response(serializer.data)
@@ -115,7 +112,6 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         # Monta lista respeitando limites por categoria
         ids_incluidos = set()
         resultados = []
-        # breakpoint()
         if geral_n > 0:
             subset = (
                 qs.exclude(classificacao__isnull=True)
