@@ -7,7 +7,8 @@ from rest_framework.decorators import action
 from django.utils import timezone
 
 from candidatos.models import ConcursoCandidato, ConcursoCandidatosLote
-from candidatos.serializers import ConcursoCandidatoSerializer, BuscarPorUuidsSerializer
+from candidatos.serializers import ConcursoCandidatoSerializer, BuscarPorUuidsSerializer, HabilitadosCalculadosParamsSerializer
+from candidatos.service.calculo_habilitados_service import gerar_sequencia_convocados
 from candidatos.service.escolhas_service import EscolhasService
 
 logger = logging.getLogger(__name__)
@@ -309,10 +310,38 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         # Busca os candidatos habilitados pelos UUIDs fornecidos
         queryset = ConcursoCandidato.objects.filter(
             uuid__in=uuids
-        ).select_related('candidato', 'lote')
+        ).order_by('classificacao').select_related('candidato', 'lote')
         
         serializer = self.get_serializer(queryset, many=True)
         
         return Response({
             'results': serializer.data,
+        })
+
+    @action(detail=False, methods=['get'], url_path='calculados')
+    def calculados(self, request):
+        """
+        Endpoint placeholder para cálculo de sequência de convocação.
+        Por enquanto retorna um dict vazio.
+        """
+        params = HabilitadosCalculadosParamsSerializer(data=request.query_params)
+        params.is_valid(raise_exception=True)
+        quantidade = params.validated_data['quantidade']
+        concurso_uuid = str(params.validated_data['concurso_uuid'])
+        lote = (
+            ConcursoCandidatosLote.objects
+            .filter(concurso_uuid=concurso_uuid)
+            .order_by('-criado_em')
+            .first()
+        )
+        if not lote:
+            return Response({'detail': 'Lote não encontrado para o concurso_uuid informado'}, status=status.HTTP_404_NOT_FOUND)
+        itens = gerar_sequencia_convocados(quantidade, lote)
+        serializer = self.get_serializer(itens, many=True)
+
+        return Response({
+            'quantidade': quantidade,
+            'concurso_uuid': str(concurso_uuid),
+            'lote_uuid': str(lote.uuid),
+            'results': serializer.data
         })
