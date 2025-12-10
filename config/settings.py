@@ -144,3 +144,5 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': True,
 }
+
+ESCOLHAS_API_URL = os.environ.get('ESCOLHAS_API_URL', 'http://localhost:8004')

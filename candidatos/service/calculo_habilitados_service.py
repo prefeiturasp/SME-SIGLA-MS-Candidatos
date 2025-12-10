@@ -42,8 +42,6 @@ def gerar_sequencia_convocados(total_convocados, lote=None):
     convocados_nna = convocados_qs.filter(categoria_efetiva='NNA').count()
     convocados_pcd = convocados_qs.filter(categoria_efetiva='PCD').count()
     convocados_geral = convocados_qs.filter(categoria_efetiva='GERAL').count()
-    # print(f"Convocados total: {convocados_total}, Convocados NNA: {convocados_nna}, Convocados PCD: {convocados_pcd}, Convocados GERAL: {convocados_geral}")
-    # print(f"Total convocados: {total_convocados}")
 
     # Totais cumulativos alvo (já convocados + novo lote)
     cumul_total = convocados_total + total_convocados
@@ -55,14 +53,12 @@ def gerar_sequencia_convocados(total_convocados, lote=None):
     nna_total = max(0, cumul_nna - convocados_nna)
     pcd_total = max(0, cumul_pcd - convocados_pcd)
     geral_total = max(0, cumul_geral - convocados_geral)
-    # print(f"NNA total: {nna_total}, PCD total: {pcd_total}, GERAL total: {geral_total}")
     sequencia = ['G'] * total_convocados
 
     qs_geral = (
         ConcursoCandidato
         .objects
         .filter(lote=lote, foi_convocado=False)
-        # .filter(classificacao_nna__isnull=True, classificacao_pcd__isnull=True)
         .exclude(classificacao__isnull=True)
         .order_by('classificacao')[:geral_total]
     )
@@ -95,7 +91,6 @@ def gerar_sequencia_convocados(total_convocados, lote=None):
             pass
         obj.save()
     for obj in nna_list:
-        # print(f"Objeto NNA: {obj}")
         try:
             obj.categoria_efetiva = 'NNA'
             obj.promovido_para_geral = False
@@ -120,23 +115,16 @@ def gerar_sequencia_convocados(total_convocados, lote=None):
     promovidos_to_update = []
     now = timezone.now()
     for obj in geral_list:
-        # print(f"Objeto: {obj}")
         try:
-            # print(f"Classificacao NNA: {getattr(obj, 'classificacao_nna', None)}")
-            # print(f"Classificacao PCD: {getattr(obj, 'classificacao_pcd', None)}")
             if getattr(obj, 'classificacao_nna', None) is not None:
-                # print(f"Promovendo de NNA para GERAL")
                 # promovido de NNA para GERAL
-                # if obj.categoria_efetiva != 'GERAL' or not getattr(obj, 'promovido_para_geral', False) or getattr(obj, 'promovido_de', None) != 'NNA':
                 obj.categoria_efetiva = 'GERAL'
                 obj.promovido_para_geral = True
                 obj.promovido_de = 'NNA'
                 obj.promovido_em = now
                 promovidos_to_update.append(obj)
             elif getattr(obj, 'classificacao_pcd', None) is not None:
-                # print(f"Promovendo de PCD para GERAL")
                 # promovido de PCD para GERAL
-                # if obj.categoria_efetiva != 'GERAL' or not getattr(obj, 'promovido_para_geral', False) or getattr(obj, 'promovido_de', None) != 'PCD':
                 obj.categoria_efetiva = 'GERAL'
                 obj.promovido_para_geral = True
                 obj.promovido_de = 'PCD'
@@ -145,7 +133,6 @@ def gerar_sequencia_convocados(total_convocados, lote=None):
         except Exception:
             continue
 
-    # print(f"Promovidos para atualizar: {promovidos_to_update}")
     if promovidos_to_update:
         ConcursoCandidato.objects.bulk_update(
             promovidos_to_update,
@@ -210,7 +197,6 @@ def gerar_sequencia_convocados(total_convocados, lote=None):
 
     # Monta a lista final de objetos com ranking baseado na posição
     resultado_itens = [None] * total_convocados
-    # print(sequencia)
 
     def pop_from(label):
         nonlocal idx_nna, idx_pcd, idx_geral
@@ -248,7 +234,15 @@ def gerar_sequencia_convocados(total_convocados, lote=None):
     final_itens = [it for it in resultado_itens if it is not None]
     try:
         uuids_lista = [str(it.uuid) for it in final_itens]
-        # print(f"UUIDs candidatos: {uuids_lista}")
     except Exception:
+        pass
+    # Persiste o ranking com a posição final (1-based) para não ficar 0
+    try:
+        for idx, it in enumerate(final_itens, start=1):
+            it.ranking = idx
+        if final_itens:
+            ConcursoCandidato.objects.bulk_update(final_itens, ['ranking'])
+    except Exception:
+        # Em caso de erro de persistência, segue retornando os itens
         pass
     return final_itens

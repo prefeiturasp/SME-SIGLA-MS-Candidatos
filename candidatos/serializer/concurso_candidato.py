@@ -52,3 +52,19 @@ class BuscarPorUuidsSerializer(serializers.Serializer):
     )
 
 
+class HabilitadosCalculadosParamsSerializer(serializers.Serializer):
+    """
+    Valida parâmetros de consulta contendo 'quantidade' e 'concurso_uuid'.
+    Útil para endpoints que recebem esses dois parâmetros via querystring.
+    """
+    quantidade = serializers.IntegerField(min_value=1, required=True, error_messages={
+        'required': 'O parâmetro "quantidade" é obrigatório',
+        'invalid': 'O parâmetro "quantidade" deve ser um número inteiro',
+        'min_value': 'O parâmetro "quantidade" deve ser maior que zero',
+    })
+    concurso_uuid = serializers.UUIDField(required=True, error_messages={
+        'required': 'O parâmetro "concurso_uuid" é obrigatório',
+        'invalid': 'O parâmetro "concurso_uuid" deve ser um UUID válido',
+    })
+
+

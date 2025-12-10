@@ -6,7 +6,15 @@ from rest_framework.decorators import action
 from django.utils import timezone
 
 from candidatos.models import ConcursoCandidato, ConcursoCandidatosLote
+<<<<<<< Updated upstream
 from candidatos.serializers import ConcursoCandidatoSerializer, BuscarPorUuidsSerializer
+=======
+from candidatos.serializers import ConcursoCandidatoSerializer, BuscarPorUuidsSerializer, HabilitadosCalculadosParamsSerializer
+from candidatos.service.calculo_habilitados_service import gerar_sequencia_convocados
+from candidatos.service.escolhas_service import EscolhasService
+
+logger = logging.getLogger(__name__)
+>>>>>>> Stashed changes
 
 
 class HabilitadosViewSet(viewsets.ModelViewSet):
@@ -203,7 +211,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         # Busca os candidatos habilitados pelos UUIDs fornecidos
         queryset = ConcursoCandidato.objects.filter(
             uuid__in=uuids
-        ).select_related('candidato', 'lote')
+        ).order_by('classificacao').select_related('candidato', 'lote')
         
         serializer = self.get_serializer(queryset, many=True)
         
@@ -217,17 +225,10 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         Endpoint placeholder para cálculo de sequência de convocação.
         Por enquanto retorna um dict vazio.
         """
-        from candidatos.service.calculo_habilitados_service import gerar_sequencia_convocados
-        quantidade = request.query_params.get('quantidade')
-        concurso_uuid = request.query_params.get('concurso_uuid')
-        try:
-            quantidade = int(str(quantidade))
-        except Exception:
-            return Response({'detail': 'Parâmetro quantidade inválido ou ausente'}, status=status.HTTP_400_BAD_REQUEST)
-        if quantidade <= 0:
-            return Response({'detail': 'quantidade deve ser maior que zero'}, status=status.HTTP_400_BAD_REQUEST)
-        if not concurso_uuid:
-            return Response({'detail': 'Parâmetro concurso_uuid é obrigatório'}, status=status.HTTP_400_BAD_REQUEST)
+        params = HabilitadosCalculadosParamsSerializer(data=request.query_params)
+        params.is_valid(raise_exception=True)
+        quantidade = params.validated_data['quantidade']
+        concurso_uuid = str(params.validated_data['concurso_uuid'])
         lote = (
             ConcursoCandidatosLote.objects
             .filter(concurso_uuid=concurso_uuid)
