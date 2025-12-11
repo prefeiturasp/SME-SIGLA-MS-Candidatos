@@ -1,12 +1,14 @@
+import math
 from typing import Any, Dict, Mapping, Iterable
 from django.db.models import QuerySet
-from candidatos.models import ConcursoCandidato
 from django.utils import timezone
+from candidatos.models import ConcursoCandidato
+from .ranking_service import atualizar_ranking, atualizar_ranking_escolha
 
 
 PORCENTAGEM_NNA = 0.2
 PORCENTAGEM_PCD = 0.05
-import math
+
 
 def calcular_quantidade_nna(total_candidatos):
     return math.ceil(total_candidatos * PORCENTAGEM_NNA)
@@ -237,12 +239,6 @@ def gerar_sequencia_convocados(total_convocados, lote=None):
     except Exception:
         pass
     # Persiste o ranking com a posição final (1-based) para não ficar 0
-    try:
-        for idx, it in enumerate(final_itens, start=1):
-            it.ranking = idx
-        if final_itens:
-            ConcursoCandidato.objects.bulk_update(final_itens, ['ranking'])
-    except Exception:
-        # Em caso de erro de persistência, segue retornando os itens
-        pass
+    atualizar_ranking(final_itens)
+    atualizar_ranking_escolha(final_itens)
     return final_itens
