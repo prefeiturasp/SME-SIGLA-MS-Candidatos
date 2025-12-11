@@ -30,6 +30,7 @@ class ConcursoCandidato(BaseModel):
     foi_convocado = models.BooleanField(default=False, verbose_name="Foi Convocado?")
     data_convocacao = models.DateTimeField(blank=True, null=True, verbose_name="Data de Convocação")
     ranking = models.IntegerField(default=0, verbose_name="Ranking")
+    ranking_escolha = models.IntegerField(default=0, verbose_name="Ranking da Escolha")
     # Sinalização de categoria efetiva e promoções
     categoria_efetiva = models.CharField(
         max_length=10,

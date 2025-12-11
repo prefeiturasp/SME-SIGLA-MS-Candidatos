@@ -1,5 +1,6 @@
 import logging
 from django.db import models
+from django.core.exceptions import FieldError
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework import status
@@ -10,6 +11,7 @@ from candidatos.models import ConcursoCandidato, ConcursoCandidatosLote
 from candidatos.serializers import ConcursoCandidatoSerializer, BuscarPorUuidsSerializer, HabilitadosCalculadosParamsSerializer
 from candidatos.service.calculo_habilitados_service import gerar_sequencia_convocados
 from candidatos.service.escolhas_service import EscolhasService
+from candidatos.service.ranking_service import atualizar_ranking, atualizar_ranking_escolha
 
 logger = logging.getLogger(__name__)
 
@@ -159,7 +161,8 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
               .annotate(_prio=prioridade)
               .order_by('_prio', 'classificacao_pcd', 'classificacao_nna', 'classificacao', 'id')
         )
-
+        atualizar_ranking(list(qs_final))
+        atualizar_ranking_escolha(list(qs_final))
         serializer = self.get_serializer(qs_final, many=True)
         return Response(serializer.data)
 
@@ -221,6 +224,8 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             .order_by('classificacao')[:quantidade]
         )
 
+        atualizar_ranking(list(qs))
+        atualizar_ranking_escolha(list(qs))
         serializer = self.get_serializer(qs, many=True)
         return Response(serializer.data)
 
@@ -298,22 +303,32 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         {
             "uuids": ["uuid-1", "uuid-2", "uuid-3", ...]
         }
-        
+
         Retorna os dados serializados dos candidatos encontrados.
         """
         # Validação usando serializer
         input_serializer = BuscarPorUuidsSerializer(data=request.data)
         input_serializer.is_valid(raise_exception=True)
-        
+
         uuids = input_serializer.validated_data['uuids']
-        
+        order_by_param = request.query_params.get('order_by') or 'classificacao'
+
         # Busca os candidatos habilitados pelos UUIDs fornecidos
-        queryset = ConcursoCandidato.objects.filter(
-            uuid__in=uuids
-        ).order_by('classificacao').select_related('candidato', 'lote')
-        
+        try:
+            queryset = (
+                ConcursoCandidato.objects
+                .filter(uuid__in=uuids)
+                .order_by(order_by_param)
+                .select_related('candidato', 'lote')
+            )
+        except FieldError:
+            return Response(
+                {'detail': 'Parâmetro order_by inválido'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         serializer = self.get_serializer(queryset, many=True)
-        
+
         return Response({
             'results': serializer.data,
         })
