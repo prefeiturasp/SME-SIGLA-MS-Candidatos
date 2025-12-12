@@ -38,10 +38,9 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
     def reconvocacao(self, request):
         """
         Endpoint para buscar candidatos habilitados para reconvocação.
-        Suporta GET /habilitados/reconvocacao/?concurso_uuid=<uuid>&geral=<val>&pcd=<val>&nna=<val>
-        - geral -> filtra campo 'classificacao'
-        - pcd   -> filtra campo 'classificacao_pcd'
-        - nna   -> filtra campo 'classificacao_nna'
+        Suporta GET /habilitados/reconvocacao/?concurso_uuid=<uuid>&quantidade=<num>
+        - concurso_uuid: UUID do concurso (obrigatório)
+        - quantidade: Quantidade de candidatos a retornar (obrigatório)
         
         Busca escolhas com situação de reconvocação no microserviço de Escolhas
         e filtra apenas candidatos cujo uuid está na lista retornada.
@@ -68,10 +67,28 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
 
 
         concurso_uuid = request.query_params.get('concurso_uuid')
+        quantidade = request.query_params.get('quantidade')
         if not concurso_uuid:
             # Sem concurso_uuid não retorna nada
             serializer = self.get_serializer([], many=True)
             return Response(serializer.data)
+        if not quantidade:
+            return Response(
+                {'detail': 'quantidade é obrigatória'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        try:
+            quantidade = int(quantidade)
+            if quantidade <= 0:
+                return Response(
+                    {'detail': 'quantidade deve ser um número positivo'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except (ValueError, TypeError):
+            return Response(
+                {'detail': 'quantidade deve ser um número válido'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         lote = (
             ConcursoCandidatosLote.objects
@@ -83,9 +100,64 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer([], many=True)
             return Response(serializer.data)
         
-        # Filtrar apenas candidatos não convocados E que estão na lista de reconvocações
+        # Filtrar apenas candidatos convocados E que estão na lista de reconvocações
+        qs = ConcursoCandidato.objects.filter(lote=lote, foi_convocado=True, uuid__in=candidato_uuids)
+
+        # Filtro opcional por código de cargo
+        codigo_cargo = request.query_params.get('codigo_cargo')
+        if codigo_cargo not in (None, ''):
+            qs = qs.filter(codigo_cargo=codigo_cargo)
+
+        # Ordena priorizando PCD (0), depois NNA (1) e por último demais (2), e limita pela quantidade
+        prioridade = models.Case(
+            models.When(classificacao_pcd__isnull=False, then=models.Value(0)),
+            models.When(classificacao_nna__isnull=False, then=models.Value(1)),
+            default=models.Value(2),
+            output_field=models.IntegerField(),
+        )
+
+        qs_final = qs.annotate(_prio=prioridade).order_by(
+            '_prio', 'classificacao_pcd', 'classificacao_nna', 'classificacao', 'id'
+        )[:quantidade]
+        atualizar_ranking(list(qs_final))
+        atualizar_ranking_escolha(list(qs_final))
+        serializer = self.get_serializer(qs_final, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='reposicao')
+    def reposicao(self, request):
+        """
+        Endpoint para buscar candidatos habilitados para reposição.
+        Busca candidatos que já foram convocados (foi_convocado=True) do lote mais recente do concurso.
         
-        qs = ConcursoCandidato.objects.filter(lote=lote, foi_convocado=True, uuid__in=candidato_uuids).all()
+        Suporta GET /habilitados/reposicao/?concurso_uuid=<uuid>&geral=<val>&pcd=<val>&nna=<val>
+        - concurso_uuid: UUID do concurso (obrigatório)
+        - geral -> filtra campo 'classificacao'
+        - pcd   -> filtra campo 'classificacao_pcd'
+        - nna   -> filtra campo 'classificacao_nna'
+        """
+        concurso_uuid = request.query_params.get('concurso_uuid')
+
+        if not concurso_uuid:
+            return Response(
+                {'detail': 'concurso_uuid é obrigatório'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Busca o lote mais recente do concurso
+        lote = (
+            ConcursoCandidatosLote.objects
+            .filter(concurso_uuid=concurso_uuid)
+            .order_by('-criado_em')
+            .first()
+        )
+
+        if not lote:
+            serializer = self.get_serializer([], many=True)
+            return Response(serializer.data)
+
+        # Base: candidatos não convocados do lote
+        qs = ConcursoCandidato.objects.select_related('candidato', 'lote').filter(lote=lote, foi_convocado=False)
 
         # Filtro opcional por código de cargo
         codigo_cargo = request.query_params.get('codigo_cargo')
@@ -148,85 +220,15 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
                     ids_incluidos.add(obj.id)
                     resultados.append(obj.id)
 
-        # Ordena priorizando PCD (0), depois NNA (1) e por último demais (2)
-        prioridade = models.Case(
-            models.When(classificacao_pcd__isnull=False, then=models.Value(0)),
-            models.When(classificacao_nna__isnull=False, then=models.Value(1)),
-            default=models.Value(2),
-            output_field=models.IntegerField(),
-        )
-
+        # Ordena somente pela classificação
         qs_final = (
             qs.filter(id__in=resultados)
-              .annotate(_prio=prioridade)
-              .order_by('_prio', 'classificacao_pcd', 'classificacao_nna', 'classificacao', 'id')
+              .order_by('classificacao')
         )
+
         atualizar_ranking(list(qs_final))
         atualizar_ranking_escolha(list(qs_final))
         serializer = self.get_serializer(qs_final, many=True)
-        return Response(serializer.data)
-
-    @action(detail=False, methods=['get'], url_path='reposicao')
-    def reposicao(self, request):
-        """
-        Endpoint para buscar candidatos habilitados para reposição.
-        Busca candidatos que já foram convocados (foi_convocado=True) do lote mais recente do concurso.
-        
-        Suporta GET /habilitados/reposicao/?concurso_uuid=<uuid>&quantidade=<num>
-        - concurso_uuid: UUID do concurso (obrigatório)
-        - quantidade: Quantidade de candidatos a retornar (obrigatório)
-        """
-        concurso_uuid = request.query_params.get('concurso_uuid')
-        quantidade = request.query_params.get('quantidade')
-
-        if not concurso_uuid:
-            return Response(
-                {'detail': 'concurso_uuid é obrigatório'}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        if not quantidade:
-            return Response(
-                {'detail': 'quantidade é obrigatória'}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        try:
-            quantidade = int(quantidade)
-            if quantidade <= 0:
-                return Response(
-                    {'detail': 'quantidade deve ser um número positivo'}, 
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-        except (ValueError, TypeError):
-            return Response(
-                {'detail': 'quantidade deve ser um número válido'}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # Busca o lote mais recente do concurso
-        lote = (
-            ConcursoCandidatosLote.objects
-            .filter(concurso_uuid=concurso_uuid)
-            .order_by('-criado_em')
-            .first()
-        )
-
-        if not lote:
-            serializer = self.get_serializer([], many=True)
-            return Response(serializer.data)
-
-        # Busca candidatos convocados do lote, limitando pela quantidade
-        qs = (
-            ConcursoCandidato.objects
-            .select_related('candidato', 'lote')
-            .filter(lote=lote, foi_convocado=False)
-            .order_by('classificacao')[:quantidade]
-        )
-
-        atualizar_ranking(list(qs))
-        atualizar_ranking_escolha(list(qs))
-        serializer = self.get_serializer(qs, many=True)
         return Response(serializer.data)
 
     @action(detail=False, methods=['patch'], url_path='convocar')
