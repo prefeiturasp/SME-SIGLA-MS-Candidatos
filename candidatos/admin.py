@@ -4,7 +4,7 @@ from .models import Candidato, ConcursoCandidato, ConcursoCandidatosLote
 @admin.register(Candidato)
 class CandidatoAdmin(admin.ModelAdmin):
     """Admin configuration for Candidato model"""
-    list_display = ['nome', 'cpf', 'email', 'status', 'cidade', 'estado', 'criado_em']
+    list_display = ['nome', 'cpf', 'uuid', 'email', 'status', 'cidade', 'estado', 'criado_em']
     list_filter = ['status', 'genero', 'cidade', 'estado', 'criado_em', 'esta_ativo']
     search_fields = ['nome', 'cpf', 'email', 'cidade', 'telefone']
     readonly_fields = ['criado_em', 'atualizado_em', 'esta_ativo']
@@ -30,7 +30,7 @@ class CandidatoAdmin(admin.ModelAdmin):
 
 @admin.register(ConcursoCandidato)
 class ConcursoCandidatoAdmin(admin.ModelAdmin):
-    list_display = ['candidato', 'candidato__nome', 'codigo_cargo', 'processo_uuid', 'classificacao', 'classificacao_pcd', 'classificacao_nna', 'foi_convocado', 'data_convocacao', 'lote__concurso_uuid', 'criado_em']
+    list_display = ['candidato', 'candidato__nome', 'codigo_cargo', 'processo_uuid', 'pontos', 'ranking', 'ranking_escolha', 'classificacao', 'classificacao_pcd', 'classificacao_nna', 'foi_convocado', 'data_convocacao', 'lote__concurso_uuid', 'criado_em']
     list_filter = ['lote__concurso_uuid', 'criado_em', 'foi_convocado', 'data_convocacao', 'processo_uuid', 'codigo_cargo']
     search_fields = ['candidato__nome', 'lote', 'candidato__cpf', 'candidato__email', 'candidato__telefone', 'candidato__celular']
     readonly_fields = ['uuid', 'criado_em', 'atualizado_em', 'esta_ativo']
@@ -42,7 +42,7 @@ class ConcursoCandidatoAdmin(admin.ModelAdmin):
         """
         Ação de admin para marcar registros como não convocados em lote.
         """
-        qtd = queryset.update(foi_convocado=False, data_convocacao=None)
+        qtd = queryset.update(foi_convocado=False, data_convocacao=None, processo_uuid=None, ranking=0, ranking_escolha=0)
         self.message_user(
             request,
             f'{qtd} registro(s) marcados como não convocados.',
