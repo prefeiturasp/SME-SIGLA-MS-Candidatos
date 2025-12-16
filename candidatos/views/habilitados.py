@@ -46,15 +46,19 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         e filtra apenas candidatos cujo uuid está na lista retornada.
         """
         # Busca reconvocações no microserviço de Escolhas
+        print("Buscando reconvocações no microserviço de Escolhas")
         try:
             reconvocoes = EscolhasService.buscar_reconvocacoes()
+            print(reconvocoes)
             # Extrai a lista de candidato_uuid da resposta
             candidato_uuids = [
                 item.get('candidato_uuid') 
                 for item in reconvocoes 
                 if item.get('candidato_uuid') is not None
             ]
+            print(candidato_uuids)
         except Exception as exc:
+            print(f"Erro ao buscar reconvocações no microserviço de Escolhas: {exc}")
             logger.error(f"Erro ao buscar reconvocações no microserviço de Escolhas: {exc}")
             return Response(
                 {'detail': 'Erro ao buscar reconvocações no microserviço de Escolhas'},
@@ -68,6 +72,9 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
 
         concurso_uuid = request.query_params.get('concurso_uuid')
         quantidade = request.query_params.get('quantidade')
+        print("concurso_uuid")
+        print(concurso_uuid)
+        print(quantidade)
         if not concurso_uuid:
             # Sem concurso_uuid não retorna nada
             serializer = self.get_serializer([], many=True)
@@ -96,13 +103,16 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             .order_by('-criado_em')
             .first()
         )
+        print("lote")
+        print(lote)
         if not lote:
             serializer = self.get_serializer([], many=True)
             return Response(serializer.data)
         
         # Filtrar apenas candidatos convocados E que estão na lista de reconvocações
         qs = ConcursoCandidato.objects.filter(lote=lote, foi_convocado=True, uuid__in=candidato_uuids)
-
+        print("qs")
+        print(qs)
         # Filtro opcional por código de cargo
         codigo_cargo = request.query_params.get('codigo_cargo')
         if codigo_cargo not in (None, ''):

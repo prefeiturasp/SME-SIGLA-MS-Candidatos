@@ -27,24 +27,24 @@ class EscolhasService:
     def buscar_reconvocacoes(cls, path: str = '/api/v1/escolhas/reconvocacao/') -> List[Dict[str, Any]]:
         """
         Busca escolhas com situação de reconvocação.
-        
         Args:
             path: Caminho do endpoint (padrão: /api/v1/escolhas/reconvocacao)
-            
         Returns:
             Lista de dicionários com 'uuid' e 'candidato_uuid'
-            
         Raises:
             requests.RequestException: Em caso de erro na requisição
             ValueError: Se a URL não estiver configurada
         """
         base_url = cls._get_base_url()
         url = f"{base_url}{path}"
-        
+        print("Buscas reconvocacoes")
+        print(url)
+        print(base_url)
         try:
+            print(f"Buscando reconvocações em: {url}")
             logger.info(f"Buscando reconvocações em: {url}")
             response = requests.get(url, timeout=cls.DEFAULT_TIMEOUT)
-            
+            print(response.status_code)
             if response.status_code == status.HTTP_200_OK:
                 data = response.json()
                 # Garante que retorna uma lista
@@ -58,11 +58,13 @@ class EscolhasService:
                     return [data]
                 return []
             else:
+                print(f"Erro ao buscar reconvocações: {response.status_code} - {response.text}")
                 logger.error(f"Erro ao buscar reconvocações: {response.status_code} - {response.text}")
                 response.raise_for_status()
                 return []
-                
+
         except requests.RequestException as exc:
+            print(f"Erro ao conectar com o microserviço de Escolhas: {exc}")
             logger.exception(f"Erro ao conectar com o microserviço de Escolhas: {exc}")
             raise requests.RequestException(f"Erro ao conectar com o microserviço de Escolhas: {exc}") from exc
 
