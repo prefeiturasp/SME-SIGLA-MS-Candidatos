@@ -27,7 +27,7 @@ def calcular_posicao_nna(posicao):
 def calcular_posicao_pcd(posicao):
     return 10 + (posicao - 1) * 20
 
-def gerar_sequencia_convocados(total_convocados, lote=None):
+def gerar_sequencia_convocados(total_convocados, lote=None, escolhas_candidato_uuids=None):
     """
     Gera a sequência de convocação com rótulos 'G', 'NNA' e 'PCD', respeitando:
     - Totais por tipo (NNA: ceil(20%), PCD: arredonda pra cima apenas se frac >= 0.5; Geral = resto)
@@ -40,6 +40,8 @@ def gerar_sequencia_convocados(total_convocados, lote=None):
 
     # Quantidade já convocada (acumulado) por categoria efetiva
     convocados_qs = ConcursoCandidato.objects.filter(lote=lote, foi_convocado=True)
+    if escolhas_candidato_uuids:
+        convocados_qs = convocados_qs.filter(uuid__in=escolhas_candidato_uuids)
     convocados_total = convocados_qs.count()
     convocados_nna = convocados_qs.filter(categoria_efetiva='NNA').count()
     convocados_pcd = convocados_qs.filter(categoria_efetiva='PCD').count()

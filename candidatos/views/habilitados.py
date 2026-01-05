@@ -41,24 +41,20 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         Suporta GET /habilitados/reconvocacao/?concurso_uuid=<uuid>&quantidade=<num>
         - concurso_uuid: UUID do concurso (obrigatório)
         - quantidade: Quantidade de candidatos a retornar (obrigatório)
-        
+
         Busca escolhas com situação de reconvocação no microserviço de Escolhas
         e filtra apenas candidatos cujo uuid está na lista retornada.
         """
         # Busca reconvocações no microserviço de Escolhas
-        print("Buscando reconvocações no microserviço de Escolhas")
         try:
             reconvocoes = EscolhasService.buscar_reconvocacoes()
-            print(reconvocoes)
             # Extrai a lista de candidato_uuid da resposta
             candidato_uuids = [
                 item.get('candidato_uuid') 
                 for item in reconvocoes 
                 if item.get('candidato_uuid') is not None
             ]
-            print(candidato_uuids)
         except Exception as exc:
-            print(f"Erro ao buscar reconvocações no microserviço de Escolhas: {exc}")
             logger.error(f"Erro ao buscar reconvocações no microserviço de Escolhas: {exc}")
             return Response(
                 {'detail': 'Erro ao buscar reconvocações no microserviço de Escolhas'},
@@ -72,9 +68,6 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
 
         concurso_uuid = request.query_params.get('concurso_uuid')
         quantidade = request.query_params.get('quantidade')
-        print("concurso_uuid")
-        print(concurso_uuid)
-        print(quantidade)
         if not concurso_uuid:
             # Sem concurso_uuid não retorna nada
             serializer = self.get_serializer([], many=True)
@@ -103,16 +96,12 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             .order_by('-criado_em')
             .first()
         )
-        print("lote")
-        print(lote)
         if not lote:
             serializer = self.get_serializer([], many=True)
             return Response(serializer.data)
-        
+
         # Filtrar apenas candidatos convocados E que estão na lista de reconvocações
         qs = ConcursoCandidato.objects.filter(lote=lote, foi_convocado=True, uuid__in=candidato_uuids)
-        print("qs")
-        print(qs)
         # Filtro opcional por código de cargo
         codigo_cargo = request.query_params.get('codigo_cargo')
         if codigo_cargo not in (None, ''):
@@ -139,7 +128,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         """
         Endpoint para buscar candidatos habilitados para reposição.
         Busca candidatos que já foram convocados (foi_convocado=True) do lote mais recente do concurso.
-        
+
         Suporta GET /habilitados/reposicao/?concurso_uuid=<uuid>&geral=<val>&pcd=<val>&nna=<val>
         - concurso_uuid: UUID do concurso (obrigatório)
         - geral -> filtra campo 'classificacao'
@@ -363,7 +352,18 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         )
         if not lote:
             return Response({'detail': 'Lote não encontrado para o concurso_uuid informado'}, status=status.HTTP_404_NOT_FOUND)
-        itens = gerar_sequencia_convocados(quantidade, lote)
+        # Buscar escolhas e extrair apenas os candidato_uuid
+        try:
+            escolhas = EscolhasService.buscar_escolhas(concurso_uuid=concurso_uuid)
+            escolhas_candidato_uuids = [
+                item.get('candidato_uuid')
+                for item in escolhas
+                if item.get('candidato_uuid') is not None
+            ]
+        except Exception as exc:
+            logger.error(f"Erro ao buscar escolhas: {exc}")
+            escolhas_candidato_uuids = []
+        itens = gerar_sequencia_convocados(quantidade, lote, escolhas_candidato_uuids)
         serializer = self.get_serializer(itens, many=True)
 
         return Response({

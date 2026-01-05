@@ -37,14 +37,9 @@ class EscolhasService:
         """
         base_url = cls._get_base_url()
         url = f"{base_url}{path}"
-        print("Buscas reconvocacoes")
-        print(url)
-        print(base_url)
         try:
-            print(f"Buscando reconvocações em: {url}")
             logger.info(f"Buscando reconvocações em: {url}")
             response = requests.get(url, timeout=cls.DEFAULT_TIMEOUT)
-            print(response.status_code)
             if response.status_code == status.HTTP_200_OK:
                 data = response.json()
                 # Garante que retorna uma lista
@@ -58,13 +53,50 @@ class EscolhasService:
                     return [data]
                 return []
             else:
-                print(f"Erro ao buscar reconvocações: {response.status_code} - {response.text}")
                 logger.error(f"Erro ao buscar reconvocações: {response.status_code} - {response.text}")
                 response.raise_for_status()
                 return []
 
         except requests.RequestException as exc:
-            print(f"Erro ao conectar com o microserviço de Escolhas: {exc}")
             logger.exception(f"Erro ao conectar com o microserviço de Escolhas: {exc}")
             raise requests.RequestException(f"Erro ao conectar com o microserviço de Escolhas: {exc}") from exc
 
+
+    @classmethod
+    def buscar_escolhas(cls, concurso_uuid: str, path: str = '/api/v1/escolhas/?situacao__in=escolha,reconvocacao') -> List[Dict[str, Any]]:
+        """
+        Busca escolhas com situação de escolha ou reconvocação.
+        Args:
+            concurso_uuid: UUID do concurso
+            path: Caminho do endpoint (padrão: /api/v1/escolhas/?situacao=escolha,reconvocacao)
+        Returns:
+            Lista de dicionários com 'uuid' e 'candidato_uuid'
+        Raises:
+            requests.RequestException: Em caso de erro na requisição
+            ValueError: Se a URL não estiver configurada
+        """
+        base_url = cls._get_base_url()
+        url = f"{base_url}{path}&concurso_uuid={concurso_uuid}&page_size=10000"
+        try:
+            logger.info(f"Buscando escolhas em: {url}")
+            response = requests.get(url, timeout=cls.DEFAULT_TIMEOUT)
+            if response.status_code == status.HTTP_200_OK:
+                data = response.json()
+                # Garante que retorna uma lista
+                if isinstance(data, list):
+                    return data
+                # Se for um dicionário com 'results', retorna os results
+                if isinstance(data, dict) and 'results' in data:
+                    return data['results']
+                # Se for um dicionário direto, retorna como lista
+                if isinstance(data, dict):
+                    return [data]
+                return []
+            else:
+                logger.error(f"Erro ao buscar escolhas: {response.status_code} - {response.text}")
+                response.raise_for_status()
+                return []
+
+        except requests.RequestException as exc:
+            logger.exception(f"Erro ao buscar escolhas: {exc}")
+            raise requests.RequestException(f"Erro ao buscar escolhas: {exc}") from exc
