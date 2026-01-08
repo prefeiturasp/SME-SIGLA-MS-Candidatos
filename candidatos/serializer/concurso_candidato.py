@@ -66,5 +66,9 @@ class HabilitadosCalculadosParamsSerializer(serializers.Serializer):
         'required': 'O parâmetro "concurso_uuid" é obrigatório',
         'invalid': 'O parâmetro "concurso_uuid" deve ser um UUID válido',
     })
+    codigo_cargo = serializers.CharField(required=False, error_messages={
+        'required': 'O parâmetro "codigo_cargo" é obrigatório',
+        'invalid': 'O parâmetro "codigo_cargo" deve ser uma string válida',
+    })
 
 
