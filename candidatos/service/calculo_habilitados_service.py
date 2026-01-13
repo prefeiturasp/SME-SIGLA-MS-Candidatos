@@ -37,12 +37,12 @@ def gerar_sequencia_convocados(total_convocados, lote=None, escolhas_candidato_u
     """
     if total_convocados <= 0:
         return []
-
     # Quantidade já convocada (acumulado) por categoria efetiva
     convocados_qs = ConcursoCandidato.objects.filter(lote=lote, foi_convocado=True)
     if codigo_cargo:
         convocados_qs = convocados_qs.filter(codigo_cargo=codigo_cargo)
-    if escolhas_candidato_uuids:
+    num_escolhas = len(escolhas_candidato_uuids) if escolhas_candidato_uuids is not None else 0
+    if num_escolhas > 0:
         convocados_qs = convocados_qs.filter(uuid__in=escolhas_candidato_uuids)
     convocados_total = convocados_qs.count()
     convocados_nna = convocados_qs.filter(categoria_efetiva='NNA').count()

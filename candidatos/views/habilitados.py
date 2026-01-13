@@ -30,6 +30,10 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
     pagination_class = None
     filterset_fields = {
         'processo_uuid': ['exact', 'in'],
+        'codigo_cargo': ['exact', 'in'],
+        'classificacao': ['exact', 'in'],
+        'classificacao_pcd': ['exact', 'in'],
+        'classificacao_nna': ['exact', 'in'],
     }
 
     @action(detail=False, methods=['get'], url_path='reconvocacao')
