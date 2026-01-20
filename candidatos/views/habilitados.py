@@ -28,11 +28,13 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
     queryset = ConcursoCandidato.objects.select_related('candidato', 'lote').all()
     serializer_class = ConcursoCandidatoSerializer
     pagination_class = None
-
-    def get_queryset(self):
-        # get_queryset não é mais usado isoladamente
-        # A lógica foi migrada para a action reposicao
-        return ConcursoCandidato.objects.none()
+    filterset_fields = {
+        'processo_uuid': ['exact', 'in'],
+        'codigo_cargo': ['exact', 'in'],
+        'classificacao': ['exact', 'in'],
+        'classificacao_pcd': ['exact', 'in'],
+        'classificacao_nna': ['exact', 'in'],
+    }
 
     @action(detail=False, methods=['get'], url_path='reconvocacao')
     def reconvocacao(self, request):
@@ -344,6 +346,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         params.is_valid(raise_exception=True)
         quantidade = params.validated_data['quantidade']
         concurso_uuid = str(params.validated_data['concurso_uuid'])
+        codigo_cargo = params.validated_data['codigo_cargo']
         lote = (
             ConcursoCandidatosLote.objects
             .filter(concurso_uuid=concurso_uuid)
@@ -363,7 +366,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         except Exception as exc:
             logger.error(f"Erro ao buscar escolhas: {exc}")
             escolhas_candidato_uuids = []
-        itens = gerar_sequencia_convocados(quantidade, lote, escolhas_candidato_uuids)
+        itens = gerar_sequencia_convocados(quantidade, lote, escolhas_candidato_uuids, codigo_cargo)
         serializer = self.get_serializer(itens, many=True)
 
         return Response({

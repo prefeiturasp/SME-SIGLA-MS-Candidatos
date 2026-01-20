@@ -11,8 +11,8 @@ def payload_exemplo():
         'concurso_uuid': 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
         'concurso_nome': 'Concurso X',
         'candidatos': [
-            {'nome': 'Fulano', 'cpf': '111.111.111-11', 'email': 'f1@example.com', 'data_nascimento': '01/01/1990', 'codigo_inscricao': '123'},
-            {'nome': 'Beltrano', 'cpf': '222.222.222-22', 'email': 'f2@example.com', 'data_nascimento': '02/02/1991', 'codigo_inscricao': '456'},
+            {'nome': 'Fulano', 'cpf': '111.111.111-11', 'email': 'f1@example.com', 'data_nascimento': '01/01/1990', 'codigo_inscricao': '123', 'pontos': 0},
+            {'nome': 'Beltrano', 'cpf': '222.222.222-22', 'email': 'f2@example.com', 'data_nascimento': '02/02/1991', 'codigo_inscricao': '456', 'pontos': 0},
         ],
     }
 

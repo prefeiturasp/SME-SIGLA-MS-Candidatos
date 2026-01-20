@@ -27,7 +27,7 @@ def calcular_posicao_nna(posicao):
 def calcular_posicao_pcd(posicao):
     return 10 + (posicao - 1) * 20
 
-def gerar_sequencia_convocados(total_convocados, lote=None, escolhas_candidato_uuids=None):
+def gerar_sequencia_convocados(total_convocados, lote=None, escolhas_candidato_uuids=None, codigo_cargo=None):
     """
     Gera a sequência de convocação com rótulos 'G', 'NNA' e 'PCD', respeitando:
     - Totais por tipo (NNA: ceil(20%), PCD: arredonda pra cima apenas se frac >= 0.5; Geral = resto)
@@ -37,10 +37,12 @@ def gerar_sequencia_convocados(total_convocados, lote=None, escolhas_candidato_u
     """
     if total_convocados <= 0:
         return []
-
     # Quantidade já convocada (acumulado) por categoria efetiva
     convocados_qs = ConcursoCandidato.objects.filter(lote=lote, foi_convocado=True)
-    if escolhas_candidato_uuids:
+    if codigo_cargo:
+        convocados_qs = convocados_qs.filter(codigo_cargo=codigo_cargo)
+    num_escolhas = len(escolhas_candidato_uuids) if escolhas_candidato_uuids is not None else 0
+    if num_escolhas > 0:
         convocados_qs = convocados_qs.filter(uuid__in=escolhas_candidato_uuids)
     convocados_total = convocados_qs.count()
     convocados_nna = convocados_qs.filter(categoria_efetiva='NNA').count()
@@ -62,7 +64,7 @@ def gerar_sequencia_convocados(total_convocados, lote=None, escolhas_candidato_u
     qs_geral = (
         ConcursoCandidato
         .objects
-        .filter(lote=lote, foi_convocado=False)
+        .filter(lote=lote, foi_convocado=False, codigo_cargo=codigo_cargo)
         .exclude(classificacao__isnull=True)
         .order_by('classificacao')[:geral_total]
     )
@@ -70,14 +72,14 @@ def gerar_sequencia_convocados(total_convocados, lote=None, escolhas_candidato_u
     qs_nna = (
         ConcursoCandidato
         .objects
-        .filter(lote=lote, foi_convocado=False, classificacao_nna__isnull=False)
+        .filter(lote=lote, foi_convocado=False, classificacao_nna__isnull=False, codigo_cargo=codigo_cargo)
         .exclude(uuid__in=uuids_qs_geral)
         .order_by('classificacao_nna')[:nna_total]
     )
     qs_pcd = (
         ConcursoCandidato
         .objects
-        .filter(lote=lote, foi_convocado=False, classificacao_pcd__isnull=False)
+        .filter(lote=lote, foi_convocado=False, classificacao_pcd__isnull=False, codigo_cargo=codigo_cargo)
         .exclude(uuid__in=uuids_qs_geral)
         .order_by('classificacao_pcd')[:pcd_total]
     )

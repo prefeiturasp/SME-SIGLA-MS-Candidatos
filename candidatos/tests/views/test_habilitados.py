@@ -22,15 +22,8 @@ def criar_candidato(nome, cpf, email=None):
     )
 
 
-def test_habilitados_sem_concurso_uuid_retorna_vazio(api_client):
-    url = reverse('habilitados-list')
-    resp = api_client.get(url)
-    assert resp.status_code == 200
-    assert resp.data == []
-
-
 def test_habilitados_filtra_por_ultimo_lote_e_limites(api_client):
-    url = reverse('habilitados-list')
+    url = reverse('habilitados-reposicao')
     concurso_uuid = uuid4()
     lote1 = ConcursoCandidatosLote.objects.create(concurso_uuid=concurso_uuid, concurso_nome='X')
     lote2 = ConcursoCandidatosLote.objects.create(concurso_uuid=concurso_uuid, concurso_nome='X2')  # mais recente
@@ -50,12 +43,15 @@ def test_habilitados_filtra_por_ultimo_lote_e_limites(api_client):
     cold = criar_candidato('OLD', '333.333.333-33')
     ConcursoCandidato.objects.create(candidato=cold, lote=lote1, codigo_inscricao='old', classificacao=1)
 
-    resp = api_client.get(url, {
-        'concurso_uuid': str(concurso_uuid),
-        'geral': 2,
-        'pcd': 1,
-        'nna': 1,
-    })
+    resp = api_client.get(
+        url,
+        {
+            'concurso_uuid': str(concurso_uuid),
+            'geral': 2,
+            'pcd': 1,
+            'nna': 1,
+        },
+    )
     assert resp.status_code == 200
     results = resp.data
     # Deve ter 1 PCD, 1 NNA e 2 gerais (total 4), sem duplicação
