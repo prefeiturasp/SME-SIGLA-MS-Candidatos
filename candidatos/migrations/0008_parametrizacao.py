@@ -4,6 +4,18 @@ import uuid
 from django.db import migrations, models
 
 
+def criar_parametrizacao_inicial(apps, schema_editor):
+    """Cria um registro inicial de parametrização com valores padrão."""
+    Parametrizacao = apps.get_model('candidatos', 'Parametrizacao')
+    Parametrizacao.objects.create()
+
+
+def reverter_parametrizacao_inicial(apps, schema_editor):
+    """Remove o registro inicial de parametrização."""
+    Parametrizacao = apps.get_model('candidatos', 'Parametrizacao')
+    Parametrizacao.objects.all().delete()
+
+
 class Migration(migrations.Migration):
     dependencies = [
         ("candidatos", "0007_concursocandidato_ranking_escolha"),
@@ -14,17 +26,13 @@ class Migration(migrations.Migration):
             name="Parametrizacao",
             fields=[
                 (
-                    "id",
-                    models.BigAutoField(
-                        auto_created=True,
+                    "uuid",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
                         primary_key=True,
                         serialize=False,
-                        verbose_name="ID",
                     ),
-                ),
-                (
-                    "uuid",
-                    models.UUIDField(default=uuid.uuid4, editable=False, unique=True),
                 ),
                 (
                     "criado_em",
@@ -64,5 +72,9 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "Parametrizações",
                 "ordering": ["-criado_em"],
             },
+        ),
+        migrations.RunPython(
+            criar_parametrizacao_inicial,
+            reverter_parametrizacao_inicial
         ),
     ]
