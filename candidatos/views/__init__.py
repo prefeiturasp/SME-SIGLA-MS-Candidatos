@@ -1,5 +1,5 @@
 from .candidatos import CandidatoViewSet
 from .swagger import SwaggerFromFileView
-from .parametrizacao import ParametrizacaoAtualView
+from .parametrizacao import ParametrizacaoViewSet
 
-__all__ = ['CandidatoViewSet', 'SwaggerFromFileView', 'ParametrizacaoAtualView']
+__all__ = ['CandidatoViewSet', 'SwaggerFromFileView', 'ParametrizacaoViewSet']
