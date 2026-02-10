@@ -8,7 +8,7 @@ from rest_framework.decorators import action
 from django.utils import timezone
 
 from candidatos.models import ConcursoCandidato, ConcursoCandidatosLote
-from candidatos.serializers import ConcursoCandidatoSerializer, BuscarPorUuidsSerializer, HabilitadosCalculadosParamsSerializer
+from candidatos.serializers import ConcursoCandidatoSerializer, BuscarPorUuidsSerializer, BuscarPorCpfsSerializer, ConcursoCandidatoCpfUuidSerializer, HabilitadosCalculadosParamsSerializer
 from candidatos.service.calculo_habilitados_service import gerar_sequencia_convocados
 from candidatos.service.escolhas_service import EscolhasService
 from candidatos.service.ranking_service import atualizar_ranking, atualizar_ranking_escolha
@@ -335,6 +335,45 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         return Response({
             'results': serializer.data,
         })
+
+    @action(detail=False, methods=['post'], url_path='buscar-por-cpfs')
+    def buscar_por_cpfs(self, request):
+        """
+        Busca candidatos habilitados por uma lista de CPFs e processo_uuid.
+        
+        Payload esperado:
+        {
+            "cpfs": ["12345678901", "98765432100", "11122233344", ...],
+            "processo_uuid": "uuid-do-processo"
+        }
+
+        Retorna os dados serializados dos candidatos encontrados do processo especificado.
+        """
+        # Validação usando serializer
+        input_serializer = BuscarPorCpfsSerializer(data=request.data)
+        input_serializer.is_valid(raise_exception=True)
+
+        cpfs = input_serializer.validated_data['cpfs']
+        processo_uuid = input_serializer.validated_data['processo_uuid']
+        order_by_param = request.query_params.get('order_by') or 'classificacao'
+        
+        # Busca os candidatos habilitados pelos CPFs fornecidos do processo especificado
+        try:
+            queryset = (
+                ConcursoCandidato.objects
+                .filter(candidato__cpf__in=cpfs, processo_uuid=processo_uuid)
+                .order_by(order_by_param)
+                .select_related('candidato', 'lote')
+            )
+        except FieldError:
+            return Response(
+                {'detail': 'Parâmetro order_by inválido'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = ConcursoCandidatoCpfUuidSerializer(queryset, many=True)
+
+        return Response(serializer.data)
 
     @action(detail=False, methods=['get'], url_path='calculados')
     def calculados(self, request):

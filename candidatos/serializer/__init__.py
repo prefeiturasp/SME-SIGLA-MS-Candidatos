@@ -1,4 +1,4 @@
-from .concurso_candidato import ConcursoCandidatoSerializer, BuscarPorUuidsSerializer, HabilitadosCalculadosParamsSerializer
+from .concurso_candidato import ConcursoCandidatoSerializer, BuscarPorUuidsSerializer, BuscarPorCpfsSerializer, ConcursoCandidatoCpfUuidSerializer, HabilitadosCalculadosParamsSerializer
 from .candidato import (
     CandidatoSerializer,
     CandidatoConcursoCreateSerializer,
@@ -9,6 +9,8 @@ from .parametrizacao import ParametrizacaoSerializer
 __all__ = [
     'ConcursoCandidatoSerializer',
     'BuscarPorUuidsSerializer',
+    'BuscarPorCpfsSerializer',
+    'ConcursoCandidatoCpfUuidSerializer',
     'HabilitadosCalculadosParamsSerializer',
     'CandidatoSerializer',
     'CandidatoConcursoCreateSerializer',

@@ -52,6 +52,47 @@ class BuscarPorUuidsSerializer(serializers.Serializer):
     )
 
 
+class BuscarPorCpfsSerializer(serializers.Serializer):
+    """
+    Serializer para validação do payload da action buscar_por_cpfs.
+    Valida que cpfs é uma lista não vazia de CPFs válidos e processo_uuid.
+    """
+    cpfs = serializers.ListField(
+        child=serializers.CharField(max_length=14),
+        min_length=1,
+        error_messages={
+            'required': 'O campo "cpfs" é obrigatório',
+            'empty': 'A lista de CPFs não pode estar vazia',
+            'min_length': 'A lista de CPFs deve conter pelo menos 1 item',
+            'invalid': 'O campo "cpfs" deve ser uma lista de CPFs válidos'
+        }
+    )
+    processo_uuid = serializers.UUIDField(
+        required=True,
+        error_messages={
+            'required': 'O campo "processo_uuid" é obrigatório',
+            'invalid': 'O campo "processo_uuid" deve ser um UUID válido'
+        }
+    )
+
+
+class ConcursoCandidatoCpfUuidSerializer(serializers.ModelSerializer):
+    """
+    Serializer simplificado que retorna apenas o CPF do candidato e o UUID do ConcursoCandidato.
+    """
+    cpf = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = ConcursoCandidato
+        fields = ['uuid', 'cpf']
+    
+    def get_cpf(self, obj):
+        """Retorna o CPF do candidato relacionado."""
+        if obj.candidato:
+            return obj.candidato.cpf
+        return None
+
+
 class HabilitadosCalculadosParamsSerializer(serializers.Serializer):
     """
     Valida parâmetros de consulta contendo 'quantidade' e 'concurso_uuid'.

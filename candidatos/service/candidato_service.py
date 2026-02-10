@@ -3,6 +3,21 @@ from typing import Tuple, Dict, Any
 from candidatos.models import Candidato, ConcursoCandidato
 
 
+def remover_mascara_cpf(cpf: str) -> str:
+    """
+    Remove máscara do CPF, retornando apenas os dígitos.
+    
+    Args:
+        cpf: CPF com ou sem máscara (ex: "123.456.789-00" ou "12345678900")
+        
+    Returns:
+        CPF sem máscara (apenas dígitos)
+    """
+    if not cpf:
+        return ''
+    return ''.join(filter(str.isdigit, str(cpf)))
+
+
 def upsert_candidato_e_concurso(data: Dict[str, Any]) -> Tuple[Candidato, ConcursoCandidato]:
     uf = data.get('uf') or ''
     genero_map = {'1': 'M', '2': 'F'}
@@ -16,12 +31,12 @@ def upsert_candidato_e_concurso(data: Dict[str, Any]) -> Tuple[Candidato, Concur
 
     lookup = {}
     if data.get('cpf'):
-        lookup['cpf'] = data['cpf']
+        lookup['cpf'] = remover_mascara_cpf(data['cpf'])
     elif data.get('email'):
         lookup['email'] = data['email']
     candidato, _created = Candidato.objects.get_or_create(**lookup, defaults={
         'nome': data.get('nome', ''),
-        'cpf': data.get('cpf', ''),
+        'cpf': remover_mascara_cpf(data.get('cpf', '')),
         'email': data.get('email', ''),
         'telefone': data.get('telefone', ''),
         'celular': data.get('celular', ''),
