@@ -84,20 +84,31 @@ def upsert_candidato_e_concurso(data: Dict[str, Any]) -> Tuple[Candidato, Concur
         except Exception:
             return value
 
+    # Determinar categoria_efetiva:
+    classificacao_pcd_val = _none_if_empty(data.get('classificacao_deficiente'))
+    classificacao_nna_val = _none_if_empty(data.get('classificacao_nna'))
+    if classificacao_pcd_val is not None:
+        categoria_efetiva_val = 'PCD'
+    elif classificacao_nna_val is not None:
+        categoria_efetiva_val = 'NNA'
+    else:
+        categoria_efetiva_val = 'GERAL'
+
     concurso = ConcursoCandidato.objects.create(
         candidato=candidato,
         codigo_inscricao=data.get('codigo_inscricao', ''),
         classificacao=_none_if_empty(data.get('classificacao')),
         pontos=data.get('pontos', ''),
-        classificacao_pcd=_none_if_empty(data.get('classificacao_deficiente')),
+        classificacao_pcd=classificacao_pcd_val,
         opcao_concurso=data.get('opcao_concurso', ''),
         codigo_cargo=data.get('codigo_cargo', ''),
         cota=data.get('cota', ''),
         descricao_cargo=data.get('descricao_cargo', ''),
         df=data.get('df', ''),
-        classificacao_nna=_none_if_empty(data.get('classificacao_nna')),
+        classificacao_nna=classificacao_nna_val,
         ano_concurso=data.get('ano_concurso', ''),
         observacao=data.get('observacao', ''),
+        categoria_efetiva=categoria_efetiva_val,
     )
 
     return candidato, concurso 
