@@ -1,9 +1,11 @@
 from rest_framework import serializers
 from candidatos.models import ConcursoCandidato
+from rest_framework.validators import ValidationError
 
 
 class ConcursoCandidatoSerializer(serializers.ModelSerializer):
     candidato = serializers.SerializerMethodField(read_only=True)
+    reclassificacoes = serializers.SerializerMethodField(read_only=True)
     class Meta:
         model = ConcursoCandidato
         fields = '__all__'
@@ -33,6 +35,28 @@ class ConcursoCandidatoSerializer(serializers.ModelSerializer):
             'estado': c.estado,
             'cep': c.cep,
         }
+
+    def get_reclassificacoes(self, obj):
+        """
+        Retorna histórico de reclassificações (desclassificações de NNA/PCD),
+        se houver, com dados essenciais.
+        """
+        try:
+            historicos = getattr(obj, 'historicos_reclassificacao', None)
+            if historicos is None:
+                return []
+            items = []
+            for h in historicos.all().order_by('-criado_em'):
+                items.append({
+                    'uuid': str(getattr(h, 'uuid', '')) if getattr(h, 'uuid', None) else None,
+                    'desclassificado_de': getattr(h, 'desclassificado_de', None),
+                    'motivo': getattr(h, 'motivo', ''),
+                    'executado_por': getattr(h, 'executado_por', ''),
+                    'criado_em': getattr(h, 'criado_em', None),
+                })
+            return items
+        except Exception:
+            return []
 
 
 class BuscarPorUuidsSerializer(serializers.Serializer):
@@ -113,3 +137,30 @@ class HabilitadosCalculadosParamsSerializer(serializers.Serializer):
     })
 
 
+class ReclassificarSerializer(serializers.Serializer):
+    """
+    Payload para reclassificação explícita:
+    {
+        "candidato_uuid": "<uuid>",
+        "desclassificar_de": "NNA" | "PCD",
+        "motivo": "opcional"
+    }
+    """
+    candidato_uuid = serializers.UUIDField(required=True)
+    desclassificar_de = serializers.ChoiceField(choices=[('NNA', 'NNA'), ('PCD', 'PCD')], required=True)
+    motivo = serializers.CharField(required=False, allow_blank=True, default='')
+
+    def validate(self, attrs):
+        return attrs
+
+
+class EliminarSerializer(serializers.Serializer):
+    """
+    Payload para eliminação explícita:
+    {
+        "concurso_candidato_uuid": "<uuid>",
+        "motivo": "opcional"
+    }
+    """
+    candidato_uuid = serializers.UUIDField(required=True)
+    motivo = serializers.CharField(required=False, allow_blank=True, default='')

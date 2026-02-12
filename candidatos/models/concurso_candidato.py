@@ -48,6 +48,11 @@ class ConcursoCandidato(BaseModel):
         verbose_name="Promovido de",
     )
     promovido_em = models.DateTimeField(blank=True, null=True, verbose_name="Promovido em")
+    # Eliminação (estado de negócio)
+    eliminado = models.BooleanField(default=False, db_index=True, verbose_name="Eliminado?")
+    eliminado_em = models.DateTimeField(blank=True, null=True, verbose_name="Eliminado em")
+    eliminado_motivo = models.TextField(blank=True, default='', verbose_name="Motivo da eliminação")
+    eliminado_por = models.CharField(max_length=150, blank=True, default='', verbose_name="Eliminado por")
 
     class Meta:
         verbose_name = 'Concurso do Candidato'
