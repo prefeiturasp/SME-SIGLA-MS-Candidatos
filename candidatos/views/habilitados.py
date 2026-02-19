@@ -494,6 +494,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         params.is_valid(raise_exception=True)
         quantidade = params.validated_data['quantidade']
         concurso_uuid = str(params.validated_data['concurso_uuid'])
+        processo_uuid = str(params.validated_data['processo_uuid'])
         codigo_cargo = params.validated_data['codigo_cargo']
         lote = (
             ConcursoCandidatosLote.objects
@@ -514,7 +515,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         except Exception as exc:
             logger.error(f"Erro ao buscar escolhas: {exc}")
             escolhas_candidato_uuids = []
-        itens = gerar_sequencia_convocados(quantidade, lote, escolhas_candidato_uuids, codigo_cargo)
+        itens = gerar_sequencia_convocados(quantidade, lote, escolhas_candidato_uuids, codigo_cargo, processo_uuid)
         serializer = self.get_serializer(itens, many=True)
 
         return Response({
