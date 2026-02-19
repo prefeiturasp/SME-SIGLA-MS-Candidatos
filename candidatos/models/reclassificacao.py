@@ -24,6 +24,7 @@ class ConcursoCandidatoReclassificacao(BaseModel):
         choices=COTA_CHOICES,
         verbose_name="Desclassificado de"
     )
+    processo_uuid = models.UUIDField(null=True, blank=True, verbose_name="Processo UUID")
     motivo = models.TextField(blank=True, default='', verbose_name="Motivo/Observação")
     executado_por = models.CharField(max_length=150, blank=True, default='', verbose_name="Executado por")
 

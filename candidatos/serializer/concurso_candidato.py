@@ -131,6 +131,10 @@ class HabilitadosCalculadosParamsSerializer(serializers.Serializer):
         'required': 'O parâmetro "concurso_uuid" é obrigatório',
         'invalid': 'O parâmetro "concurso_uuid" deve ser um UUID válido',
     })
+    processo_uuid = serializers.UUIDField(required=True, error_messages={
+        'required': 'O parâmetro "processo_uuid" é obrigatório',
+        'invalid': 'O parâmetro "processo_uuid" deve ser um UUID válido',
+    })
     codigo_cargo = serializers.CharField(required=False, error_messages={
         'required': 'O parâmetro "codigo_cargo" é obrigatório',
         'invalid': 'O parâmetro "codigo_cargo" deve ser uma string válida',
@@ -164,3 +168,58 @@ class EliminarSerializer(serializers.Serializer):
     """
     candidato_uuid = serializers.UUIDField(required=True)
     motivo = serializers.CharField(required=False, allow_blank=True, default='')
+
+
+class ConcursoCandidatoReclassificadoSerializer(serializers.ModelSerializer):
+    """
+    Serializer compacto para saída de reclassificados.
+    Campos do candidato: nome, cpf, rg, registro_funcional
+    Campos do concurso_candidato: uuid, codigo_cargo, classificacao, classificacao_pcd,
+    classificacao_nna, categoria_efetiva, criado_em
+    """
+    candidato = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = ConcursoCandidato
+        fields = '__all__'
+        read_only_fields = ['criado_em', 'atualizado_em', 'esta_ativo']
+
+    def get_candidato(self, obj):
+        c = obj.candidato
+        if not c:
+            return None
+        return {
+            'id': c.id,
+            'nome': c.nome,
+            'cpf': c.cpf,
+            'email': c.email,
+            'rg': getattr(c, 'rg', ''),
+            'registro_funcional': getattr(c, 'registro_funcional', ''),
+        }
+
+
+class ConcursoCandidatoEliminadoSerializer(serializers.ModelSerializer):
+    """
+    Serializer compacto para saída de eliminados.
+    Inclui dados essenciais do candidato e do registro de ConcursoCandidato,
+    preservando campos de eliminação (eliminado_em, eliminado_motivo, eliminado_por).
+    """
+    candidato = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = ConcursoCandidato
+        fields = '__all__'
+        read_only_fields = ['criado_em', 'atualizado_em', 'esta_ativo']
+
+    def get_candidato(self, obj):
+        c = obj.candidato
+        if not c:
+            return None
+        return {
+            'id': c.id,
+            'nome': c.nome,
+            'cpf': c.cpf,
+            'email': c.email,
+            'rg': getattr(c, 'rg', ''),
+            'registro_funcional': getattr(c, 'registro_funcional', ''),
+        }

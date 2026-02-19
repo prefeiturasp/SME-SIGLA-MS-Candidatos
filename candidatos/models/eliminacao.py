@@ -14,6 +14,7 @@ class ConcursoCandidatoEliminacao(BaseModel):
         related_name='historicos_eliminacao',
         verbose_name="ConcursoCandidato"
     )
+    processo_uuid = models.UUIDField(blank=True, null=True, verbose_name="UUID do Processo")
     motivo = models.TextField(blank=True, default='', verbose_name="Motivo/Observação")
     executado_por = models.CharField(max_length=150, blank=True, default='', verbose_name="Executado por")
 
