@@ -8,10 +8,20 @@ from rest_framework.decorators import action
 from django.utils import timezone
 
 from candidatos.models import ConcursoCandidato, ConcursoCandidatosLote
-from candidatos.serializers import ConcursoCandidatoSerializer, BuscarPorUuidsSerializer, HabilitadosCalculadosParamsSerializer
+from candidatos.serializers import (
+    ConcursoCandidatoSerializer,
+    BuscarPorUuidsSerializer,
+    BuscarPorCpfsSerializer,
+    ConcursoCandidatoCpfUuidSerializer,
+    HabilitadosCalculadosParamsSerializer,
+    ReclassificarSerializer,
+    EliminarSerializer
+    )
 from candidatos.service.calculo_habilitados_service import gerar_sequencia_convocados
 from candidatos.service.escolhas_service import EscolhasService
 from candidatos.service.ranking_service import atualizar_ranking, atualizar_ranking_escolha
+from candidatos.service.reclassificacao_service import aplicar_reclassificacao
+from candidatos.service.eliminacao_service import aplicar_eliminacao
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +41,37 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
     filterset_fields = {
         'processo_uuid': ['exact', 'in'],
         'codigo_cargo': ['exact', 'in'],
+        'lote__concurso_uuid': ['exact', 'in'],
+        'candidato__cpf': ['exact', 'in'],
+        'candidato__registro_funcional': ['exact', 'in'],
+        'candidato__nome': ['exact', 'in'],
+        'candidato__rg': ['exact', 'in'],
         'classificacao': ['exact', 'in'],
         'classificacao_pcd': ['exact', 'in'],
         'classificacao_nna': ['exact', 'in'],
     }
+
+    def get_queryset(self):
+        """
+        Sempre que houver 'lote__concurso_uuid' (ou 'concurso_uuid') nos parâmetros,
+        restringe o resultado ao último lote desse concurso para evitar duplicidades.
+        Aplica também filtros opcionais como cpf e codigo_cargo quando informados.
+        """
+        qs = self.queryset
+        params = getattr(self.request, 'query_params', {})
+        concurso_uuid = params.get('lote__concurso_uuid') or params.get('concurso_uuid')
+        if concurso_uuid:
+            lote = (
+                ConcursoCandidatosLote.objects
+                .filter(concurso_uuid=concurso_uuid)
+                .order_by('-criado_em')
+                .first()
+            )
+            if not lote:
+                return qs.none()
+            qs = qs.filter(lote=lote)
+
+        return qs
 
     @action(detail=False, methods=['get'], url_path='reconvocacao')
     def reconvocacao(self, request):
@@ -124,6 +161,78 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         atualizar_ranking_escolha(list(qs_final))
         serializer = self.get_serializer(qs_final, many=True)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['post'], url_path='reclassificar')
+    def reclassificar(self, request):
+        """
+        Reclassifica explicitamente um ConcursoCandidato desclassificando-o de uma cota (NNA/PCD),
+        sem alterar os campos de classificação originais, e atualiza categoria_efetiva.
+        Payload:
+        {
+            "concurso_candidato_uuid": "<uuid>",
+            "desclassificar_de": "NNA" | "PCD",
+            "motivo": "opcional"
+        }
+        """
+        input_ser = ReclassificarSerializer(data=request.data)
+        input_ser.is_valid(raise_exception=True)
+        data = input_ser.validated_data
+        try:
+            username = getattr(request.user, 'username', '') if hasattr(request, 'user') and request.user and request.user.is_authenticated else ''
+        except Exception:
+            username = ''
+        try:
+            cc, hist = aplicar_reclassificacao(
+                candidato_uuid=str(data['candidato_uuid']),
+                desclassificar_de=str(data['desclassificar_de']),
+                motivo=data.get('motivo') or '',
+                executado_por=username,
+            )
+        except ValueError as ve:
+            return Response({'detail': str(ve)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as exc:
+            logger.error('Falha ao reclassificar: %s', exc, exc_info=True)
+            return Response({'detail': 'Erro ao reclassificar'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({
+            'concurso_candidato': ConcursoCandidatoSerializer(cc).data,
+            'historico_uuid': str(hist.uuid),
+            'nova_categoria_efetiva': cc.categoria_efetiva,
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['post'], url_path='eliminar')
+    def eliminar(self, request):
+        """
+        Elimina explicitamente um ConcursoCandidato e registra histórico.
+        Payload:
+        {
+            "concurso_candidato_uuid": "<uuid>",
+            "motivo": "opcional"
+        }
+        """
+        input_ser = EliminarSerializer(data=request.data)
+        input_ser.is_valid(raise_exception=True)
+        data = input_ser.validated_data
+        try:
+            username = getattr(request.user, 'username', '') if hasattr(request, 'user') and request.user and request.user.is_authenticated else ''
+        except Exception:
+            username = ''
+        try:
+            cc, hist = aplicar_eliminacao(
+                candidato_uuid=str(data['candidato_uuid']),
+                motivo=data.get('motivo') or '',
+                executado_por=username,
+            )
+        except ValueError as ve:
+            return Response({'detail': str(ve)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as exc:
+            logger.error('Falha ao eliminar: %s', exc, exc_info=True)
+            return Response({'detail': 'Erro ao eliminar'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({
+            'concurso_candidato': ConcursoCandidatoSerializer(cc).data,
+            'historico_uuid': str(hist.uuid),
+            'acao': 'ELIMINAR',
+        }, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'], url_path='reposicao')
     def reposicao(self, request):
@@ -336,6 +445,45 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             'results': serializer.data,
         })
 
+    @action(detail=False, methods=['post'], url_path='buscar-por-cpfs')
+    def buscar_por_cpfs(self, request):
+        """
+        Busca candidatos habilitados por uma lista de CPFs e processo_uuid.
+        
+        Payload esperado:
+        {
+            "cpfs": ["12345678901", "98765432100", "11122233344", ...],
+            "processo_uuid": "uuid-do-processo"
+        }
+
+        Retorna os dados serializados dos candidatos encontrados do processo especificado.
+        """
+        # Validação usando serializer
+        input_serializer = BuscarPorCpfsSerializer(data=request.data)
+        input_serializer.is_valid(raise_exception=True)
+
+        cpfs = input_serializer.validated_data['cpfs']
+        processo_uuid = input_serializer.validated_data['processo_uuid']
+        order_by_param = request.query_params.get('order_by') or 'classificacao'
+        
+        # Busca os candidatos habilitados pelos CPFs fornecidos do processo especificado
+        try:
+            queryset = (
+                ConcursoCandidato.objects
+                .filter(candidato__cpf__in=cpfs, processo_uuid=processo_uuid)
+                .order_by(order_by_param)
+                .select_related('candidato', 'lote')
+            )
+        except FieldError:
+            return Response(
+                {'detail': 'Parâmetro order_by inválido'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = ConcursoCandidatoCpfUuidSerializer(queryset, many=True)
+
+        return Response(serializer.data)
+
     @action(detail=False, methods=['get'], url_path='calculados')
     def calculados(self, request):
         """
@@ -346,6 +494,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         params.is_valid(raise_exception=True)
         quantidade = params.validated_data['quantidade']
         concurso_uuid = str(params.validated_data['concurso_uuid'])
+        processo_uuid = str(params.validated_data['processo_uuid'])
         codigo_cargo = params.validated_data['codigo_cargo']
         lote = (
             ConcursoCandidatosLote.objects
@@ -366,7 +515,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         except Exception as exc:
             logger.error(f"Erro ao buscar escolhas: {exc}")
             escolhas_candidato_uuids = []
-        itens = gerar_sequencia_convocados(quantidade, lote, escolhas_candidato_uuids, codigo_cargo)
+        itens = gerar_sequencia_convocados(quantidade, lote, escolhas_candidato_uuids, codigo_cargo, processo_uuid)
         serializer = self.get_serializer(itens, many=True)
 
         return Response({

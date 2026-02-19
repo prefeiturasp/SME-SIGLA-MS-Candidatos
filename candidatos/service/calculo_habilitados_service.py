@@ -1,6 +1,6 @@
 import math
 from typing import Any, Dict, Mapping, Iterable
-from django.db.models import QuerySet
+from django.db.models import QuerySet, Q
 from django.utils import timezone
 from candidatos.models import ConcursoCandidato
 from .ranking_service import atualizar_ranking, atualizar_ranking_escolha
@@ -27,7 +27,121 @@ def calcular_posicao_nna(posicao):
 def calcular_posicao_pcd(posicao):
     return 10 + (posicao - 1) * 20
 
-def gerar_sequencia_convocados(total_convocados, lote=None, escolhas_candidato_uuids=None, codigo_cargo=None):
+def _safe_max_classificacao(final_itens, classificacao_attr: str):
+    """
+    Retorna o maior valor inteiro encontrado no atributo de classificação
+    informado dentre os itens finais. Ignora valores nulos/inválidos.
+    """
+    try:
+        valores = []
+        for item in final_itens:
+            try:
+                # Quando for 'classificacao' (GERAL), considerar apenas itens que tenham
+                # 'classificacao' preenchido e NÃO tenham classificacao_nna/pcd (i.e., são gerais)
+                if classificacao_attr == 'classificacao':
+                    if getattr(item, 'classificacao_nna', None) is not None:
+                        continue
+                    if getattr(item, 'classificacao_pcd', None) is not None:
+                        continue
+                valor = getattr(item, classificacao_attr, None)
+                if valor is None:
+                    continue
+                valor_int = int(valor)
+                if valor_int:
+                    valores.append(valor_int)
+            except Exception:
+                continue
+        return max(valores) if valores else None
+    except Exception:
+        return None
+
+def _atualizar_processo_uuid_para_reclassificados(
+    final_itens,
+    categoria: str,
+    classificacao_attr: str,
+    processo_uuid,
+    lote,
+    codigo_cargo,
+):
+    """
+    Atualiza processo_uuid nos históricos de reclassificação para candidatos que foram
+    reclassificados da categoria indicada (NNA/PCD) e cuja classificação original é menor
+    que o maior valor de classificação efetivamente utilizado em final_itens.
+    """
+    try:
+        if not processo_uuid:
+            return
+        limite = _safe_max_classificacao(final_itens, classificacao_attr)
+        if not limite:
+            return
+        from candidatos.models import ConcursoCandidatoReclassificacao
+        filtro_classificacao = {f"{classificacao_attr}__lt": limite}
+        reclassificados_qs = (
+            ConcursoCandidato.objects
+            .filter(
+                lote=lote,
+                codigo_cargo=codigo_cargo,
+                historicos_reclassificacao__desclassificado_de=categoria,
+            )
+            .filter(**filtro_classificacao)
+        )
+        if reclassificados_qs.exists():
+            ConcursoCandidatoReclassificacao.objects.filter(
+                concurso_candidato__in=reclassificados_qs.values_list('id', flat=True),
+                processo_uuid=None,
+                desclassificado_de=categoria,
+            ).update(processo_uuid=processo_uuid)
+    except Exception:
+        # Não deve quebrar o fluxo principal de geração
+        return
+
+def _atualizar_processo_uuid_para_eliminados(
+    final_itens,
+    processo_uuid,
+    lote,
+    codigo_cargo,
+):
+    """
+    Atualiza processo_uuid nos históricos de eliminação para candidatos que foram eliminados
+    e cuja classificação (geral/nna/pcd) é menor do que o maior valor de classificação
+    efetivamente utilizado em final_itens, considerando todos os tipos de classificação.
+    """
+    try:
+        if not processo_uuid:
+            return
+        # Limites máximos por tipo de classificação observados no lote final
+        limites = {
+            'classificacao': _safe_max_classificacao(final_itens, 'classificacao'),
+            'classificacao_nna': _safe_max_classificacao(final_itens, 'classificacao_nna'),
+            'classificacao_pcd': _safe_max_classificacao(final_itens, 'classificacao_pcd'),
+        }
+        # Monta filtro combinado por qualquer classificação menor que o limite correspondente
+        filtro_q = Q()
+        for attr, limite in limites.items():
+            if limite:
+                filtro_q |= Q(**{f"{attr}__lt": limite})
+        if not filtro_q:
+            return
+        from candidatos.models import ConcursoCandidatoEliminacao
+        eliminados_qs = (
+            ConcursoCandidato.objects
+            .filter(
+                lote=lote,
+                codigo_cargo=codigo_cargo,
+                eliminado=True,
+            )
+            .filter(filtro_q)
+        )
+        if eliminados_qs.exists():
+            ConcursoCandidatoEliminacao.objects.filter(
+                concurso_candidato__in=eliminados_qs.values_list('id', flat=True),
+                processo_uuid=None,
+            ).update(processo_uuid=processo_uuid)
+    except Exception:
+        # Não deve quebrar o fluxo principal de geração
+        return
+
+def gerar_sequencia_convocados(total_convocados, lote=None, escolhas_candidato_uuids=None, codigo_cargo=None, processo_uuid=None):
     """
     Gera a sequência de convocação com rótulos 'G', 'NNA' e 'PCD', respeitando:
     - Totais por tipo (NNA: ceil(20%), PCD: arredonda pra cima apenas se frac >= 0.5; Geral = resto)
@@ -38,7 +152,7 @@ def gerar_sequencia_convocados(total_convocados, lote=None, escolhas_candidato_u
     if total_convocados <= 0:
         return []
     # Quantidade já convocada (acumulado) por categoria efetiva
-    convocados_qs = ConcursoCandidato.objects.filter(lote=lote, foi_convocado=True)
+    convocados_qs = ConcursoCandidato.objects.filter(lote=lote, foi_convocado=True, eliminado=False)
     if codigo_cargo:
         convocados_qs = convocados_qs.filter(codigo_cargo=codigo_cargo)
     num_escolhas = len(escolhas_candidato_uuids) if escolhas_candidato_uuids is not None else 0
@@ -64,7 +178,7 @@ def gerar_sequencia_convocados(total_convocados, lote=None, escolhas_candidato_u
     qs_geral = (
         ConcursoCandidato
         .objects
-        .filter(lote=lote, foi_convocado=False, codigo_cargo=codigo_cargo)
+        .filter(lote=lote, foi_convocado=False, eliminado=False, codigo_cargo=codigo_cargo)
         .exclude(classificacao__isnull=True)
         .order_by('classificacao')[:geral_total]
     )
@@ -72,14 +186,14 @@ def gerar_sequencia_convocados(total_convocados, lote=None, escolhas_candidato_u
     qs_nna = (
         ConcursoCandidato
         .objects
-        .filter(lote=lote, foi_convocado=False, classificacao_nna__isnull=False, codigo_cargo=codigo_cargo)
+        .filter(lote=lote, foi_convocado=False, eliminado=False, classificacao_nna__isnull=False, codigo_cargo=codigo_cargo, categoria_efetiva='NNA')
         .exclude(uuid__in=uuids_qs_geral)
         .order_by('classificacao_nna')[:nna_total]
     )
     qs_pcd = (
         ConcursoCandidato
         .objects
-        .filter(lote=lote, foi_convocado=False, classificacao_pcd__isnull=False, codigo_cargo=codigo_cargo)
+        .filter(lote=lote, foi_convocado=False, eliminado=False, classificacao_pcd__isnull=False, codigo_cargo=codigo_cargo, categoria_efetiva='PCD')
         .exclude(uuid__in=uuids_qs_geral)
         .order_by('classificacao_pcd')[:pcd_total]
     )
@@ -122,14 +236,20 @@ def gerar_sequencia_convocados(total_convocados, lote=None, escolhas_candidato_u
     now = timezone.now()
     for obj in geral_list:
         try:
-            if getattr(obj, 'classificacao_nna', None) is not None:
+            if (
+                getattr(obj, 'classificacao_nna', None) is not None
+                and not obj.historicos_reclassificacao.filter(desclassificado_de='NNA').exists()
+            ):
                 # promovido de NNA para GERAL
                 obj.categoria_efetiva = 'GERAL'
                 obj.promovido_para_geral = True
                 obj.promovido_de = 'NNA'
                 obj.promovido_em = now
                 promovidos_to_update.append(obj)
-            elif getattr(obj, 'classificacao_pcd', None) is not None:
+            elif (
+                getattr(obj, 'classificacao_pcd', None) is not None
+                and not obj.historicos_reclassificacao.filter(desclassificado_de='PCD').exists()
+            ):
                 # promovido de PCD para GERAL
                 obj.categoria_efetiva = 'GERAL'
                 obj.promovido_para_geral = True
@@ -166,6 +286,9 @@ def gerar_sequencia_convocados(total_convocados, lote=None, escolhas_candidato_u
             nna_positions.append(pos_abs - offset - 1)  # índice relativo ao novo lote
             if len(nna_positions) >= nna_total:
                 break
+
+    # Verificação de reclassificados NNA: pega a maior classificacao_nna selecionada e,
+    # se houver reclassificado de NNA com classificacao_nna menor, seta processo_uuid no histórico
 
     def place_at_or_next_free(index_list, label, remaining):
         placed = 0
@@ -242,6 +365,32 @@ def gerar_sequencia_convocados(total_convocados, lote=None, escolhas_candidato_u
         uuids_lista = [str(it.uuid) for it in final_itens]
     except Exception:
         pass
+
+    # Atualiza processo_uuid nos históricos de reclassificação relevantes (PCD e NNA)
+    _atualizar_processo_uuid_para_reclassificados(
+        final_itens=final_itens,
+        categoria='PCD',
+        classificacao_attr='classificacao_pcd',
+        processo_uuid=processo_uuid,
+        lote=lote,
+        codigo_cargo=codigo_cargo,
+    )
+    _atualizar_processo_uuid_para_reclassificados(
+        final_itens=final_itens,
+        categoria='NNA',
+        classificacao_attr='classificacao_nna',
+        processo_uuid=processo_uuid,
+        lote=lote,
+        codigo_cargo=codigo_cargo,
+    )
+    # Atualiza processo_uuid nos históricos de eliminação relevantes (todas classificações)
+    _atualizar_processo_uuid_para_eliminados(
+        final_itens=final_itens,
+        processo_uuid=processo_uuid,
+        lote=lote,
+        codigo_cargo=codigo_cargo,
+    )
+
     # Persiste o ranking com a posição final (1-based) para não ficar 0
     atualizar_ranking(final_itens)
     atualizar_ranking_escolha(final_itens)
