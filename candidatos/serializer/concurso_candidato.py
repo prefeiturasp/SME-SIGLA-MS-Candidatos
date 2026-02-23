@@ -3,7 +3,22 @@ from candidatos.models import ConcursoCandidato
 from rest_framework.validators import ValidationError
 
 
-class ConcursoCandidatoSerializer(serializers.ModelSerializer):
+class DynamicFieldsSerializer(serializers.ModelSerializer):
+    def __init__(self, *args, **kwargs):
+        # Pega os campos do contexto do request
+        fields = kwargs.pop('fields', None)
+
+        super().__init__(*args, **kwargs)
+
+        if fields is not None:
+            # Dropa os campos que não foram solicitados
+            allowed = set(fields)
+            existing = set(self.fields)
+            for field_name in existing - allowed:
+                self.fields.pop(field_name)
+
+
+class ConcursoCandidatoSerializer(DynamicFieldsSerializer):
     candidato = serializers.SerializerMethodField(read_only=True)
     reclassificacoes = serializers.SerializerMethodField(read_only=True)
     class Meta:

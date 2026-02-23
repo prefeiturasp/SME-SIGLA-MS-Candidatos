@@ -20,7 +20,11 @@ class ParametrizacaoViewSet(mixins.ListModelMixin,
     
     def get_object(self):
         """Sempre retorna o registro mais recente, ignorando o pk."""
-        return self.queryset.first()
+        from rest_framework.exceptions import NotFound
+        obj = self.queryset.first()
+        if obj is None:
+            raise NotFound()
+        return obj
     
     def create(self, request, *args, **kwargs):
         return Response({'detail': 'Method "POST" not allowed.'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
