@@ -39,7 +39,7 @@ def test_create_candidatos_em_lote(api_client, candidato_url):
     assert ConcursoCandidatosLote.objects.count() == 1
     lote = ConcursoCandidatosLote.objects.first()
     assert ConcursoCandidato.objects.filter(lote=lote).count() == 1
-    assert Candidato.objects.filter(cpf='55566677788').exists()
+    assert Candidato.objects.filter(cpf='555.666.777-88').exists()
 
 
 def test_retrieve_candidato(api_client, candidatos_criados):
