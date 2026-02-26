@@ -6,10 +6,34 @@ from rest_framework.validators import ValidationError
 class ConcursoCandidatoSerializer(serializers.ModelSerializer):
     candidato = serializers.SerializerMethodField(read_only=True)
     reclassificacoes = serializers.SerializerMethodField(read_only=True)
+    concurso_uuid = serializers.SerializerMethodField(read_only=True)
+    concurso_nome = serializers.SerializerMethodField(read_only=True)
+    concurso_candidato_uuid = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = ConcursoCandidato
         fields = '__all__'
         read_only_fields = ['criado_em', 'atualizado_em', 'esta_ativo']
+
+    def get_concurso_candidato_uuid(self, obj):
+        """UUID da linha na tabela candidatos_concursocandidato (ConcursoCandidato)."""
+        return str(obj.uuid) if getattr(obj, 'uuid', None) else None
+
+    def get_concurso_uuid(self, obj):
+        """Retorna o UUID do concurso (campo do modelo ou do lote)."""
+        if getattr(obj, 'concurso_uuid', None):
+            return str(obj.concurso_uuid)
+        lote = getattr(obj, 'lote', None)
+        if lote and getattr(lote, 'concurso_uuid', None):
+            return str(lote.concurso_uuid)
+        return None
+
+    def get_concurso_nome(self, obj):
+        """Retorna o nome do concurso (do lote, quando existir)."""
+        lote = getattr(obj, 'lote', None)
+        if lote and getattr(lote, 'concurso_nome', None):
+            return lote.concurso_nome
+        return None
 
     def get_candidato(self, obj):
         c = obj.candidato
