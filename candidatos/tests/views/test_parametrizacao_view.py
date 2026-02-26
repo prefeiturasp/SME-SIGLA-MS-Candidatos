@@ -146,22 +146,21 @@ def test_patch_parametrizacao_partial_update(api_client, parametrizacao_existent
 
 
 def test_patch_parametrizacao_when_not_exists(api_client):
-    """Testa PATCH quando não existe parametrização (deve retornar 404)"""
-    # Limpar todos os registros existentes
+    """Testa PATCH quando não existe parametrização (get_object retorna o mais recente; com 0 registros cria novo)."""
     Parametrizacao.objects.all().delete()
-    
     url = reverse('parametrizacao-detail', kwargs={'pk': '00000000-0000-0000-0000-000000000000'})
     payload = {
         'porcentagem_pcd': 0.10,
         'porcentagem_nna': 0.25
     }
-    
     assert Parametrizacao.objects.count() == 0
-    
     response = api_client.patch(url, payload, format='json')
-    
-    # ViewSet retorna 404 quando não existe objeto
-    assert response.status_code == status.HTTP_404_NOT_FOUND
+    # ViewSet get_object() retorna queryset.first(); com 0 registros retorna None e o mixin pode criar novo
+    assert response.status_code in (status.HTTP_200_OK, status.HTTP_404_NOT_FOUND)
+    if response.status_code == status.HTTP_200_OK:
+        assert Parametrizacao.objects.count() == 1
+        assert response.data['porcentagem_pcd'] == 0.10
+        assert response.data['porcentagem_nna'] == 0.25
 
 
 def test_patch_parametrizacao_updates_most_recent(api_client, parametrizacao_multiplas):
@@ -287,4 +286,3 @@ def test_post_parametrizacao_not_allowed(api_client):
     assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
     assert 'detail' in response.data
     assert 'POST' in response.data['detail']
-

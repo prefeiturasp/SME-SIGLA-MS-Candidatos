@@ -49,4 +49,5 @@ def test_upsert_data_nascimento_formato_invalido_nao_quebra():
         'codigo_inscricao': '789',
         'pontos': 0,
     })
-    assert Candidato.objects.filter(cpf='222.222.222-22').exists()
+    # CPF é armazenado sem máscara pelo serviço
+    assert Candidato.objects.filter(cpf='22222222222').exists()
