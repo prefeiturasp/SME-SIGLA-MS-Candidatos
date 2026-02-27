@@ -45,7 +45,7 @@ def test_create_candidatos_em_lote(api_client, candidato_url):
 
 def test_retrieve_candidato(api_client, candidatos_criados):
     candidato1 = candidatos_criados['candidato1']
-    url = reverse('candidato-detail', kwargs={'uuid': candidato1.uuid})
+    url = reverse('candidato-detail', kwargs={'pk': candidato1.pk})
     response = api_client.get(url)
     assert response.status_code == status.HTTP_200_OK
     assert response.data['nome'] == 'João Silva'
@@ -53,7 +53,7 @@ def test_retrieve_candidato(api_client, candidatos_criados):
 
 def test_update_candidato(api_client, candidatos_criados):
     candidato1 = candidatos_criados['candidato1']
-    url = reverse('candidato-detail', kwargs={'uuid': candidato1.uuid})
+    url = reverse('candidato-detail', kwargs={'pk': candidato1.pk})
     dados_atualizados = {
         'nome': 'João Silva Santos', 'cpf': '123.456.789-00', 'email': 'joao.silva.santos@email.com',
         'telefone': '(11) 99999-9999', 'data_nascimento': '1990-01-15', 'genero': 'M', 'endereco': 'Rua das Flores, 123',
@@ -65,13 +65,13 @@ def test_update_candidato(api_client, candidatos_criados):
 
 def test_partial_update_candidato(api_client, candidatos_criados):
     candidato1 = candidatos_criados['candidato1']
-    url = reverse('candidato-detail', kwargs={'uuid': candidato1.uuid})
+    url = reverse('candidato-detail', kwargs={'pk': candidato1.pk})
     response = api_client.patch(url, {'telefone': '(11) 11111-1111', 'status': 'suspenso'}, format='json')
     assert response.status_code == status.HTTP_200_OK
 
 
 def test_delete_candidato(api_client, candidatos_criados):
     candidato1 = candidatos_criados['candidato1']
-    url = reverse('candidato-detail', kwargs={'uuid': candidato1.uuid})
+    url = reverse('candidato-detail', kwargs={'pk': candidato1.pk})
     response = api_client.delete(url)
     assert response.status_code == status.HTTP_204_NO_CONTENT

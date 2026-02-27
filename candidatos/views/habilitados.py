@@ -73,13 +73,6 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
 
         return qs
 
-    def get_serializer(self, *args, **kwargs):
-        serializer_class = self.get_serializer_class()
-        fields = self.request.query_params.get('fields')
-        if fields:
-            kwargs['fields'] = fields.split(',')
-        return serializer_class(*args, **kwargs)
-
     @action(detail=False, methods=['get'], url_path='reconvocacao')
     def reconvocacao(self, request):
         """
