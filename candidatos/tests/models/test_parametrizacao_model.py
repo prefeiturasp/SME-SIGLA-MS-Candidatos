@@ -98,16 +98,14 @@ def test_parametrizacao_soft_delete():
 
 def test_parametrizacao_multiple_instances():
     """Testa criação de múltiplas instâncias"""
+    Parametrizacao.objects.all().delete()
     parametrizacao1 = Parametrizacao.objects.create(
         porcentagem_pcd=0.05,
         porcentagem_nna=0.20
     )
-    
     parametrizacao2 = Parametrizacao.objects.create(
         porcentagem_pcd=0.10,
         porcentagem_nna=0.25
     )
-    
     assert Parametrizacao.objects.count() == 2
     assert parametrizacao1.uuid != parametrizacao2.uuid
-

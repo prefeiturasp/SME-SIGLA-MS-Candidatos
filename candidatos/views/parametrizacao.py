@@ -1,6 +1,7 @@
 from rest_framework import viewsets, status, mixins
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.exceptions import NotFound
 from candidatos.models import Parametrizacao
 from candidatos.serializer import ParametrizacaoSerializer
 
@@ -20,7 +21,10 @@ class ParametrizacaoViewSet(mixins.ListModelMixin,
     
     def get_object(self):
         """Sempre retorna o registro mais recente, ignorando o pk."""
-        return self.queryset.first()
+        obj = self.get_queryset().first()
+        if obj is None:
+            raise NotFound('Nenhuma parametrização encontrada.')
+        return obj
     
     def create(self, request, *args, **kwargs):
         return Response({'detail': 'Method "POST" not allowed.'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
