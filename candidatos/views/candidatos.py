@@ -35,7 +35,8 @@ class CandidatoViewSet(viewsets.ModelViewSet):
     @action(methods=['get'], detail=False, url_path='buscar')
     def buscar(self, request):
         """
-        Busca por nome, CPF, RG ou registro funcional na tabela candidatos_concursocandidato.
+        Busca por nome, CPF, RG e/ou registro funcional na tabela candidatos_concursocandidato.
+        Os parâmetros informados são combinados com AND (todos devem ser atendidos).
         Retorna lista de candidatos com concursos (apenas os ConcursoCandidato que bateram na busca).
         Query params: nome, cpf, rg, registro_funcional (pelo menos um obrigatório).
         """
@@ -52,13 +53,13 @@ class CandidatoViewSet(viewsets.ModelViewSet):
 
         q_obj = Q()
         if nome:
-            q_obj |= Q(candidato__nome__icontains=nome)
+            q_obj &= Q(candidato__nome__icontains=nome)
         if cpf:
-            q_obj |= Q(candidato__cpf__icontains=cpf)
+            q_obj &= Q(candidato__cpf__icontains=cpf)
         if rg:
-            q_obj |= Q(candidato__rg__icontains=rg)
+            q_obj &= Q(candidato__rg__icontains=rg)
         if registro_funcional:
-            q_obj |= Q(candidato__registro_funcional__icontains=registro_funcional)
+            q_obj &= Q(candidato__registro_funcional__icontains=registro_funcional)
 
         cc_qs = (
             ConcursoCandidato.objects
