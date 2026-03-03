@@ -21,7 +21,6 @@ def processar_criacao_candidatos_lote(data: Dict[str, Any]) -> Tuple[Dict[str, A
         concurso_uuid=concurso_uuid,
         concurso_nome=data.get('concurso_nome', ''),
     )
-
     itens: List[Dict[str, Any]] = []
     for item in data.get('candidatos', []):
         _cand, concurso = upsert_candidato_e_concurso(item)
@@ -31,7 +30,7 @@ def processar_criacao_candidatos_lote(data: Dict[str, Any]) -> Tuple[Dict[str, A
             'candidato_uuid': concurso.candidato_id,
             'concurso_id': concurso.id,
         })
-
+        
     return {
         'lote_uuid': str(lote.id),
         'total_itens': len(itens),

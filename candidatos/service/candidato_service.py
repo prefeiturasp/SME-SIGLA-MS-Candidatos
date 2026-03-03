@@ -56,6 +56,7 @@ def upsert_candidato_e_concurso(data: Dict[str, Any]) -> Tuple[Candidato, Concur
     if not _created:
         update_fields = {
             'nome': data.get('nome', candidato.nome),
+            'email': data.get('email', candidato.email),
             'telefone': data.get('telefone', candidato.telefone),
             'celular': data.get('celular', candidato.celular),
             'rg': data.get('rg', candidato.rg),

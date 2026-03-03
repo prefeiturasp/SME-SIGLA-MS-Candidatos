@@ -109,4 +109,3 @@ def test_parametrizacao_serializer_validation():
     serializer_invalid = ParametrizacaoSerializer(data=data_invalid)
     # Django FloatField aceita negativos por padrão, então pode ser válido
     # Se houver validação customizada, ajustar este teste
-
