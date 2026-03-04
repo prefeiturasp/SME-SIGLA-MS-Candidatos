@@ -74,6 +74,7 @@ class ConcursoCandidatoSerializer(serializers.ModelSerializer):
                 items.append({
                     'uuid': str(getattr(h, 'uuid', '')) if getattr(h, 'uuid', None) else None,
                     'desclassificado_de': getattr(h, 'desclassificado_de', None),
+                    'nova_classificacao': getattr(h, 'nova_classificacao', None),
                     'motivo': getattr(h, 'motivo', ''),
                     'executado_por': getattr(h, 'executado_por', ''),
                     'criado_em': getattr(h, 'criado_em', None),
@@ -176,6 +177,7 @@ class ReclassificarSerializer(serializers.Serializer):
     """
     candidato_uuid = serializers.UUIDField(required=True)
     desclassificar_de = serializers.ChoiceField(choices=[('NNA', 'NNA'), ('PCD', 'PCD')], required=True)
+    nova_classificacao = serializers.ChoiceField(choices=[('GERAL', 'GERAL'), ('NNA', 'NNA'), ('PCD', 'PCD')], required=False)
     motivo = serializers.CharField(required=False, allow_blank=True, default='')
 
     def validate(self, attrs):

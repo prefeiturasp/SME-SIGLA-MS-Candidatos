@@ -106,5 +106,9 @@ class TestConcursoCandidatoReclassificacao:
         assert concurso_candidato.historicos_reclassificacao.count() == 1
         assert concurso_candidato.historicos_reclassificacao.first().desclassificado_de == "NNA"
 
-    def test_cota_choices(self):
-        assert ConcursoCandidatoReclassificacao.COTA_CHOICES == (("NNA", "NNA"), ("PCD", "PCD"))
+    def test_classificacao_choices(self):
+        assert ConcursoCandidatoReclassificacao.CLASSIFICACAO_CHOICES == (
+            ("GERAL", "GERAL"),
+            ("NNA", "NNA"),
+            ("PCD", "PCD"),
+        )
