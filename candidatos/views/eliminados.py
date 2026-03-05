@@ -24,10 +24,11 @@ class EliminadosViewSet(viewsets.ViewSet):
 
     def list(self, request):
         concurso_uuid = request.query_params.get('concurso_uuid')
+        processo_uuid = request.query_params.get('processo_uuid')
         classificacao_max = request.query_params.get('classificacao_max')
         classificacao_min = request.query_params.get('classificacao_min')
-        if not concurso_uuid or not classificacao_max or not classificacao_min:
-            return Response({'detail': 'concurso_uuid, classificacao_max e classificacao_min são obrigatórios'}, status=status.HTTP_400_BAD_REQUEST)
+        if not concurso_uuid or not processo_uuid or not classificacao_max or not classificacao_min:
+            return Response({'detail': 'concurso_uuid, processo_uuid, classificacao_max e classificacao_min são obrigatórios'}, status=status.HTTP_400_BAD_REQUEST)
 
         # Usa o último lote do concurso
         lote = (
@@ -45,6 +46,7 @@ class EliminadosViewSet(viewsets.ViewSet):
             .select_related('candidato', 'lote')
             .filter(lote=lote, eliminado=True)
             .filter(classificacao__lte=classificacao_max, classificacao__gte=classificacao_min)
+            .filter(historicos_eliminacao__processo_uuid=processo_uuid)
         ).distinct()
 
         # Separar por tipo de classificação
