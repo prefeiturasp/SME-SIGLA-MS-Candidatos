@@ -64,9 +64,10 @@ def aplicar_reclassificacao(
         motivo=motivo or '',
         executado_por=executado_por or '',
     )
-
-    # Recalcula categoria efetiva e salva
     nova_categoria = _categoria_efetiva_calculada(cc)
+    hist.nova_classificacao = nova_categoria
+    hist.save(update_fields=['nova_classificacao'])
+    # Recalcula categoria efetiva e salva
     if cc.categoria_efetiva != nova_categoria:
         cc.categoria_efetiva = nova_categoria
         cc.save(update_fields=['categoria_efetiva', 'atualizado_em'])

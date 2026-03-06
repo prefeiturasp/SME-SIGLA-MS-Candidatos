@@ -8,7 +8,8 @@ class ConcursoCandidatoReclassificacao(BaseModel):
     Histórico de reclassificações explícitas, registrando desclassificação
     de cotas sem alterar os campos de classificação originais.
     """
-    COTA_CHOICES = (
+    CLASSIFICACAO_CHOICES = (
+        ('GERAL', 'GERAL'),
         ('NNA', 'NNA'),
         ('PCD', 'PCD'),
     )
@@ -20,9 +21,17 @@ class ConcursoCandidatoReclassificacao(BaseModel):
         verbose_name="ConcursoCandidato"
     )
     desclassificado_de = models.CharField(
-        max_length=3,
-        choices=COTA_CHOICES,
+        max_length=5,
+        choices=CLASSIFICACAO_CHOICES,
         verbose_name="Desclassificado de"
+    )
+    nova_classificacao = models.CharField(
+        max_length=5,
+        choices=CLASSIFICACAO_CHOICES,
+        verbose_name="Nova Classificação",
+        default='GERAL',
+        blank=True,
+        null=True,
     )
     processo_uuid = models.UUIDField(null=True, blank=True, verbose_name="Processo UUID")
     motivo = models.TextField(blank=True, default='', verbose_name="Motivo/Observação")

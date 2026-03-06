@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import patch, MagicMock
 from uuid import uuid4
 from django.urls import reverse
 from rest_framework.test import APIClient
@@ -200,4 +201,232 @@ class TestReclassificacaoHabilitados:
         assert resp2.status_code == 400
         detail = (resp2.data.get("detail") or "").lower()
         assert "nna" in detail or "desclassificação" in detail or "já há" in detail
+
+
+# --- Reconvocação (GET /habilitados/reconvocacao/) ---
+
+
+class TestReconvocacao:
+    def test_erro_servico_retorna_503(self, api_client):
+        with patch("candidatos.views.habilitados.EscolhasService.buscar_reconvocacoes", side_effect=Exception("falha")):
+            resp = api_client.get(
+                reverse("habilitados-reconvocacao"),
+                {"concurso_uuid": str(uuid4()), "quantidade": "1"},
+            )
+        assert resp.status_code == 503
+        assert "reconvocações" in resp.data.get("detail", "")
+
+    def test_sem_reconvocacoes_retorna_lista_vazia(self, api_client):
+        with patch("candidatos.views.habilitados.EscolhasService.buscar_reconvocacoes", return_value=[]):
+            resp = api_client.get(
+                reverse("habilitados-reconvocacao"),
+                {"concurso_uuid": str(uuid4()), "quantidade": "1"},
+            )
+        assert resp.status_code == 200
+        assert resp.data == []
+
+    def test_sem_concurso_uuid_retorna_lista_vazia(self, api_client):
+        with patch(
+            "candidatos.views.habilitados.EscolhasService.buscar_reconvocacoes",
+            return_value=[{"candidato_uuid": str(uuid4())}],
+        ):
+            resp = api_client.get(reverse("habilitados-reconvocacao"), {"quantidade": "1"})
+        assert resp.status_code == 200
+        assert resp.data == []
+
+    def test_sem_quantidade_retorna_400(self, api_client):
+        with patch(
+            "candidatos.views.habilitados.EscolhasService.buscar_reconvocacoes",
+            return_value=[{"candidato_uuid": str(uuid4())}],
+        ):
+            resp = api_client.get(reverse("habilitados-reconvocacao"), {"concurso_uuid": str(uuid4())})
+        assert resp.status_code == 400
+        assert "quantidade" in resp.data.get("detail", "").lower()
+
+    def test_quantidade_invalida_retorna_400(self, api_client):
+        with patch(
+            "candidatos.views.habilitados.EscolhasService.buscar_reconvocacoes",
+            return_value=[{"candidato_uuid": str(uuid4())}],
+        ):
+            resp = api_client.get(
+                reverse("habilitados-reconvocacao"),
+                {"concurso_uuid": str(uuid4()), "quantidade": "abc"},
+            )
+        assert resp.status_code == 400
+
+    def test_quantidade_zero_retorna_400(self, api_client):
+        with patch(
+            "candidatos.views.habilitados.EscolhasService.buscar_reconvocacoes",
+            return_value=[{"candidato_uuid": str(uuid4())}],
+        ):
+            resp = api_client.get(
+                reverse("habilitados-reconvocacao"),
+                {"concurso_uuid": str(uuid4()), "quantidade": "0"},
+            )
+        assert resp.status_code == 400
+
+    def test_sem_lote_retorna_lista_vazia(self, api_client):
+        with patch(
+            "candidatos.views.habilitados.EscolhasService.buscar_reconvocacoes",
+            return_value=[{"candidato_uuid": str(uuid4())}],
+        ):
+            resp = api_client.get(
+                reverse("habilitados-reconvocacao"),
+                {"concurso_uuid": str(uuid4()), "quantidade": "1"},
+            )
+        assert resp.status_code == 200
+        assert resp.data == []
+
+    def test_retorna_convocados_na_lista_reconvocacoes(self, api_client, lote):
+        c = criar_candidato("Reconv", "555.555.555-55")
+        cc = ConcursoCandidato.objects.create(
+            candidato=c, lote=lote, codigo_inscricao="rc1", foi_convocado=True
+        )
+        with patch(
+            "candidatos.views.habilitados.EscolhasService.buscar_reconvocacoes",
+            return_value=[{"candidato_uuid": str(cc.uuid)}],
+        ):
+            with patch("candidatos.views.habilitados.atualizar_ranking"):
+                with patch("candidatos.views.habilitados.atualizar_ranking_escolha"):
+                    resp = api_client.get(
+                        reverse("habilitados-reconvocacao"),
+                        {"concurso_uuid": str(lote.concurso_uuid), "quantidade": "5"},
+                    )
+        assert resp.status_code == 200
+        assert len(resp.data) == 1
+        assert resp.data[0]["codigo_inscricao"] == "rc1"
+
+    def test_filtra_por_codigo_cargo(self, api_client, lote):
+        c1 = criar_candidato("C1", "666.666.666-66")
+        c2 = criar_candidato("C2", "777.777.777-77")
+        cc1 = ConcursoCandidato.objects.create(
+            candidato=c1, lote=lote, codigo_inscricao="a", foi_convocado=True, codigo_cargo="CARGO_A"
+        )
+        cc2 = ConcursoCandidato.objects.create(
+            candidato=c2, lote=lote, codigo_inscricao="b", foi_convocado=True, codigo_cargo="CARGO_B"
+        )
+        with patch(
+            "candidatos.views.habilitados.EscolhasService.buscar_reconvocacoes",
+            return_value=[{"candidato_uuid": str(cc1.uuid)}, {"candidato_uuid": str(cc2.uuid)}],
+        ):
+            with patch("candidatos.views.habilitados.atualizar_ranking"):
+                with patch("candidatos.views.habilitados.atualizar_ranking_escolha"):
+                    resp = api_client.get(
+                        reverse("habilitados-reconvocacao"),
+                        {"concurso_uuid": str(lote.concurso_uuid), "quantidade": "5", "codigo_cargo": "CARGO_A"},
+                    )
+        assert resp.status_code == 200
+        assert len(resp.data) == 1
+        assert resp.data[0]["codigo_cargo"] == "CARGO_A"
+
+
+# --- Eliminar (POST /habilitados/eliminar/) ---
+
+
+class TestEliminar:
+    def test_payload_invalido_retorna_400(self, api_client):
+        resp = api_client.post(reverse("habilitados-eliminar"), {}, format="json")
+        assert resp.status_code == 400
+
+    def test_sucesso_retorna_200_com_dados(self, api_client, lote):
+        cc = ConcursoCandidato.objects.create(
+            candidato=criar_candidato("Elim", "888.888.888-88"),
+            lote=lote,
+            codigo_inscricao="el1",
+        )
+        hist_mock = MagicMock()
+        hist_mock.uuid = uuid4()
+        with patch("candidatos.views.habilitados.aplicar_eliminacao", return_value=(cc, hist_mock)):
+            resp = api_client.post(
+                reverse("habilitados-eliminar"),
+                {"candidato_uuid": str(cc.uuid), "motivo": "Teste"},
+                format="json",
+            )
+        assert resp.status_code == 200
+        assert "concurso_candidato" in resp.data
+        assert "historico_uuid" in resp.data
+        assert resp.data["acao"] == "ELIMINAR"
+
+    def test_value_error_retorna_400(self, api_client):
+        with patch(
+            "candidatos.views.habilitados.aplicar_eliminacao",
+            side_effect=ValueError("candidato não encontrado"),
+        ):
+            resp = api_client.post(
+                reverse("habilitados-eliminar"),
+                {"candidato_uuid": str(uuid4()), "motivo": ""},
+                format="json",
+            )
+        assert resp.status_code == 400
+        assert "candidato não encontrado" in resp.data.get("detail", "")
+
+    def test_excecao_generica_retorna_500(self, api_client):
+        with patch("candidatos.views.habilitados.aplicar_eliminacao", side_effect=Exception("erro")):
+            resp = api_client.post(
+                reverse("habilitados-eliminar"),
+                {"candidato_uuid": str(uuid4()), "motivo": ""},
+                format="json",
+            )
+        assert resp.status_code == 500
+        assert "detail" in resp.data
+
+
+# --- Buscar por UUIDs (POST /habilitados/buscar-por-uuids/) ---
+
+
+class TestBuscarPorUuids:
+    def test_sem_uuids_retorna_400(self, api_client):
+        resp = api_client.post(reverse("habilitados-buscar-por-uuids"), {}, format="json")
+        assert resp.status_code == 400
+
+    def test_lista_vazia_retorna_400(self, api_client):
+        resp = api_client.post(reverse("habilitados-buscar-por-uuids"), {"uuids": []}, format="json")
+        assert resp.status_code == 400
+
+    def test_uuid_invalido_retorna_400(self, api_client):
+        resp = api_client.post(
+            reverse("habilitados-buscar-por-uuids"),
+            {"uuids": ["nao-e-uuid"]},
+            format="json",
+        )
+        assert resp.status_code == 400
+
+    def test_retorna_candidatos_encontrados(self, api_client, lote):
+        cc = ConcursoCandidato.objects.create(
+            candidato=criar_candidato("Uuid", "999.999.999-99"),
+            lote=lote,
+            codigo_inscricao="uu1",
+        )
+        resp = api_client.post(
+            reverse("habilitados-buscar-por-uuids"),
+            {"uuids": [str(cc.uuid)]},
+            format="json",
+        )
+        assert resp.status_code == 200
+        assert "results" in resp.data
+        assert len(resp.data["results"]) == 1
+        assert resp.data["results"][0]["codigo_inscricao"] == "uu1"
+
+    def test_uuid_inexistente_retorna_vazio(self, api_client):
+        resp = api_client.post(
+            reverse("habilitados-buscar-por-uuids"),
+            {"uuids": [str(uuid4())]},
+            format="json",
+        )
+        assert resp.status_code == 200
+        assert resp.data["results"] == []
+
+    def test_order_by_invalido_retorna_400(self, api_client, lote):
+        cc = ConcursoCandidato.objects.create(
+            candidato=criar_candidato("O", "101.101.101-10"),
+            lote=lote,
+            codigo_inscricao="oo1",
+        )
+        resp = api_client.post(
+            reverse("habilitados-buscar-por-uuids") + "?order_by=campo_inexistente",
+            {"uuids": [str(cc.uuid)]},
+            format="json",
+        )
+        assert resp.status_code == 400
+        assert "order_by" in resp.data.get("detail", "").lower()
 
