@@ -45,7 +45,6 @@ def test_create_candidatos_em_lote(api_client, candidato_url):
     assert ConcursoCandidatosLote.objects.count() == 1
     lote = ConcursoCandidatosLote.objects.first()
     assert ConcursoCandidato.objects.filter(lote=lote).count() == 1
-    # CPF é armazenado sem máscara pelo serviço
     assert Candidato.objects.filter(cpf='55566677788').exists()
 
 
