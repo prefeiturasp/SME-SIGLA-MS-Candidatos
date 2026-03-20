@@ -201,15 +201,15 @@ def test_buscar_nome_icontains(api_client, buscar_url):
 
 
 def test_buscar_com_multiplos_parametros(api_client, buscar_url):
-    """Vários parâmetros são unidos com OR (qualquer match)."""
+    """Vários parâmetros são combinados com AND (todos devem bater)."""
     lote = ConcursoCandidatosLote.objects.create(concurso_uuid=uuid4(), concurso_nome='Concurso X')
     c1 = Candidato.objects.create(
-        nome='Alfa', cpf='11111111111', email='alfa@email.com',
+        nome='Alfa', cpf='22222222222', email='alfa@email.com',
         telefone='', data_nascimento='1990-01-01', genero='M',
         endereco='', cidade='', estado='', cep='', status='ativo', observacoes=''
     )
     c2 = Candidato.objects.create(
-        nome='Beta', cpf='22222222222', email='beta@email.com',
+        nome='Beta', cpf='11111111111', email='beta@email.com',
         telefone='', data_nascimento='1990-01-01', genero='M',
         endereco='', cidade='', estado='', cep='', status='ativo', observacoes=''
     )
@@ -217,4 +217,5 @@ def test_buscar_com_multiplos_parametros(api_client, buscar_url):
     ConcursoCandidato.objects.create(candidato=c2, lote=lote, codigo_inscricao='2')
     response = api_client.get(buscar_url, {'nome': 'Alfa', 'cpf': '22222222222'})
     assert response.status_code == status.HTTP_200_OK
-    assert len(response.data) == 2
+    assert len(response.data) == 1
+    assert response.data[0]['nome'] == 'Alfa'

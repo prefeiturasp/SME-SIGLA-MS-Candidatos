@@ -29,53 +29,25 @@ def upsert_candidato_e_concurso(data: Dict[str, Any]) -> Tuple[Candidato, Concur
         except Exception:
             data_nasc = None
 
-    lookup = {}
-    if data.get('cpf'):
-        lookup['cpf'] = remover_mascara_cpf(data['cpf'])
-    elif data.get('email'):
-        lookup['email'] = data['email']
-    candidato, _created = Candidato.objects.get_or_create(**lookup, defaults={
-        'nome': data.get('nome', ''),
-        'cpf': remover_mascara_cpf(data.get('cpf', '')),
-        'email': data.get('email', ''),
-        'telefone': data.get('telefone', ''),
-        'celular': data.get('celular', ''),
-        'rg': data.get('rg', ''),
-        'registro_funcional': data.get('registro_funcional', ''),
-        'vinculo': data.get('vinculo', ''),
-        'data_nascimento': data_nasc or datetime(1900,1,1).date(),
-        'genero': genero,
-        'endereco': data.get('endereco', ''),
-        'numero': data.get('numero', ''),
-        'complemento': data.get('complemento', ''),
-        'bairro': data.get('bairro', ''),
-        'cidade': data.get('cidade', ''),
-        'estado': uf,
-        'cep': data.get('cep', ''),
-    })
-    if not _created:
-        update_fields = {
-            'nome': data.get('nome', candidato.nome),
-            'email': data.get('email', candidato.email),
-            'telefone': data.get('telefone', candidato.telefone),
-            'celular': data.get('celular', candidato.celular),
-            'rg': data.get('rg', candidato.rg),
-            'registro_funcional': data.get('registro_funcional', candidato.registro_funcional),
-            'vinculo': data.get('vinculo', candidato.vinculo),
-            'genero': genero or candidato.genero,
-            'endereco': data.get('endereco', candidato.endereco),
-            'numero': data.get('numero', candidato.numero),
-            'complemento': data.get('complemento', candidato.complemento),
-            'bairro': data.get('bairro', candidato.bairro),
-            'cidade': data.get('cidade', candidato.cidade),
-            'estado': uf or candidato.estado,
-            'cep': data.get('cep', candidato.cep),
-        }
-        if data_nasc:
-            update_fields['data_nascimento'] = data_nasc
-        for k, v in update_fields.items():
-            setattr(candidato, k, v)
-        candidato.save()
+    candidato = Candidato.objects.create(
+        nome=data.get('nome', ''),
+        cpf=remover_mascara_cpf(data.get('cpf', '')),
+        email=data.get('email', ''),
+        telefone=data.get('telefone', ''),
+        celular=data.get('celular', ''),
+        rg=data.get('rg', ''),
+        registro_funcional=data.get('registro_funcional', ''),
+        vinculo=data.get('vinculo', ''),
+        data_nascimento=data_nasc or datetime(1900, 1, 1).date(),
+        genero=genero,
+        endereco=data.get('endereco', ''),
+        numero=data.get('numero', ''),
+        complemento=data.get('complemento', ''),
+        bairro=data.get('bairro', ''),
+        cidade=data.get('cidade', ''),
+        estado=uf,
+        cep=data.get('cep', ''),
+    )
 
     def _none_if_empty(value):
         if value is None:

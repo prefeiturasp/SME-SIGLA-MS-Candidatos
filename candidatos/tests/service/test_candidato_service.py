@@ -41,7 +41,7 @@ def test_upsert_cria_candidato_e_concurso_quando_novo():
     assert concurso.codigo_inscricao == '123'
 
 
-def test_upsert_atualiza_candidato_existente_por_cpf():
+def test_upsert_cria_novos_candidatos_para_mesmo_cpf():
     # cria inicialmente
     primeiro, _ = upsert_candidato_e_concurso({
         'nome': 'A', 'cpf': '111.111.111-11', 'email': 'a@example.com',
@@ -50,17 +50,19 @@ def test_upsert_atualiza_candidato_existente_por_cpf():
         'pontos': 0,
     })
     # chama de novo com mesmo CPF e novos dados
-    candidato, _c2 = upsert_candidato_e_concurso({
+    candidato2, _c2 = upsert_candidato_e_concurso({
         'nome': 'B', 'cpf': '111.111.111-11', 'email': 'a2@example.com',
         'telefone': '9999', 'sexo': '2',
         'codigo_inscricao': 'y',
         'pontos': 0,
     })
-    candidato.refresh_from_db()
+    candidato2.refresh_from_db()
 
-    assert candidato.id == primeiro.id
-    assert candidato.nome == 'B'
-    assert candidato.telefone == '9999'
+    assert candidato2.id != primeiro.id
+    assert candidato2.nome == 'B'
+    assert candidato2.telefone == '9999'
+    assert Candidato.objects.filter(cpf='11111111111').count() == 2
+    assert ConcursoCandidato.objects.count() == 2
 
 
 def test_upsert_data_nascimento_formato_invalido_nao_quebra():
@@ -73,34 +75,40 @@ def test_upsert_data_nascimento_formato_invalido_nao_quebra():
     assert Candidato.objects.filter(cpf='22222222222').exists()
 
 
-def test_upsert_lookup_por_email_quando_sem_cpf():
-    """Quando não há CPF no data, lookup é por email (linhas 35-36)."""
-    candidato, c1 = upsert_candidato_e_concurso({
+def test_upsert_cria_novos_candidatos_para_mesmo_email_sem_cpf():
+    # Quando não há CPF, antes existia deduplicacao por email.
+    # Agora, cada chamada deve criar um novo candidato (1:1).
+    candidato1, _c1 = upsert_candidato_e_concurso({
         'nome': 'X', 'email': 'unico@example.com', 'data_nascimento': '01/01/1990', 'sexo': '1',
         'codigo_inscricao': 'a', 'pontos': 0,
     })
-    candidato2, c2 = upsert_candidato_e_concurso({
+    candidato2, _c2 = upsert_candidato_e_concurso({
         'nome': 'Y', 'email': 'unico@example.com', 'codigo_inscricao': 'b', 'pontos': 0,
     })
-    assert candidato.id == candidato2.id
+    assert candidato1.id != candidato2.id
     candidato2.refresh_from_db()
     assert candidato2.nome == 'Y'
+    assert Candidato.objects.filter(email='unico@example.com').count() == 2
+    assert ConcursoCandidato.objects.count() == 2
 
 
-def test_upsert_atualiza_data_nascimento_em_existente():
-    """Atualização de candidato existente com data_nascimento (linha 75)."""
-    upsert_candidato_e_concurso({
+def test_upsert_cria_novos_candidatos_com_diferentes_datas_de_nascimento():
+    primeiro, _ = upsert_candidato_e_concurso({
         'nome': 'A', 'cpf': '333.333.333-33', 'email': 'c@example.com',
         'data_nascimento': '01/01/1985', 'sexo': '1', 'codigo_inscricao': 'x', 'pontos': 0,
     })
-    candidato, _ = upsert_candidato_e_concurso({
+    candidato2, _ = upsert_candidato_e_concurso({
         'nome': 'A', 'cpf': '333.333.333-33', 'email': 'c@example.com',
         'data_nascimento': '15/06/1990', 'sexo': '1', 'codigo_inscricao': 'y', 'pontos': 0,
     })
-    candidato.refresh_from_db()
-    assert candidato.data_nascimento.year == 1990
-    assert candidato.data_nascimento.month == 6
-    assert candidato.data_nascimento.day == 15
+    assert primeiro.data_nascimento.year == 1985
+    candidato2.refresh_from_db()
+    assert candidato2.id != primeiro.id
+    assert candidato2.data_nascimento.year == 1990
+    assert candidato2.data_nascimento.month == 6
+    assert candidato2.data_nascimento.day == 15
+    assert Candidato.objects.filter(cpf='33333333333').count() == 2
+    assert ConcursoCandidato.objects.count() == 2
 
 
 def test_upsert_categoria_efetiva_pcd():
