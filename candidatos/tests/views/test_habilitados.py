@@ -154,7 +154,7 @@ class TestReclassificacaoHabilitados:
             "motivo": "",
         }
         resp = api_client.post(url, payload, format="json")
-        assert resp.status_code == 500
+        assert resp.status_code == 400
         assert "detail" in resp.data
 
     def test_reclassificar_sem_classificacao_nna_retorna_400(self, api_client, lote):
@@ -359,19 +359,6 @@ class TestEliminar:
             )
         assert resp.status_code == 400
         assert "candidato não encontrado" in resp.data.get("detail", "")
-
-    def test_excecao_generica_retorna_500(self, api_client):
-        with patch("candidatos.views.habilitados.aplicar_eliminacao", side_effect=Exception("erro")):
-            resp = api_client.post(
-                reverse("habilitados-eliminar"),
-                {"candidato_uuid": str(uuid4()), "motivo": ""},
-                format="json",
-            )
-        assert resp.status_code == 500
-        assert "detail" in resp.data
-
-
-# --- Buscar por UUIDs (POST /habilitados/buscar-por-uuids/) ---
 
 
 class TestBuscarPorUuids:

@@ -3,12 +3,23 @@ from typing import Tuple, Optional
 from django.db import transaction
 from django.utils import timezone
 from candidatos.models import ConcursoCandidato, ConcursoCandidatoEliminacao
+from candidatos.middleware import get_correlation_id
+
 
 logger = logging.getLogger(__name__)
 
 
 @transaction.atomic
 def aplicar_eliminacao(*, candidato_uuid, motivo: str = '', executado_por: str = '') -> Tuple[ConcursoCandidato, ConcursoCandidatoEliminacao]:
+    logger.info(
+        'Aplicando eliminação',
+        extra={
+            "correlation_id": get_correlation_id(),
+            "candidato_uuid": candidato_uuid,
+            "motivo": motivo,
+            "executado_por": executado_por,
+        }
+    )
     cc = ConcursoCandidato.objects.select_for_update().get(uuid=candidato_uuid)
     if cc.eliminado:
         raise ValueError('Registro já está eliminado.')
