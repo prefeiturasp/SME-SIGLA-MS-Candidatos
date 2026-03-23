@@ -2,6 +2,8 @@ import logging
 from typing import Tuple, Optional
 from django.db import transaction
 from candidatos.models import ConcursoCandidato, ConcursoCandidatoReclassificacao
+from candidatos.middleware import get_correlation_id
+
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +43,16 @@ def aplicar_reclassificacao(
     Aplica a reclassificação explícita (desclassificação de NNA/PCD) a um ConcursoCandidato,
     registra histórico e atualiza categoria_efetiva.
     """
+    logger.info(
+        'Aplicando reclassificação',
+        extra={
+            "correlation_id": get_correlation_id(),
+            "candidato_uuid": candidato_uuid,
+            "desclassificar_de": desclassificar_de,
+            "motivo": motivo,
+            "executado_por": executado_por,
+        }
+    )
     cc = ConcursoCandidato.objects.select_for_update().select_related('candidato').get(uuid=candidato_uuid)
 
     desclassificar_de = (desclassificar_de or '').upper()
