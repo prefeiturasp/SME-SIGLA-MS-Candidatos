@@ -15,9 +15,11 @@ from candidatos.serializers import (
     ConcursoCandidatoCpfUuidSerializer,
     HabilitadosCalculadosParamsSerializer,
     ReclassificarSerializer,
-    EliminarSerializer
+    EliminarSerializer,
+    SalvarLotesSerializer,
     )
 from candidatos.service.calculo_habilitados_service import gerar_sequencia_convocados
+from candidatos.service.lotes_service import salvar_lotes as salvar_lotes_service, SalvarLotesException
 from candidatos.service.escolhas_service import EscolhasService
 from candidatos.service.ranking_service import atualizar_ranking, atualizar_ranking_escolha
 from candidatos.service.reclassificacao_service import aplicar_reclassificacao
@@ -640,3 +642,38 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             'lote_uuid': str(lote.uuid),
             'results': serializer.data
         })
+
+    @action(detail=False, methods=['post'], url_path='salvar-lotes')
+    def salvar_lotes(self, request):
+        """
+        Importa dados de lote de classificação para os candidatos do concurso.
+
+        Payload esperado:
+        {
+            "concurso_uuid": "<uuid>",
+            "lotes": [
+                {"lote": 78348, "empresa": 1, "vaga": 111, "identificacao": "321125619",
+                 "numfunc": "9348093", "numvinc": ""}
+            ]
+        }
+        """
+        serializer = SalvarLotesSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        concurso_uuid = str(serializer.validated_data['concurso_uuid'])
+        lotes = serializer.validated_data['lotes']
+        try:
+            total = salvar_lotes_service(concurso_uuid=concurso_uuid, lotes=lotes)
+        except SalvarLotesException as exc:
+            logger.warning('Erro de negocio ao salvar lotes: %s', exc)
+            return Response(
+                {
+                    'detail': exc.mensagem,
+                    'mensagem': exc.mensagem,
+                    'erros_por_linha': exc.erros_por_linha,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except Exception as exc:
+            logger.error('Erro ao salvar lotes: %s', exc, exc_info=True)
+            return Response({'detail': 'Erro ao salvar lotes.'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'total_atualizados': total}, status=status.HTTP_201_CREATED)
