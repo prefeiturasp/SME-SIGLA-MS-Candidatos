@@ -46,6 +46,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         'processo_uuid': ['exact', 'in'],
         'codigo_cargo': ['exact', 'in'],
         'lote__concurso_uuid': ['exact', 'in'],
+        'lote__uuid': ['exact'],
         'candidato__cpf': ['exact', 'in'],
         'candidato__registro_funcional': ['exact', 'in'],
         'candidato__nome': ['exact', 'in'],
@@ -59,10 +60,17 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         """
         Sempre que houver 'lote__concurso_uuid' (ou 'concurso_uuid') nos parâmetros,
         restringe o resultado ao último lote desse concurso para evitar duplicidades.
+        Se 'lote__uuid' for informado diretamente, o DjangoFilterBackend resolve o
+        filtro sem sobrescrever (usado pela exportação de lote específico).
         Aplica também filtros opcionais como cpf e codigo_cargo quando informados.
         """
         qs = self.queryset
         params = getattr(self.request, 'query_params', {})
+
+        # Se lote__uuid for informado, não aplica o override de "último lote"
+        if params.get('lote__uuid'):
+            return qs
+
         concurso_uuid = params.get('lote__concurso_uuid') or params.get('concurso_uuid')
         if concurso_uuid:
             lote = (

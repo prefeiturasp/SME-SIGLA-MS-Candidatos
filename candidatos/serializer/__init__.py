@@ -18,6 +18,7 @@ from .candidato import (
     CandidatosLoteCreateSerializer,
 )
 from .parametrizacao import ParametrizacaoSerializer
+from .lote import ConcursoCandidatosLoteSerializer
 
 __all__ = [
     'ConcursoCandidatoSerializer',
@@ -35,6 +36,7 @@ __all__ = [
     'CandidatoConcursoCreateSerializer',
     'CandidatosLoteCreateSerializer',
     'ParametrizacaoSerializer',
+    'ConcursoCandidatosLoteSerializer',
 ]
 
 
