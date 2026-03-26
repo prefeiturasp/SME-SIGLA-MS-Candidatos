@@ -19,7 +19,8 @@ from candidatos.serializers import (
     SalvarLotesSerializer,
     )
 from candidatos.service.calculo_habilitados_service import gerar_sequencia_convocados
-from candidatos.service.lotes_service import salvar_lotes as salvar_lotes_service, SalvarLotesException
+from candidatos.service.lotes_service import salvar_lotes as salvar_lotes_service
+from candidatos.service.exceptions import SalvarLotesException
 from candidatos.service.escolhas_service import EscolhasService
 from candidatos.service.ranking_service import atualizar_ranking, atualizar_ranking_escolha
 from candidatos.service.reclassificacao_service import aplicar_reclassificacao
@@ -666,14 +667,10 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         except SalvarLotesException as exc:
             logger.warning('Erro de negocio ao salvar lotes: %s', exc)
             return Response(
-                {
-                    'detail': exc.mensagem,
-                    'mensagem': exc.mensagem,
-                    'erros_por_linha': exc.erros_por_linha,
-                },
+                {'mensagem': exc.mensagem, 'detail': exc.detalhes},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         except Exception as exc:
             logger.error('Erro ao salvar lotes: %s', exc, exc_info=True)
-            return Response({'detail': 'Erro ao salvar lotes.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'mensagem': 'Erro ao salvar lotes.', 'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         return Response({'total_atualizados': total}, status=status.HTTP_201_CREATED)
