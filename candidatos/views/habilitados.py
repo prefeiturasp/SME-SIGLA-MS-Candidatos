@@ -55,6 +55,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         'classificacao': ['exact', 'in'],
         'classificacao_pcd': ['exact', 'in'],
         'classificacao_nna': ['exact', 'in'],
+        'numero_lote': ['exact'],
     }
 
     def get_queryset(self):
@@ -63,7 +64,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         restringe o resultado ao último lote desse concurso para evitar duplicidades.
         Se 'lote__uuid' for informado diretamente, o DjangoFilterBackend resolve o
         filtro sem sobrescrever (usado pela exportação de lote específico).
-        Aplica também filtros opcionais como cpf e codigo_cargo quando informados.
+        Aplica também filtros opcionais como numero_lote e codigo_cargo quando informados.
         """
         qs = self.queryset
         params = getattr(self.request, 'query_params', {})
@@ -83,6 +84,15 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             if not lote:
                 return qs.none()
             qs = qs.filter(lote=lote)
+
+        # Filtros explícitos para exportação por numero_lote e codigo_cargo
+        numero_lote = params.get('numero_lote')
+        if numero_lote is not None:
+            qs = qs.filter(numero_lote=numero_lote)
+
+        codigo_cargo = params.get('codigo_cargo')
+        if codigo_cargo:
+            qs = qs.filter(codigo_cargo=codigo_cargo)
 
         return qs
 
@@ -451,10 +461,11 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         )
         if not lote:
             return Response({'detail': 'Lote não encontrado para o concurso informado'}, status=status.HTTP_404_NOT_FOUND)
-
+        
         qs = ConcursoCandidato.objects.filter(lote=lote, uuid__in=candidatos)
         atualizados = list(qs.values_list('uuid', flat=True))
         qs.update(foi_convocado=True, processo_uuid=processo_uuid, data_convocacao=timezone.now())
+        print(atualizados)
 
         return Response({
             'atualizados': [str(u) for u in atualizados],
@@ -651,6 +662,75 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             'lote_uuid': str(lote.uuid),
             'results': serializer.data
         })
+
+    @action(detail=False, methods=['get'], url_path='numeros-lote')
+    def numeros_lote(self, request):
+        """
+        Retorna os valores distintos de numero_lote para um concurso.
+
+        GET /habilitados/numeros-lote/?concurso_uuid=<uuid>&codigo_cargo=<code>
+        - concurso_uuid: UUID do concurso (obrigatório)
+        - codigo_cargo: código do cargo (opcional)
+
+        Retorna: [{"numero_lote": 78348}, {"numero_lote": 78349}, ...]
+        """
+        concurso_uuid = request.query_params.get('concurso_uuid')
+        if not concurso_uuid:
+            return Response({'detail': 'concurso_uuid é obrigatório'}, status=status.HTTP_400_BAD_REQUEST)
+
+        lote = (
+            ConcursoCandidatosLote.objects
+            .filter(concurso_uuid=concurso_uuid)
+            .order_by('-criado_em')
+            .first()
+        )
+        if not lote:
+            return Response([], status=status.HTTP_200_OK)
+
+        qs = ConcursoCandidato.objects.filter(lote=lote, numero_lote__isnull=False)
+
+        codigo_cargo = request.query_params.get('codigo_cargo')
+        if codigo_cargo:
+            qs = qs.filter(codigo_cargo=codigo_cargo)
+
+        numeros = (
+            qs.values_list('numero_lote', flat=True)
+            .distinct()
+            .order_by('numero_lote')
+        )
+        return Response([{'numero_lote': n, 'lote_uuid': lote.uuid} for n in numeros])
+
+    @action(detail=False, methods=['get'], url_path='cargos')
+    def cargos(self, request):
+        """
+        Retorna os cargos distintos disponíveis para exportação SIGPEC de um concurso.
+        Considera apenas candidatos que possuem numero_lote preenchido.
+
+        GET /habilitados/cargos/?concurso_uuid=<uuid>
+
+        Retorna: [{"codigo_cargo": "1234", "descricao_cargo": "Professor"}, ...]
+        """
+        concurso_uuid = request.query_params.get('concurso_uuid')
+        if not concurso_uuid:
+            return Response({'detail': 'concurso_uuid é obrigatório'}, status=status.HTTP_400_BAD_REQUEST)
+
+        lote = (
+            ConcursoCandidatosLote.objects
+            .filter(concurso_uuid=concurso_uuid)
+            .order_by('-criado_em')
+            .first()
+        )
+        if not lote:
+            return Response([], status=status.HTTP_200_OK)
+
+        cargos = (
+            ConcursoCandidato.objects
+            .filter(lote=lote, numero_lote__isnull=False)
+            .values('codigo_cargo', 'descricao_cargo')
+            .distinct()
+            .order_by('codigo_cargo')
+        )
+        return Response(list(cargos))
 
     @action(detail=False, methods=['post'], url_path='salvar-lotes')
     def salvar_lotes(self, request):

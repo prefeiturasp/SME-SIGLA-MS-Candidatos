@@ -56,6 +56,7 @@ class ConcursoCandidatoSerializer(DynamicFieldsSerializer):
             return None
         return {
             'id': c.id,
+            'uuid': str(c.uuid),
             'nome': c.nome,
             'cpf': c.cpf,
             'email': c.email,
