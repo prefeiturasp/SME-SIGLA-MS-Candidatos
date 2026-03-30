@@ -34,7 +34,7 @@ __all__ = [
     'CandidatoSerializer',
     'CandidatoConcursoCreateSerializer',
     'CandidatosLoteCreateSerializer',
-    'ParametrizacaoSerializer',
+    'ParametrizacaoSerializer',    
 ]
 
 
