@@ -66,11 +66,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         filtro sem sobrescrever (usado pela exportação de lote específico).
         """
         qs = self.queryset
-        params = getattr(self.request, 'query_params', {})
-
-        # Se lote__uuid for informado, não aplica o override de "último lote"
-        if params.get('lote__uuid'):
-            return qs
+        params = getattr(self.request, 'query_params', {})      
 
         concurso_uuid = params.get('lote__concurso_uuid') or params.get('concurso_uuid')
         if concurso_uuid:
