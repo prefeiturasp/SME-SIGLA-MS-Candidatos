@@ -455,7 +455,6 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         qs = ConcursoCandidato.objects.filter(lote=lote, uuid__in=candidatos)
         atualizados = list(qs.values_list('uuid', flat=True))
         qs.update(foi_convocado=True, processo_uuid=processo_uuid, data_convocacao=timezone.now())
-        print(atualizados)
 
         return Response({
             'atualizados': [str(u) for u in atualizados],
