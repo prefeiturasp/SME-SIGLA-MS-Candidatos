@@ -664,10 +664,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'concurso_uuid é obrigatório'}, status=status.HTTP_400_BAD_REQUEST)
 
         lote = (
-            ConcursoCandidatosLote.objects
-            .filter(concurso_uuid=concurso_uuid)
-            .order_by('-criado_em')
-            .first()
+            ConcursoCandidatosLote.objects.filter(concurso_uuid=concurso_uuid).order_by('-criado_em').first()
         )
         if not lote:
             return Response([], status=status.HTTP_200_OK)

@@ -36,7 +36,7 @@ def salvar_lotes(concurso_uuid: str, lotes: list[dict[str, Any]]) -> int:
         ConcursoCandidato.objects.filter(
             lote__concurso_uuid=concurso_uuid,
             numero_lote=nro_lote_reset,
-        ).update(
+        ).order_by('-criado_em').update(
             numero_lote=None,
             codigo_sigpec=None,
             numero_vaga=None,
@@ -58,6 +58,7 @@ def salvar_lotes(concurso_uuid: str, lotes: list[dict[str, Any]]) -> int:
                 lote__concurso_uuid=concurso_uuid,
                 codigo_inscricao=identificacao,
             )
+            .order_by('-criado_em')
             .first()
         )
 
