@@ -64,7 +64,6 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         restringe o resultado ao último lote desse concurso para evitar duplicidades.
         Se 'lote__uuid' for informado diretamente, o DjangoFilterBackend resolve o
         filtro sem sobrescrever (usado pela exportação de lote específico).
-        Aplica também filtros opcionais como numero_lote e codigo_cargo quando informados.
         """
         qs = self.queryset
         params = getattr(self.request, 'query_params', {})
@@ -84,15 +83,6 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             if not lote:
                 return qs.none()
             qs = qs.filter(lote=lote)
-
-        # Filtros explícitos para exportação por numero_lote e codigo_cargo
-        numero_lote = params.get('numero_lote')
-        if numero_lote is not None:
-            qs = qs.filter(numero_lote=numero_lote)
-
-        codigo_cargo = params.get('codigo_cargo')
-        if codigo_cargo:
-            qs = qs.filter(codigo_cargo=codigo_cargo)
 
         return qs
 
