@@ -23,8 +23,8 @@ class Candidato(BaseModel):
     ]
 
     nome = models.CharField(max_length=200, verbose_name="Nome")
-    cpf = models.CharField(max_length=14, unique=True, verbose_name="CPF")
-    email = models.EmailField(unique=True, verbose_name="Email")
+    cpf = models.CharField(max_length=14, verbose_name="CPF")
+    email = models.EmailField(max_length=254, verbose_name="Email")
     telefone = models.CharField(max_length=20, blank=True, verbose_name="Telefone")
     celular = models.CharField(max_length=20, blank=True, verbose_name="Celular")
     rg = models.CharField(max_length=20, blank=True, verbose_name="RG")

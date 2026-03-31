@@ -8,6 +8,8 @@ from .concurso_candidato import (
     EliminarSerializer,
     ConcursoCandidatoReclassificadoSerializer,
     ConcursoCandidatoEliminadoSerializer,
+    LoteItemSerializer,
+    SalvarLotesSerializer,
 )
 
 from .candidato import (
@@ -27,10 +29,12 @@ __all__ = [
     'EliminarSerializer',
     'ConcursoCandidatoReclassificadoSerializer',
     'ConcursoCandidatoEliminadoSerializer',
+    'LoteItemSerializer',
+    'SalvarLotesSerializer',
     'CandidatoSerializer',
     'CandidatoConcursoCreateSerializer',
     'CandidatosLoteCreateSerializer',
-    'ParametrizacaoSerializer',
+    'ParametrizacaoSerializer',    
 ]
 
 

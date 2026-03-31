@@ -56,6 +56,7 @@ class ConcursoCandidatoSerializer(DynamicFieldsSerializer):
             return None
         return {
             'id': c.id,
+            'uuid': str(c.uuid),
             'nome': c.nome,
             'cpf': c.cpf,
             'email': c.email,
@@ -237,6 +238,23 @@ class ConcursoCandidatoReclassificadoSerializer(serializers.ModelSerializer):
             'rg': getattr(c, 'rg', ''),
             'registro_funcional': getattr(c, 'registro_funcional', ''),
         }
+
+
+class LoteItemSerializer(serializers.Serializer):
+    """Serializer para um item de lote (linha do arquivo TXT)."""
+    lote = serializers.IntegerField()
+    empresa = serializers.IntegerField()
+    vaga = serializers.IntegerField()
+    identificacao = serializers.CharField()
+    chave_inscrito = serializers.CharField(allow_blank=True, default='')
+    numfunc = serializers.CharField(allow_blank=True, default='')
+    numvinc = serializers.CharField(allow_blank=True, default='')
+
+
+class SalvarLotesSerializer(serializers.Serializer):
+    """Serializer para o payload do endpoint salvar-lotes."""
+    concurso_uuid = serializers.UUIDField()
+    lotes = serializers.ListField(child=LoteItemSerializer(), min_length=1)
 
 
 class ConcursoCandidatoEliminadoSerializer(serializers.ModelSerializer):

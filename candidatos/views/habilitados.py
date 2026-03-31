@@ -15,13 +15,18 @@ from candidatos.serializers import (
     ConcursoCandidatoCpfUuidSerializer,
     HabilitadosCalculadosParamsSerializer,
     ReclassificarSerializer,
-    EliminarSerializer
+    EliminarSerializer,
+    SalvarLotesSerializer,
     )
 from candidatos.service.calculo_habilitados_service import gerar_sequencia_convocados
+from candidatos.service.lotes_service import salvar_lotes as salvar_lotes_service
+from candidatos.service.exceptions import SalvarLotesException
 from candidatos.service.escolhas_service import EscolhasService
 from candidatos.service.ranking_service import atualizar_ranking, atualizar_ranking_escolha
 from candidatos.service.reclassificacao_service import aplicar_reclassificacao
 from candidatos.service.eliminacao_service import aplicar_eliminacao
+from candidatos.middleware import get_correlation_id
+
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +47,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         'processo_uuid': ['exact', 'in'],
         'codigo_cargo': ['exact', 'in'],
         'lote__concurso_uuid': ['exact', 'in'],
+        'lote__uuid': ['exact'],
         'candidato__cpf': ['exact', 'in'],
         'candidato__registro_funcional': ['exact', 'in'],
         'candidato__nome': ['exact', 'in'],
@@ -49,16 +55,19 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         'classificacao': ['exact', 'in'],
         'classificacao_pcd': ['exact', 'in'],
         'classificacao_nna': ['exact', 'in'],
+        'numero_lote': ['exact'],
     }
 
     def get_queryset(self):
         """
         Sempre que houver 'lote__concurso_uuid' (ou 'concurso_uuid') nos parâmetros,
         restringe o resultado ao último lote desse concurso para evitar duplicidades.
-        Aplica também filtros opcionais como cpf e codigo_cargo quando informados.
+        Se 'lote__uuid' for informado diretamente, o DjangoFilterBackend resolve o
+        filtro sem sobrescrever (usado pela exportação de lote específico).
         """
         qs = self.queryset
-        params = getattr(self.request, 'query_params', {})
+        params = getattr(self.request, 'query_params', {})      
+
         concurso_uuid = params.get('lote__concurso_uuid') or params.get('concurso_uuid')
         if concurso_uuid:
             lote = (
@@ -92,22 +101,38 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         e filtra apenas candidatos cujo uuid está na lista retornada.
         """
         # Busca reconvocações no microserviço de Escolhas
+        logger.info(
+            'Buscando reconvocações',
+            extra={
+                "correlation_id": get_correlation_id(),
+                "params": request.query_params,
+                "user": request.user,
+                "path": request.path,
+                "method": request.method,
+            }
+        )
         try:
             reconvocoes = EscolhasService.buscar_reconvocacoes()
             # Extrai a lista de candidato_uuid da resposta
-            candidato_uuids = [
-                item.get('candidato_uuid') 
-                for item in reconvocoes 
-                if item.get('candidato_uuid') is not None
-            ]
         except Exception as exc:
             logger.error(f"Erro ao buscar reconvocações no microserviço de Escolhas: {exc}")
             return Response(
                 {'detail': 'Erro ao buscar reconvocações no microserviço de Escolhas'},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE
             )
+        candidato_uuids = [
+            item.get('candidato_uuid') 
+            for item in reconvocoes 
+            if item.get('candidato_uuid') is not None
+        ]
         # Se não houver candidatos para reconvocação, retorna vazio
         if not candidato_uuids:
+            logger.info(
+                'Não houver candidatos para reconvocação',
+                extra={
+                    "correlation_id": get_correlation_id(),
+                }
+            )
             serializer = self.get_serializer([], many=True)
             return Response(serializer.data)
 
@@ -167,6 +192,13 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         atualizar_ranking(list(qs_final))
         atualizar_ranking_escolha(list(qs_final))
         serializer = self.get_serializer(qs_final, many=True)
+        logger.info(
+            'Reconvocações encontradas',
+            extra={
+                "correlation_id": get_correlation_id(),
+                "quantidade": len(qs_final),
+            }
+        )
         return Response(serializer.data)
 
     @action(detail=False, methods=['post'], url_path='reclassificar')
@@ -181,6 +213,16 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             "motivo": "opcional"
         }
         """
+        logger.info(
+            'Reclassificar candidato',
+            extra={
+                "correlation_id": get_correlation_id(),
+                "method": request.method,
+                "path": request.path,
+                "params": request.data,
+                "user": request.user,
+            }
+        )
         input_ser = ReclassificarSerializer(data=request.data)
         input_ser.is_valid(raise_exception=True)
         data = input_ser.validated_data
@@ -199,7 +241,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             return Response({'detail': str(ve)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as exc:
             logger.error('Falha ao reclassificar: %s', exc, exc_info=True)
-            return Response({'detail': 'Erro ao reclassificar'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'detail': 'Erro ao reclassificar'}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({
             'concurso_candidato': ConcursoCandidatoSerializer(cc).data,
@@ -217,6 +259,16 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             "motivo": "opcional"
         }
         """
+        logger.info(
+            'Eliminar candidato',
+            extra={
+                "correlation_id": get_correlation_id(),
+                "method": request.method,
+                "path": request.path,
+                "params": request.data,
+                "user": request.user,
+            }
+        )
         input_ser = EliminarSerializer(data=request.data)
         input_ser.is_valid(raise_exception=True)
         data = input_ser.validated_data
@@ -234,7 +286,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             return Response({'detail': str(ve)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as exc:
             logger.error('Falha ao eliminar: %s', exc, exc_info=True)
-            return Response({'detail': 'Erro ao eliminar'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'detail': 'Erro ao eliminar'}, status=status.HTTP_400_BAD_REQUEST)
         return Response({
             'concurso_candidato': ConcursoCandidatoSerializer(cc).data,
             'historico_uuid': str(hist.uuid),
@@ -253,6 +305,16 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         - pcd   -> filtra campo 'classificacao_pcd'
         - nna   -> filtra campo 'classificacao_nna'
         """
+        logger.info(
+            'Buscar candidatos para reposição',
+            extra={
+                "correlation_id": get_correlation_id(),
+                "method": request.method,
+                "path": request.path,
+                "params": request.query_params,
+                "user": request.user,
+            }
+        )
         concurso_uuid = request.query_params.get('concurso_uuid')
 
         if not concurso_uuid:
@@ -359,6 +421,17 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             "foi_convocado": true|false   # opcional; default: true
         }
         """
+        logger.info(
+            'Convocar candidatos',
+            extra={
+                "correlation_id": get_correlation_id(),
+                "method": request.method,
+                "path": request.path,
+                "params": request.query_params,
+                "data": request.data,
+                "user": request.user,
+            }
+        )
         concurso_uuid = request.data.get('concurso_uuid')
         processo_uuid = request.data.get('processo_uuid')
         candidatos = request.data.get('candidatos', [])
@@ -374,7 +447,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         )
         if not lote:
             return Response({'detail': 'Lote não encontrado para o concurso informado'}, status=status.HTTP_404_NOT_FOUND)
-
+        
         qs = ConcursoCandidato.objects.filter(lote=lote, uuid__in=candidatos)
         atualizados = list(qs.values_list('uuid', flat=True))
         qs.update(foi_convocado=True, processo_uuid=processo_uuid, data_convocacao=timezone.now())
@@ -396,6 +469,17 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             "codigo_cargo": "12345"
         }
         """
+        logger.info(
+            'Desconvocar candidatos',
+            extra={
+                "correlation_id": get_correlation_id(),
+                "method": request.method,
+                "path": request.path,
+                "params": request.query_params,
+                "data": request.data,
+                "user": request.user,
+            }
+        )
         processo_uuid = request.data.get('processo_uuid') or request.data.get('concurso_uuid')
         codigo_cargo = request.data.get('codigo_cargo')
 
@@ -425,6 +509,17 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
 
         Retorna os dados serializados dos candidatos encontrados.
         """
+        logger.info(
+            'Buscar candidatos por UUIDs',
+            extra={
+                "correlation_id": get_correlation_id(),
+                "method": request.method,
+                "path": request.path,
+                "params": request.query_params,
+                "data": request.data,
+                "user": request.user,
+            }
+        )
         # Validação usando serializer
         input_serializer = BuscarPorUuidsSerializer(data=request.data)
         input_serializer.is_valid(raise_exception=True)
@@ -465,6 +560,17 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
 
         Retorna os dados serializados dos candidatos encontrados do processo especificado.
         """
+        logger.info(
+            'Buscar candidatos por CPFs',
+            extra={
+                "correlation_id": get_correlation_id(),
+                "method": request.method,
+                "path": request.path,
+                "params": request.query_params,
+                "data": request.data,
+                "user": request.user,
+            }
+        )
         # Validação usando serializer
         input_serializer = BuscarPorCpfsSerializer(data=request.data)
         input_serializer.is_valid(raise_exception=True)
@@ -497,6 +603,16 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         Endpoint placeholder para cálculo de sequência de convocação.
         Por enquanto retorna um dict vazio.
         """
+        logger.info(
+            'Buscar candidatos calculados',
+            extra={
+                "correlation_id": get_correlation_id(),
+                "method": request.method,
+                "path": request.path,
+                "params": request.query_params,
+                "user": request.user,
+            }
+        )
         params = HabilitadosCalculadosParamsSerializer(data=request.query_params)
         params.is_valid(raise_exception=True)
         quantidade = params.validated_data['quantidade']
@@ -531,3 +647,100 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             'lote_uuid': str(lote.uuid),
             'results': serializer.data
         })
+
+    @action(detail=False, methods=['get'], url_path='numeros-lote')
+    def numeros_lote(self, request):
+        """
+        Retorna os valores distintos de numero_lote para um concurso.
+
+        GET /habilitados/numeros-lote/?concurso_uuid=<uuid>&codigo_cargo=<code>
+        - concurso_uuid: UUID do concurso (obrigatório)
+        - codigo_cargo: código do cargo (opcional)
+
+        Retorna: [{"numero_lote": 78348}, {"numero_lote": 78349}, ...]
+        """
+        concurso_uuid = request.query_params.get('concurso_uuid')
+        if not concurso_uuid:
+            return Response({'detail': 'concurso_uuid é obrigatório'}, status=status.HTTP_400_BAD_REQUEST)
+
+        lote = (
+            ConcursoCandidatosLote.objects.filter(concurso_uuid=concurso_uuid).order_by('-criado_em').first()
+        )
+        if not lote:
+            return Response([], status=status.HTTP_200_OK)
+
+        qs = ConcursoCandidato.objects.filter(lote=lote, numero_lote__isnull=False)
+
+        codigo_cargo = request.query_params.get('codigo_cargo')
+        if codigo_cargo:
+            qs = qs.filter(codigo_cargo=codigo_cargo)
+
+        numeros = (
+            qs.values_list('numero_lote', flat=True)
+            .distinct()
+            .order_by('numero_lote')
+        )
+        return Response([{'numero_lote': n, 'lote_uuid': lote.uuid} for n in numeros])
+
+    @action(detail=False, methods=['get'], url_path='cargos')
+    def cargos(self, request):
+        """
+        Retorna os cargos distintos disponíveis para exportação SIGPEC de um concurso.
+        Considera apenas candidatos que possuem numero_lote preenchido.
+
+        GET /habilitados/cargos/?concurso_uuid=<uuid>
+
+        Retorna: [{"codigo_cargo": "1234", "descricao_cargo": "Professor"}, ...]
+        """
+        concurso_uuid = request.query_params.get('concurso_uuid')
+        if not concurso_uuid:
+            return Response({'detail': 'concurso_uuid é obrigatório'}, status=status.HTTP_400_BAD_REQUEST)
+
+        lote = (
+            ConcursoCandidatosLote.objects
+            .filter(concurso_uuid=concurso_uuid)
+            .order_by('-criado_em')
+            .first()
+        )
+        if not lote:
+            return Response([], status=status.HTTP_200_OK)
+
+        cargos = (
+            ConcursoCandidato.objects
+            .filter(lote=lote, numero_lote__isnull=False)
+            .values('codigo_cargo', 'descricao_cargo')
+            .distinct()
+            .order_by('codigo_cargo')
+        )
+        return Response(list(cargos))
+
+    @action(detail=False, methods=['post'], url_path='salvar-lotes')
+    def salvar_lotes(self, request):
+        """
+        Importa dados de lote de classificação para os candidatos do concurso.
+
+        Payload esperado:
+        {
+            "concurso_uuid": "<uuid>",
+            "lotes": [
+                {"lote": 78348, "empresa": 1, "vaga": 111, "identificacao": "321125619",
+                 "numfunc": "9348093", "numvinc": ""}
+            ]
+        }
+        """
+        serializer = SalvarLotesSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        concurso_uuid = str(serializer.validated_data['concurso_uuid'])
+        lotes = serializer.validated_data['lotes']
+        try:
+            total = salvar_lotes_service(concurso_uuid=concurso_uuid, lotes=lotes)
+        except SalvarLotesException as exc:
+            logger.warning('Erro de negocio ao salvar lotes: %s', exc)
+            return Response(
+                {'mensagem': exc.mensagem, 'detail': exc.detalhes},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except Exception as exc:
+            logger.error('Erro ao salvar lotes: %s', exc, exc_info=True)
+            return Response({'mensagem': 'Erro ao salvar lotes.', 'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'total_atualizados': total}, status=status.HTTP_201_CREATED)

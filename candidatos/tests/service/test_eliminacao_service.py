@@ -4,6 +4,7 @@ Cobre aplicar_eliminacao (linhas 12-25).
 """
 import pytest
 from uuid import uuid4
+from django.utils import timezone
 
 from candidatos.models import (
     Candidato,

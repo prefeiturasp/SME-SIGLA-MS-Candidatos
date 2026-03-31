@@ -53,6 +53,11 @@ class ConcursoCandidato(BaseModel):
     eliminado_em = models.DateTimeField(blank=True, null=True, verbose_name="Eliminado em")
     eliminado_motivo = models.TextField(blank=True, default='', verbose_name="Motivo da eliminação")
     eliminado_por = models.CharField(max_length=150, blank=True, default='', verbose_name="Eliminado por")
+    # Campos de lote (importação SIGPEC)
+    numero_lote = models.IntegerField(null=True, blank=True, verbose_name="Número do Lote")
+    codigo_sigpec = models.IntegerField(null=True, blank=True, verbose_name="Código SIGPEC (Empresa)")
+    numero_vaga = models.IntegerField(null=True, blank=True, verbose_name="Número da Vaga")
+    chave_inscrito = models.CharField(max_length=50, null=True, blank=True, verbose_name="Chave do Inscrito")
 
     class Meta:
         verbose_name = 'Concurso do Candidato'
