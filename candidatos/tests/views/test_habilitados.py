@@ -118,6 +118,71 @@ class TestReclassificacaoHabilitados:
             concurso_candidato=cc, desclassificado_de="NNA"
         ).exists()
 
+
+def test_habilitados_desconvocar_sem_codigo_cargo_desconvoca_todos(api_client, lote):
+    """Quando codigo_cargo não é enviado, desconvoca todos os cargos do processo."""
+    processo_uuid = uuid4()
+    c1 = criar_candidato("C1", "111.111.111-11")
+    c2 = criar_candidato("C2", "222.222.222-22")
+    cc1 = ConcursoCandidato.objects.create(
+        candidato=c1, lote=lote, codigo_inscricao="1", foi_convocado=True, processo_uuid=processo_uuid, codigo_cargo="1008"
+    )
+    cc2 = ConcursoCandidato.objects.create(
+        candidato=c2, lote=lote, codigo_inscricao="2", foi_convocado=True, processo_uuid=processo_uuid, codigo_cargo="2001"
+    )
+
+    url = reverse("habilitados-desconvocar")
+    resp = api_client.patch(url, {"processo_uuid": str(processo_uuid)}, format="json")
+
+    assert resp.status_code == 200
+    assert resp.data["total"] == 2
+    assert set(resp.data["desconvocados"]) == {str(cc1.uuid), str(cc2.uuid)}
+    assert resp.data["codigo_cargo"] is None
+
+    cc1.refresh_from_db()
+    cc2.refresh_from_db()
+    assert cc1.foi_convocado is False
+    assert cc1.processo_uuid is None
+    assert cc2.foi_convocado is False
+    assert cc2.processo_uuid is None
+
+
+def test_habilitados_desconvocar_com_codigo_cargo_desconvoca_so_um(api_client, lote):
+    """Quando codigo_cargo é enviado, desconvoca apenas os registros daquele cargo."""
+    processo_uuid = uuid4()
+    c1 = criar_candidato("C1", "333.333.333-33")
+    c2 = criar_candidato("C2", "444.444.444-44")
+    cc1 = ConcursoCandidato.objects.create(
+        candidato=c1, lote=lote, codigo_inscricao="1", foi_convocado=True, processo_uuid=processo_uuid, codigo_cargo="1008"
+    )
+    cc2 = ConcursoCandidato.objects.create(
+        candidato=c2, lote=lote, codigo_inscricao="2", foi_convocado=True, processo_uuid=processo_uuid, codigo_cargo="2001"
+    )
+
+    url = reverse("habilitados-desconvocar")
+    resp = api_client.patch(
+        url, {"processo_uuid": str(processo_uuid), "codigo_cargo": "1008"}, format="json"
+    )
+
+    assert resp.status_code == 200
+    assert resp.data["total"] == 1
+    assert resp.data["desconvocados"] == [str(cc1.uuid)]
+    assert resp.data["codigo_cargo"] == "1008"
+
+    cc1.refresh_from_db()
+    cc2.refresh_from_db()
+    assert cc1.foi_convocado is False
+    assert cc1.processo_uuid is None
+    assert cc2.foi_convocado is True
+    assert str(cc2.processo_uuid) == str(processo_uuid)
+
+
+def test_habilitados_desconvocar_sem_processo_uuid_retorna_400(api_client):
+    url = reverse("habilitados-desconvocar")
+    resp = api_client.patch(url, {"codigo_cargo": "1008"}, format="json")
+    assert resp.status_code == 400
+    assert "processo_uuid" in resp.data["detail"]
+
     def test_reclassificar_de_pcd_retorna_200_e_atualiza_categoria(self, api_client, lote):
         c = criar_candidato("Candidato PCD", "222.222.222-22")
         cc = ConcursoCandidato.objects.create(
