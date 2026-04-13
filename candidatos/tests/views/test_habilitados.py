@@ -84,6 +84,57 @@ def test_habilitados_filtra_por_ultimo_lote_e_limites(api_client):
     assert 'nome' in results[0]['candidato']
 
 
+def test_habilitados_list_quando_concurso_uuid_filtra_apenas_ultimo_lote(api_client):
+    """
+    `HabilitadosViewSet.get_queryset()` deve restringir ao último lote do concurso
+    sempre que `concurso_uuid` (ou `lote__concurso_uuid`) for informado.
+    """
+    concurso_uuid = uuid4()
+    lote_antigo = ConcursoCandidatosLote.objects.create(concurso_uuid=concurso_uuid, concurso_nome='Antigo')
+    lote_recente = ConcursoCandidatosLote.objects.create(concurso_uuid=concurso_uuid, concurso_nome='Recente')
+
+    cold = criar_candidato('OLD', '999.999.999-99')
+    cnew = criar_candidato('NEW', '888.888.888-88')
+    ConcursoCandidato.objects.create(candidato=cold, lote=lote_antigo, codigo_inscricao='old', classificacao=1)
+    ConcursoCandidato.objects.create(candidato=cnew, lote=lote_recente, codigo_inscricao='new', classificacao=1)
+
+    url = reverse('habilitados-list')
+    resp = api_client.get(url, {'concurso_uuid': str(concurso_uuid)})
+    assert resp.status_code == 200
+    # Sem paginação: deve ser lista
+    assert isinstance(resp.data, list)
+    assert len(resp.data) == 1
+    assert resp.data[0]['candidato']['cpf'] == '888.888.888-88'
+
+
+def test_habilitados_list_quando_concurso_uuid_sem_lote_retorna_vazio(api_client):
+    url = reverse('habilitados-list')
+    resp = api_client.get(url, {'concurso_uuid': str(uuid4())})
+    assert resp.status_code == 200
+    assert resp.data == []
+
+
+def test_habilitados_list_quando_lote_uuid_informado_nao_restringe_ao_ultimo_lote(api_client):
+    """
+    Se o filtro for por `lote__uuid` diretamente (sem `concurso_uuid`),
+    o `get_queryset()` não restringe ao último lote (conforme docstring).
+    """
+    concurso_uuid = uuid4()
+    lote1 = ConcursoCandidatosLote.objects.create(concurso_uuid=concurso_uuid, concurso_nome='L1')
+    lote2 = ConcursoCandidatosLote.objects.create(concurso_uuid=concurso_uuid, concurso_nome='L2')
+
+    c1 = criar_candidato('C1', '777.777.777-77')
+    c2 = criar_candidato('C2', '666.666.666-66')
+    ConcursoCandidato.objects.create(candidato=c1, lote=lote1, codigo_inscricao='1', classificacao=1)
+    ConcursoCandidato.objects.create(candidato=c2, lote=lote2, codigo_inscricao='2', classificacao=1)
+
+    url = reverse('habilitados-list')
+    resp = api_client.get(url, {'lote__uuid': str(lote1.uuid)})
+    assert resp.status_code == 200
+    assert len(resp.data) == 1
+    assert resp.data[0]['candidato']['cpf'] == '777.777.777-77'
+
+
 # --- Testes de Reclassificação de Candidatos habilitados ---
 
 
@@ -182,6 +233,151 @@ def test_habilitados_desconvocar_sem_processo_uuid_retorna_400(api_client):
     resp = api_client.patch(url, {"codigo_cargo": "1008"}, format="json")
     assert resp.status_code == 400
     assert "processo_uuid" in resp.data["detail"]
+
+
+def test_habilitados_buscar_por_cpfs_retorna_dados_do_processo(api_client, lote):
+    processo_uuid = uuid4()
+    # 2 candidatos no processo
+    c1 = criar_candidato("C1", "12345678901")
+    c2 = criar_candidato("C2", "98765432100")
+    ConcursoCandidato.objects.create(
+        candidato=c1,
+        lote=lote,
+        codigo_inscricao="1",
+        processo_uuid=processo_uuid,
+        classificacao=2,
+    )
+    ConcursoCandidato.objects.create(
+        candidato=c2,
+        lote=lote,
+        codigo_inscricao="2",
+        processo_uuid=processo_uuid,
+        classificacao=1,
+    )
+    # Mesmo cpf, mas em outro processo: não pode retornar
+    c3 = criar_candidato("C3", "11122233344")
+    ConcursoCandidato.objects.create(
+        candidato=c3,
+        lote=lote,
+        codigo_inscricao="3",
+        processo_uuid=uuid4(),
+        classificacao=1,
+    )
+
+    url = reverse("habilitados-buscar-por-cpfs")
+    payload = {"cpfs": ["12345678901", "98765432100", "11122233344"], "processo_uuid": str(processo_uuid)}
+
+    resp = api_client.post(url, payload, format="json")
+    assert resp.status_code == 200
+    assert isinstance(resp.data, list)
+    # Deve retornar só os 2 do processo informado
+    assert len(resp.data) == 2
+    returned_cpfs = {item["cpf"] for item in resp.data}
+    assert returned_cpfs == {"12345678901", "98765432100"}
+    # Default order_by = classificacao (asc): cpf do c2 (classificacao=1) deve vir primeiro
+    assert resp.data[0]["cpf"] == "98765432100"
+
+
+def test_habilitados_buscar_por_cpfs_order_by_invalido_retorna_400(api_client):
+    url = reverse("habilitados-buscar-por-cpfs")
+    payload = {"cpfs": ["12345678901"], "processo_uuid": str(uuid4())}
+    resp = api_client.post(url + "?order_by=campo_inexistente", payload, format="json")
+    assert resp.status_code == 400
+    assert resp.data["detail"] == "Parâmetro order_by inválido"
+
+
+def test_habilitados_calculados_sem_lote_retorna_404(api_client):
+    url = reverse("habilitados-calculados")
+    resp = api_client.get(
+        url,
+        {
+            "quantidade": 5,
+            "concurso_uuid": str(uuid4()),
+            "processo_uuid": str(uuid4()),
+            "codigo_cargo": "1008",
+        },
+    )
+    assert resp.status_code == 404
+    assert resp.data["detail"] == "Lote não encontrado para o concurso_uuid informado"
+
+
+@patch("candidatos.views.habilitados.EscolhasService.buscar_escolhas")
+@patch("candidatos.views.habilitados.gerar_sequencia_convocados")
+def test_habilitados_calculados_sucesso_mockando_externos(
+    mock_gerar_sequencia,
+    mock_buscar_escolhas,
+    api_client,
+):
+    concurso_uuid = uuid4()
+    processo_uuid = uuid4()
+    lote = ConcursoCandidatosLote.objects.create(concurso_uuid=concurso_uuid, concurso_nome="X")
+
+    mock_buscar_escolhas.return_value = [
+        {"candidato_uuid": "u1"},
+        {"candidato_uuid": None},
+        {},
+        {"candidato_uuid": "u2"},
+    ]
+    mock_gerar_sequencia.return_value = []
+
+    url = reverse("habilitados-calculados")
+    resp = api_client.get(
+        url,
+        {
+            "quantidade": 3,
+            "concurso_uuid": str(concurso_uuid),
+            "processo_uuid": str(processo_uuid),
+            "codigo_cargo": "1008",
+        },
+    )
+
+    assert resp.status_code == 200
+    assert resp.data["quantidade"] == 3
+    assert resp.data["concurso_uuid"] == str(concurso_uuid)
+    assert resp.data["lote_uuid"] == str(lote.uuid)
+    assert resp.data["results"] == []
+
+    mock_buscar_escolhas.assert_called_once_with(concurso_uuid=str(concurso_uuid))
+    mock_gerar_sequencia.assert_called_once()
+    args = mock_gerar_sequencia.call_args.args
+    assert args[0] == 3  # quantidade
+    assert args[1] == lote
+    assert args[2] == ["u1", "u2"]  # escolhas_candidato_uuids filtrado
+    assert args[3] == "1008"  # codigo_cargo
+    assert args[4] == str(processo_uuid)
+
+
+@patch("candidatos.views.habilitados.EscolhasService.buscar_escolhas", side_effect=Exception("ms caiu"))
+@patch("candidatos.views.habilitados.gerar_sequencia_convocados")
+def test_habilitados_calculados_quando_escolhas_falha_continua_com_lista_vazia(
+    mock_gerar_sequencia,
+    mock_buscar_escolhas,
+    api_client,
+):
+    concurso_uuid = uuid4()
+    processo_uuid = uuid4()
+    lote = ConcursoCandidatosLote.objects.create(concurso_uuid=concurso_uuid, concurso_nome="X")
+
+    mock_gerar_sequencia.return_value = []
+
+    url = reverse("habilitados-calculados")
+    resp = api_client.get(
+        url,
+        {
+            "quantidade": 2,
+            "concurso_uuid": str(concurso_uuid),
+            "processo_uuid": str(processo_uuid),
+            "codigo_cargo": "1008",
+        },
+    )
+
+    assert resp.status_code == 200
+    assert resp.data["lote_uuid"] == str(lote.uuid)
+    assert resp.data["results"] == []
+    mock_buscar_escolhas.assert_called_once_with(concurso_uuid=str(concurso_uuid))
+
+    args = mock_gerar_sequencia.call_args.args
+    assert args[2] == []  # escolhas_candidato_uuids vazio
 
     def test_reclassificar_de_pcd_retorna_200_e_atualiza_categoria(self, api_client, lote):
         c = criar_candidato("Candidato PCD", "222.222.222-22")
