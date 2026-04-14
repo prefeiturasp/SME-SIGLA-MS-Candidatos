@@ -460,13 +460,14 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['patch'], url_path='desconvocar')
     def desconvocar(self, request):
         """
-        Marca como NÃO convocados todos os registros que pertencem ao processo (lote)
-        informado e correspondem ao código de cargo fornecido.
+        Marca como NÃO convocados todos os registros que pertencem ao processo (lote).
+        Se codigo_cargo for informado, desconvoca apenas o cargo; caso contrário,
+        desconvoca todos os cargos do processo.
 
         Payload esperado:
         {
             "processo_uuid": "...",      # ou "concurso_uuid"
-            "codigo_cargo": "12345"
+            "codigo_cargo": "12345"      # opcional
         }
         """
         logger.info(
@@ -483,10 +484,15 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         processo_uuid = request.data.get('processo_uuid') or request.data.get('concurso_uuid')
         codigo_cargo = request.data.get('codigo_cargo')
 
-        if not processo_uuid or not codigo_cargo:
-            return Response({'detail': 'processo_uuid (ou concurso_uuid) e codigo_cargo são obrigatórios'}, status=status.HTTP_400_BAD_REQUEST)
+        if not processo_uuid:
+            return Response(
+                {'detail': 'processo_uuid (ou concurso_uuid) é obrigatório'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        qs = ConcursoCandidato.objects.filter(processo_uuid=processo_uuid, codigo_cargo=codigo_cargo, foi_convocado=True)
+        qs = ConcursoCandidato.objects.filter(processo_uuid=processo_uuid, foi_convocado=True)
+        if codigo_cargo:
+            qs = qs.filter(codigo_cargo=codigo_cargo)
         atualizados = list(qs.values_list('uuid', flat=True))
         qs.update(foi_convocado=False, data_convocacao=None, processo_uuid=None)
 
@@ -494,7 +500,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             'desconvocados': [str(u) for u in atualizados],
             'total': len(atualizados),
             'processo_uuid': str(processo_uuid),
-            'codigo_cargo': str(codigo_cargo),
+            'codigo_cargo': str(codigo_cargo) if codigo_cargo else None,
         })
 
     @action(detail=False, methods=['post'], url_path='buscar-por-uuids')
