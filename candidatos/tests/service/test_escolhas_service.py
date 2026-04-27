@@ -27,7 +27,7 @@ def test_get_base_url_retorna_url_sem_barra_final():
 # --- buscar_reconvocacoes (linhas 38-62) ---
 
 
-@patch("candidatos.service.escolhas_service.requests.get")
+@patch("candidatos.service.escolhas_service.http_client.get")
 def test_buscar_reconvocacoes_200_retorna_lista_direta(mock_get):
     mock_get.return_value.status_code = 200
     mock_get.return_value.json.return_value = [{"uuid": "a", "candidato_uuid": "b"}]
@@ -36,7 +36,7 @@ def test_buscar_reconvocacoes_200_retorna_lista_direta(mock_get):
     assert result == [{"uuid": "a", "candidato_uuid": "b"}]
 
 
-@patch("candidatos.service.escolhas_service.requests.get")
+@patch("candidatos.service.escolhas_service.http_client.get")
 def test_buscar_reconvocacoes_200_dict_com_results(mock_get):
     mock_get.return_value.status_code = 200
     mock_get.return_value.json.return_value = {"results": [{"candidato_uuid": "x"}]}
@@ -45,7 +45,7 @@ def test_buscar_reconvocacoes_200_dict_com_results(mock_get):
     assert result == [{"candidato_uuid": "x"}]
 
 
-@patch("candidatos.service.escolhas_service.requests.get")
+@patch("candidatos.service.escolhas_service.http_client.get")
 def test_buscar_reconvocacoes_200_dict_sem_results_retorna_lista_unitária(mock_get):
     mock_get.return_value.status_code = 200
     mock_get.return_value.json.return_value = {"uuid": "um", "candidato_uuid": "c1"}
@@ -54,7 +54,7 @@ def test_buscar_reconvocacoes_200_dict_sem_results_retorna_lista_unitária(mock_
     assert result == [{"uuid": "um", "candidato_uuid": "c1"}]
 
 
-@patch("candidatos.service.escolhas_service.requests.get")
+@patch("candidatos.service.escolhas_service.http_client.get")
 def test_buscar_reconvocacoes_200_outro_formato_retorna_lista_vazia(mock_get):
     mock_get.return_value.status_code = 200
     mock_get.return_value.json.return_value = "não é list nem dict"
@@ -63,7 +63,7 @@ def test_buscar_reconvocacoes_200_outro_formato_retorna_lista_vazia(mock_get):
     assert result == []
 
 
-@patch("candidatos.service.escolhas_service.requests.get")
+@patch("candidatos.service.escolhas_service.http_client.get")
 def test_buscar_reconvocacoes_nao_200_levanta_request_exception(mock_get):
     mock_resp = MagicMock()
     mock_resp.status_code = 404
@@ -76,7 +76,7 @@ def test_buscar_reconvocacoes_nao_200_levanta_request_exception(mock_get):
             EscolhasService.buscar_reconvocacoes()
 
 
-@patch("candidatos.service.escolhas_service.requests.get")
+@patch("candidatos.service.escolhas_service.http_client.get")
 def test_buscar_reconvocacoes_request_exception_propaga(mock_get):
     mock_get.side_effect = ConnectionError("rede")
     with patch.object(EscolhasService, "_get_base_url", return_value="https://api"):
@@ -87,7 +87,7 @@ def test_buscar_reconvocacoes_request_exception_propaga(mock_get):
 # --- buscar_escolhas (linhas 78-102) ---
 
 
-@patch("candidatos.service.escolhas_service.requests.get")
+@patch("candidatos.service.escolhas_service.http_client.get")
 def test_buscar_escolhas_200_retorna_lista_direta(mock_get):
     mock_get.return_value.status_code = 200
     mock_get.return_value.json.return_value = [{"candidato_uuid": "e1"}]
@@ -98,7 +98,7 @@ def test_buscar_escolhas_200_retorna_lista_direta(mock_get):
     assert "concurso_uuid=concurso-123" in call_url
 
 
-@patch("candidatos.service.escolhas_service.requests.get")
+@patch("candidatos.service.escolhas_service.http_client.get")
 def test_buscar_escolhas_200_dict_com_results(mock_get):
     mock_get.return_value.status_code = 200
     mock_get.return_value.json.return_value = {"results": [{"candidato_uuid": "e2"}]}
@@ -107,7 +107,7 @@ def test_buscar_escolhas_200_dict_com_results(mock_get):
     assert result == [{"candidato_uuid": "e2"}]
 
 
-@patch("candidatos.service.escolhas_service.requests.get")
+@patch("candidatos.service.escolhas_service.http_client.get")
 def test_buscar_escolhas_200_dict_sem_results_retorna_lista_unitária(mock_get):
     mock_get.return_value.status_code = 200
     mock_get.return_value.json.return_value = {"candidato_uuid": "e3"}
@@ -116,7 +116,7 @@ def test_buscar_escolhas_200_dict_sem_results_retorna_lista_unitária(mock_get):
     assert result == [{"candidato_uuid": "e3"}]
 
 
-@patch("candidatos.service.escolhas_service.requests.get")
+@patch("candidatos.service.escolhas_service.http_client.get")
 def test_buscar_escolhas_nao_200_levanta(mock_get):
     mock_resp = MagicMock()
     mock_resp.status_code = 500
@@ -128,7 +128,7 @@ def test_buscar_escolhas_nao_200_levanta(mock_get):
             EscolhasService.buscar_escolhas(concurso_uuid="uu")
 
 
-@patch("candidatos.service.escolhas_service.requests.get")
+@patch("candidatos.service.escolhas_service.http_client.get")
 def test_buscar_escolhas_request_exception_propaga(mock_get):
     mock_get.side_effect = TimeoutError("timeout")
     with patch.object(EscolhasService, "_get_base_url", return_value="https://api"):
@@ -182,7 +182,7 @@ def test_buscar_reconvocacoes_retorna_lista(settings):
     settings.ESCOLHAS_API_URL = 'http://escolhas'
     payload = [{'uuid': 'u1', 'candidato_uuid': 'c1'}, {'uuid': 'u2', 'candidato_uuid': 'c2'}]
 
-    with patch('candidatos.service.escolhas_service.requests.get', return_value=_mock_response(200, payload)):
+    with patch('candidatos.service.escolhas_service.http_client.get', return_value=_mock_response(200, payload)):
         result = EscolhasService.buscar_reconvocacoes()
 
     assert result == payload
@@ -193,7 +193,7 @@ def test_buscar_reconvocacoes_resposta_dict_com_results(settings):
     items = [{'uuid': 'u1'}]
     payload = {'count': 1, 'results': items}
 
-    with patch('candidatos.service.escolhas_service.requests.get', return_value=_mock_response(200, payload)):
+    with patch('candidatos.service.escolhas_service.http_client.get', return_value=_mock_response(200, payload)):
         result = EscolhasService.buscar_reconvocacoes()
 
     assert result == items
@@ -203,7 +203,7 @@ def test_buscar_reconvocacoes_resposta_dict_sem_results(settings):
     settings.ESCOLHAS_API_URL = 'http://escolhas'
     payload = {'uuid': 'u1', 'candidato_uuid': 'c1'}
 
-    with patch('candidatos.service.escolhas_service.requests.get', return_value=_mock_response(200, payload)):
+    with patch('candidatos.service.escolhas_service.http_client.get', return_value=_mock_response(200, payload)):
         result = EscolhasService.buscar_reconvocacoes()
 
     assert result == [payload]
@@ -212,7 +212,7 @@ def test_buscar_reconvocacoes_resposta_dict_sem_results(settings):
 def test_buscar_reconvocacoes_resposta_vazia(settings):
     settings.ESCOLHAS_API_URL = 'http://escolhas'
 
-    with patch('candidatos.service.escolhas_service.requests.get', return_value=_mock_response(200, [])):
+    with patch('candidatos.service.escolhas_service.http_client.get', return_value=_mock_response(200, [])):
         result = EscolhasService.buscar_reconvocacoes()
 
     assert result == []
@@ -227,7 +227,7 @@ def test_buscar_reconvocacoes_erro_http_levanta_excecao(settings):
     mock_resp = _mock_response(500)
     mock_resp.raise_for_status.side_effect = _requests.HTTPError('500 Server Error')
 
-    with patch('candidatos.service.escolhas_service.requests.get', return_value=mock_resp):
+    with patch('candidatos.service.escolhas_service.http_client.get', return_value=mock_resp):
         with pytest.raises(_requests.RequestException):
             EscolhasService.buscar_reconvocacoes()
 
@@ -235,7 +235,7 @@ def test_buscar_reconvocacoes_erro_http_levanta_excecao(settings):
 def test_buscar_reconvocacoes_connection_error_levanta_request_exception(settings):
     settings.ESCOLHAS_API_URL = 'http://escolhas'
 
-    with patch('candidatos.service.escolhas_service.requests.get', side_effect=_requests.ConnectionError('timeout')):
+    with patch('candidatos.service.escolhas_service.http_client.get', side_effect=_requests.ConnectionError('timeout')):
         with pytest.raises(_requests.RequestException, match='Erro ao conectar'):
             EscolhasService.buscar_reconvocacoes()
 
@@ -243,7 +243,7 @@ def test_buscar_reconvocacoes_connection_error_levanta_request_exception(setting
 def test_buscar_reconvocacoes_timeout_levanta_request_exception(settings):
     settings.ESCOLHAS_API_URL = 'http://escolhas'
 
-    with patch('candidatos.service.escolhas_service.requests.get', side_effect=_requests.Timeout('timed out')):
+    with patch('candidatos.service.escolhas_service.http_client.get', side_effect=_requests.Timeout('timed out')):
         with pytest.raises(_requests.RequestException):
             EscolhasService.buscar_reconvocacoes()
 
@@ -255,7 +255,7 @@ def test_buscar_reconvocacoes_timeout_levanta_request_exception(settings):
 def test_buscar_reconvocacoes_usa_path_customizado(settings):
     settings.ESCOLHAS_API_URL = 'http://escolhas'
 
-    with patch('candidatos.service.escolhas_service.requests.get', return_value=_mock_response(200, [])) as mock_get:
+    with patch('candidatos.service.escolhas_service.http_client.get', return_value=_mock_response(200, [])) as mock_get:
         EscolhasService.buscar_reconvocacoes(path='/api/v2/reconvocacao/')
 
     called_url = mock_get.call_args[0][0]
@@ -270,7 +270,7 @@ def test_buscar_escolhas_retorna_lista(settings):
     settings.ESCOLHAS_API_URL = 'http://escolhas'
     payload = [{'uuid': 'e1', 'candidato_uuid': 'c1', 'situacao': 'escolha'}]
 
-    with patch('candidatos.service.escolhas_service.requests.get', return_value=_mock_response(200, payload)):
+    with patch('candidatos.service.escolhas_service.http_client.get', return_value=_mock_response(200, payload)):
         result = EscolhasService.buscar_escolhas(concurso_uuid='conc-uuid-1')
 
     assert result == payload
@@ -281,7 +281,7 @@ def test_buscar_escolhas_resposta_dict_com_results(settings):
     items = [{'uuid': 'e1'}]
     payload = {'count': 1, 'results': items}
 
-    with patch('candidatos.service.escolhas_service.requests.get', return_value=_mock_response(200, payload)):
+    with patch('candidatos.service.escolhas_service.http_client.get', return_value=_mock_response(200, payload)):
         result = EscolhasService.buscar_escolhas(concurso_uuid='conc-uuid-1')
 
     assert result == items
@@ -291,7 +291,7 @@ def test_buscar_escolhas_resposta_dict_sem_results(settings):
     settings.ESCOLHAS_API_URL = 'http://escolhas'
     payload = {'uuid': 'e1', 'situacao': 'escolha'}
 
-    with patch('candidatos.service.escolhas_service.requests.get', return_value=_mock_response(200, payload)):
+    with patch('candidatos.service.escolhas_service.http_client.get', return_value=_mock_response(200, payload)):
         result = EscolhasService.buscar_escolhas(concurso_uuid='conc-uuid-1')
 
     assert result == [payload]
@@ -300,7 +300,7 @@ def test_buscar_escolhas_resposta_dict_sem_results(settings):
 def test_buscar_escolhas_resposta_vazia(settings):
     settings.ESCOLHAS_API_URL = 'http://escolhas'
 
-    with patch('candidatos.service.escolhas_service.requests.get', return_value=_mock_response(200, [])):
+    with patch('candidatos.service.escolhas_service.http_client.get', return_value=_mock_response(200, [])):
         result = EscolhasService.buscar_escolhas(concurso_uuid='conc-uuid-1')
 
     assert result == []
@@ -313,7 +313,7 @@ def test_buscar_escolhas_resposta_vazia(settings):
 def test_buscar_escolhas_url_inclui_concurso_uuid(settings):
     settings.ESCOLHAS_API_URL = 'http://escolhas'
 
-    with patch('candidatos.service.escolhas_service.requests.get', return_value=_mock_response(200, [])) as mock_get:
+    with patch('candidatos.service.escolhas_service.http_client.get', return_value=_mock_response(200, [])) as mock_get:
         EscolhasService.buscar_escolhas(concurso_uuid='meu-uuid-123')
 
     called_url = mock_get.call_args[0][0]
@@ -323,7 +323,7 @@ def test_buscar_escolhas_url_inclui_concurso_uuid(settings):
 def test_buscar_escolhas_url_inclui_page_size(settings):
     settings.ESCOLHAS_API_URL = 'http://escolhas'
 
-    with patch('candidatos.service.escolhas_service.requests.get', return_value=_mock_response(200, [])) as mock_get:
+    with patch('candidatos.service.escolhas_service.http_client.get', return_value=_mock_response(200, [])) as mock_get:
         EscolhasService.buscar_escolhas(concurso_uuid='uuid-x')
 
     called_url = mock_get.call_args[0][0]
@@ -339,7 +339,7 @@ def test_buscar_escolhas_erro_http_levanta_excecao(settings):
     mock_resp = _mock_response(404)
     mock_resp.raise_for_status.side_effect = _requests.HTTPError('404 Not Found')
 
-    with patch('candidatos.service.escolhas_service.requests.get', return_value=mock_resp):
+    with patch('candidatos.service.escolhas_service.http_client.get', return_value=mock_resp):
         with pytest.raises(_requests.RequestException):
             EscolhasService.buscar_escolhas(concurso_uuid='uuid-x')
 
@@ -347,7 +347,7 @@ def test_buscar_escolhas_erro_http_levanta_excecao(settings):
 def test_buscar_escolhas_connection_error_levanta_request_exception(settings):
     settings.ESCOLHAS_API_URL = 'http://escolhas'
 
-    with patch('candidatos.service.escolhas_service.requests.get', side_effect=_requests.ConnectionError('refused')):
+    with patch('candidatos.service.escolhas_service.http_client.get', side_effect=_requests.ConnectionError('refused')):
         with pytest.raises(_requests.RequestException, match='Erro ao buscar escolhas'):
             EscolhasService.buscar_escolhas(concurso_uuid='uuid-x')
 
@@ -355,7 +355,7 @@ def test_buscar_escolhas_connection_error_levanta_request_exception(settings):
 def test_buscar_escolhas_timeout_levanta_request_exception(settings):
     settings.ESCOLHAS_API_URL = 'http://escolhas'
 
-    with patch('candidatos.service.escolhas_service.requests.get', side_effect=_requests.Timeout('timed out')):
+    with patch('candidatos.service.escolhas_service.http_client.get', side_effect=_requests.Timeout('timed out')):
         with pytest.raises(_requests.RequestException):
             EscolhasService.buscar_escolhas(concurso_uuid='uuid-x')
 
@@ -367,7 +367,7 @@ def test_buscar_escolhas_timeout_levanta_request_exception(settings):
 def test_buscar_escolhas_usa_path_customizado(settings):
     settings.ESCOLHAS_API_URL = 'http://escolhas'
 
-    with patch('candidatos.service.escolhas_service.requests.get', return_value=_mock_response(200, [])) as mock_get:
+    with patch('candidatos.service.escolhas_service.http_client.get', return_value=_mock_response(200, [])) as mock_get:
         EscolhasService.buscar_escolhas(concurso_uuid='uuid-x', path='/api/v2/escolhas/?situacao=escolha')
 
     called_url = mock_get.call_args[0][0]
@@ -381,7 +381,7 @@ def test_buscar_escolhas_usa_path_customizado(settings):
 def test_buscar_reconvocacoes_usa_timeout_padrao(settings):
     settings.ESCOLHAS_API_URL = 'http://escolhas'
 
-    with patch('candidatos.service.escolhas_service.requests.get', return_value=_mock_response(200, [])) as mock_get:
+    with patch('candidatos.service.escolhas_service.http_client.get', return_value=_mock_response(200, [])) as mock_get:
         EscolhasService.buscar_reconvocacoes()
 
     _, kwargs = mock_get.call_args
@@ -391,7 +391,7 @@ def test_buscar_reconvocacoes_usa_timeout_padrao(settings):
 def test_buscar_escolhas_usa_timeout_padrao(settings):
     settings.ESCOLHAS_API_URL = 'http://escolhas'
 
-    with patch('candidatos.service.escolhas_service.requests.get', return_value=_mock_response(200, [])) as mock_get:
+    with patch('candidatos.service.escolhas_service.http_client.get', return_value=_mock_response(200, [])) as mock_get:
         EscolhasService.buscar_escolhas(concurso_uuid='uuid-x')
 
     _, kwargs = mock_get.call_args
