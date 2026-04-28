@@ -3,7 +3,8 @@ import requests
 from typing import List, Dict, Any
 from django.conf import settings
 from rest_framework import status
-from candidatos.middleware import get_correlation_id
+from sigla_sdk.context import get_correlation_id
+from sigla_sdk.http.api_client import http_client
 
 
 logger = logging.getLogger(__name__)
@@ -50,7 +51,7 @@ class EscolhasService:
         )
         try:
             logger.info(f"Buscando reconvocações em: {url}")
-            response = requests.get(url, timeout=cls.DEFAULT_TIMEOUT)
+            response = http_client.get(url, timeout=cls.DEFAULT_TIMEOUT)
 
         except requests.RequestException as exc:
             logger.exception(f"Erro ao conectar com o microserviço de Escolhas: {exc}")
@@ -107,7 +108,7 @@ class EscolhasService:
             }
         )
         try:
-            response = requests.get(url, timeout=cls.DEFAULT_TIMEOUT)
+            response = http_client.get(url, timeout=cls.DEFAULT_TIMEOUT)
         except requests.RequestException as exc:
             logger.exception(f"Erro ao buscar escolhas: {exc}")
             raise requests.RequestException(f"Erro ao buscar escolhas: {exc}") from exc
