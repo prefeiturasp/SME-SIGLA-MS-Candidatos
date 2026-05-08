@@ -78,21 +78,21 @@ def lote():
 
 class TestCalcularQuantidade:
     def test_calcular_quantidade_nna(self):
-        assert calcular_quantidade_nna(0) == 0
-        assert calcular_quantidade_nna(10) == 2  # 10 * 0.2
-        assert calcular_quantidade_nna(7) == 2   # ceil(1.4)
-        assert calcular_quantidade_nna(100) == 20
+        assert calcular_quantidade_nna(0, 0.2) == 0
+        assert calcular_quantidade_nna(10, 0.2) == 2  # 10 * 0.2
+        assert calcular_quantidade_nna(7, 0.2) == 2   # ceil(1.4)
+        assert calcular_quantidade_nna(100, 0.2) == 20
 
     def test_calcular_quantidade_pcd(self):
-        assert calcular_quantidade_pcd(0) == 0
-        assert calcular_quantidade_pcd(100) == 5   # 5.0, frac=0 -> floor 5
-        assert calcular_quantidade_pcd(30) == 2    # 1.5, frac>=0.5 -> ceil 2
-        assert calcular_quantidade_pcd(20) == 1    # 1.0, frac=0 -> floor 1
-        assert calcular_quantidade_pcd(10) == 1    # 0.5, frac>=0.5 -> ceil 1
+        assert calcular_quantidade_pcd(0, 0.05) == 0
+        assert calcular_quantidade_pcd(100, 0.05) == 5   # 5.0, frac=0 -> floor 5
+        assert calcular_quantidade_pcd(30, 0.05) == 2    # 1.5, frac>=0.5 -> ceil 2
+        assert calcular_quantidade_pcd(20, 0.05) == 1    # 1.0, frac=0 -> floor 1
+        assert calcular_quantidade_pcd(10, 0.05) == 1    # 0.5, frac>=0.5 -> ceil 1
 
     def test_calcular_quantidade_geral(self):
-        assert calcular_quantidade_geral(100) == 100 - 20 - 5  # 75
-        assert calcular_quantidade_geral(10) == 10 - 2 - 1  # 7
+        assert calcular_quantidade_geral(100, 0.2, 0.05) == 100 - 20 - 5  # 75
+        assert calcular_quantidade_geral(10, 0.2, 0.05) == 10 - 2 - 1  # 7
 
 
 class TestCalcularPosicao:
@@ -244,39 +244,46 @@ class TestGerarSequenciaConvocados:
     def test_sem_candidatos_retorna_lista_vazia(self, lote):
         with patch("candidatos.service.calculo_habilitados_service.atualizar_ranking"):
             with patch("candidatos.service.calculo_habilitados_service.atualizar_ranking_escolha"):
-                result = gerar_sequencia_convocados(5, lote=lote, codigo_cargo="CARGO1")
-        assert result == []
+                itens, porcentagem_nna, porcentagem_pcd = gerar_sequencia_convocados(
+                    5, lote=lote, codigo_cargo="CARGO1"
+                )
+        assert itens == []
+        assert porcentagem_nna == 0.2
+        assert porcentagem_pcd == 0.05
 
     def test_retorna_geral_quando_so_geral_disponivel(self, lote):
-        # total_convocados=3 → geral_total=2, nna_total=1 (20%). Só há gerais, então retorna 2.
+        # total_convocados=3 → geral_total=2, nna_total=1 (20%).
+        # Como o serviço limita a lista de GERAL por geral_total, retorna 2 mesmo havendo gerais disponíveis.
         for i in range(1, 6):
             _cc(lote, codigo_cargo="CARGO1", classificacao=i, classificacao_nna=None, classificacao_pcd=None)
         with patch("candidatos.service.calculo_habilitados_service.atualizar_ranking"):
             with patch("candidatos.service.calculo_habilitados_service.atualizar_ranking_escolha"):
-                result = gerar_sequencia_convocados(3, lote=lote, codigo_cargo="CARGO1")
-        assert len(result) == 2
-        assert all(getattr(it, "classificacao", None) is not None for it in result)
+                itens, _, _ = gerar_sequencia_convocados(3, lote=lote, codigo_cargo="CARGO1")
+        assert len(itens) == 2
+        assert all(getattr(it, "classificacao", None) is not None for it in itens)
 
     def test_respeita_quantidade_solicitada(self, lote):
-        # total_convocados=4 → geral_total=3, nna_total=1. Com só gerais disponíveis retorna 3.
+        # total_convocados=4 → geral_total=3, nna_total=1.
+        # Sem NNA, retorna 3 (limitado a geral_total).
         for i in range(1, 11):
             _cc(lote, codigo_cargo="CARGO1", classificacao=i, classificacao_nna=None, classificacao_pcd=None)
         with patch("candidatos.service.calculo_habilitados_service.atualizar_ranking"):
             with patch("candidatos.service.calculo_habilitados_service.atualizar_ranking_escolha"):
-                result = gerar_sequencia_convocados(4, lote=lote, codigo_cargo="CARGO1")
-        assert len(result) == 3
+                itens, _, _ = gerar_sequencia_convocados(4, lote=lote, codigo_cargo="CARGO1")
+        assert len(itens) == 3
 
     def test_inclui_nna_e_pcd_quando_disponiveis(self, lote):
-        # total_convocados=4 → geral_total=3, nna_total=1, pcd_total=0. 2 gerais + 1 NNA = 3 itens.
+        # total_convocados=4 → geral_total=3, nna_total=1, pcd_total=0.
+        # Mesmo havendo PCD disponível, pcd_total=0 então retorna 3 (2 gerais + 1 NNA).
         _cc(lote, codigo_cargo="CARGO1", classificacao=1, classificacao_nna=None, classificacao_pcd=None)
         _cc(lote, codigo_cargo="CARGO1", classificacao=2, classificacao_nna=None, classificacao_pcd=None)
         _cc(lote, codigo_cargo="CARGO1", classificacao_nna=1, classificacao_pcd=None, categoria_efetiva="NNA")
         _cc(lote, codigo_cargo="CARGO1", classificacao_pcd=1, classificacao_nna=None, categoria_efetiva="PCD")
         with patch("candidatos.service.calculo_habilitados_service.atualizar_ranking"):
             with patch("candidatos.service.calculo_habilitados_service.atualizar_ranking_escolha"):
-                result = gerar_sequencia_convocados(4, lote=lote, codigo_cargo="CARGO1")
-        assert len(result) == 3
-        categorias = [getattr(it, "categoria_efetiva", None) for it in result]
+                itens, _, _ = gerar_sequencia_convocados(4, lote=lote, codigo_cargo="CARGO1")
+        assert len(itens) == 3
+        categorias = [getattr(it, "categoria_efetiva", None) for it in itens]
         assert "NNA" in categorias or "GERAL" in categorias
         assert "PCD" in categorias or "GERAL" in categorias
 
@@ -286,48 +293,48 @@ class TestGerarSequenciaConvocados:
         _cc(lote, codigo_cargo="CARGO1", classificacao=2)
         with patch("candidatos.service.calculo_habilitados_service.atualizar_ranking"):
             with patch("candidatos.service.calculo_habilitados_service.atualizar_ranking_escolha"):
-                result = gerar_sequencia_convocados(
+                itens, _, _ = gerar_sequencia_convocados(
                     3, lote=lote, codigo_cargo="CARGO1",
                     escolhas_candidato_uuids=[str(cc1.uuid)],
                 )
-        assert len(result) == 2
-        assert result[0].uuid == cc1.uuid
+        assert len(itens) == 2
+        assert itens[0].uuid == cc1.uuid
 
     def test_nao_conta_eliminados_em_convocados(self, lote):
         _cc(lote, codigo_cargo="CARGO1", classificacao=1, foi_convocado=True, eliminado=False)
         _cc(lote, codigo_cargo="CARGO1", classificacao=2, foi_convocado=False, eliminado=False)
         with patch("candidatos.service.calculo_habilitados_service.atualizar_ranking"):
             with patch("candidatos.service.calculo_habilitados_service.atualizar_ranking_escolha"):
-                result = gerar_sequencia_convocados(2, lote=lote, codigo_cargo="CARGO1")
-        assert len(result) >= 1
+                itens, _, _ = gerar_sequencia_convocados(2, lote=lote, codigo_cargo="CARGO1")
+        assert len(itens) >= 1
 
     def test_atribui_ranking_nos_itens(self, lote):
-        # total_convocados=3 → geral_total=2, nna_total=1. Só gerais → 2 itens.
+        # total_convocados=3 → geral_total=2, nna_total=1. Sem NNA retorna 2.
         for i in range(1, 4):
             _cc(lote, codigo_cargo="CARGO1", classificacao=i)
         with patch("candidatos.service.calculo_habilitados_service.atualizar_ranking") as mock_rank:
             with patch("candidatos.service.calculo_habilitados_service.atualizar_ranking_escolha"):
-                result = gerar_sequencia_convocados(3, lote=lote, codigo_cargo="CARGO1")
-        assert len(result) == 2
+                itens, _, _ = gerar_sequencia_convocados(3, lote=lote, codigo_cargo="CARGO1")
+        assert len(itens) == 2
         mock_rank.assert_called_once()
         args = mock_rank.call_args[0][0]
         assert len(args) == 2
 
     def test_com_processo_uuid_chama_atualizacao_historicos(self, lote):
-        # total_convocados=2 → geral_total=1, nna_total=1. Só gerais → 1 item.
+        # total_convocados=2 → geral_total=1, nna_total=1. Sem NNA retorna 1.
         for i in range(1, 3):
             _cc(lote, codigo_cargo="CARGO1", classificacao=i)
         processo_uuid = uuid4()
         with patch("candidatos.service.calculo_habilitados_service.atualizar_ranking"):
             with patch("candidatos.service.calculo_habilitados_service.atualizar_ranking_escolha"):
-                result = gerar_sequencia_convocados(
+                itens, _, _ = gerar_sequencia_convocados(
                     2, lote=lote, codigo_cargo="CARGO1", processo_uuid=processo_uuid
                 )
-        assert len(result) == 1
+        assert len(itens) == 1
 
     def test_marca_promovido_para_geral_quando_geral_tem_classificacao_nna(self, lote):
         """Candidato em geral_list com classificacao_nna e sem histórico NNA é marcado promovido_de NNA."""
-        # total_convocados=5 → geral_total=4. Incluímos 2: um só geral, outro com classificacao_nna (entra em geral_list).
+        # total_convocados=5 → pode retornar mais itens; aqui validamos apenas a promoção.
         _cc(lote, codigo_cargo="CARGO1", classificacao=1, classificacao_nna=None, classificacao_pcd=None)
         cc_nna = _cc(
             lote, codigo_cargo="CARGO1", classificacao=2,
@@ -335,8 +342,8 @@ class TestGerarSequenciaConvocados:
         )
         with patch("candidatos.service.calculo_habilitados_service.atualizar_ranking"):
             with patch("candidatos.service.calculo_habilitados_service.atualizar_ranking_escolha"):
-                result = gerar_sequencia_convocados(5, lote=lote, codigo_cargo="CARGO1")
-        assert len(result) == 2
+                itens, _, _ = gerar_sequencia_convocados(5, lote=lote, codigo_cargo="CARGO1")
+        assert len(itens) >= 2
         cc_nna.refresh_from_db()
         assert cc_nna.promovido_para_geral is True
         assert cc_nna.promovido_de == "NNA"
@@ -355,6 +362,6 @@ class TestGerarSequenciaConvocados:
         )
         with patch("candidatos.service.calculo_habilitados_service.atualizar_ranking"):
             with patch("candidatos.service.calculo_habilitados_service.atualizar_ranking_escolha"):
-                result = gerar_sequencia_convocados(5, lote=lote, codigo_cargo="")
-        assert len(result) == 1
-        assert result[0].codigo_inscricao == "vazio"
+                itens, _, _ = gerar_sequencia_convocados(5, lote=lote, codigo_cargo="")
+        assert len(itens) == 1
+        assert itens[0].codigo_inscricao == "vazio"

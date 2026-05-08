@@ -318,7 +318,7 @@ def test_habilitados_calculados_sucesso_mockando_externos(
         {},
         {"candidato_uuid": "u2"},
     ]
-    mock_gerar_sequencia.return_value = []
+    mock_gerar_sequencia.return_value = ([], 0.2, 0.05)
 
     url = reverse("habilitados-calculados")
     resp = api_client.get(
@@ -336,6 +336,8 @@ def test_habilitados_calculados_sucesso_mockando_externos(
     assert resp.data["concurso_uuid"] == str(concurso_uuid)
     assert resp.data["lote_uuid"] == str(lote.uuid)
     assert resp.data["results"] == []
+    assert resp.data["porcentagem_nna"] == 0.2
+    assert resp.data["porcentagem_pcd"] == 0.05
 
     mock_buscar_escolhas.assert_called_once_with(concurso_uuid=str(concurso_uuid))
     mock_gerar_sequencia.assert_called_once()
@@ -358,7 +360,7 @@ def test_habilitados_calculados_quando_escolhas_falha_continua_com_lista_vazia(
     processo_uuid = uuid4()
     lote = ConcursoCandidatosLote.objects.create(concurso_uuid=concurso_uuid, concurso_nome="X")
 
-    mock_gerar_sequencia.return_value = []
+    mock_gerar_sequencia.return_value = ([], 0.2, 0.05)
 
     url = reverse("habilitados-calculados")
     resp = api_client.get(
