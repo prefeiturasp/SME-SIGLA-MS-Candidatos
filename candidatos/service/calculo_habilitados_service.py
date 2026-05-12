@@ -176,28 +176,67 @@ def gerar_sequencia_convocados(total_convocados, lote=None, escolhas_candidato_u
     geral_total = max(0, cumul_geral - convocados_geral)
     sequencia = ['G'] * total_convocados
 
-    qs_geral = (
-        ConcursoCandidato
-        .objects
-        .filter(lote=lote, foi_convocado=False, eliminado=False, codigo_cargo=codigo_cargo)
-        .exclude(classificacao__isnull=True)
-        .order_by('classificacao')[:geral_total]
-    )
-    uuids_qs_geral = qs_geral.values_list('uuid', flat=True)
-    qs_nna = (
-        ConcursoCandidato
-        .objects
-        .filter(lote=lote, foi_convocado=False, eliminado=False, classificacao_nna__isnull=False, codigo_cargo=codigo_cargo, categoria_efetiva='NNA')
-        .exclude(uuid__in=uuids_qs_geral)
-        .order_by('classificacao_nna')[:nna_total]
-    )
-    qs_pcd = (
-        ConcursoCandidato
-        .objects
-        .filter(lote=lote, foi_convocado=False, eliminado=False, classificacao_pcd__isnull=False, codigo_cargo=codigo_cargo, categoria_efetiva='PCD')
-        .exclude(uuid__in=uuids_qs_geral)
-        .order_by('classificacao_pcd')[:pcd_total]
-    )
+    def calcular_quantidades_por_tipo(geral, nna, pcd):
+        qs_geral = (
+            ConcursoCandidato
+            .objects
+            .filter(lote=lote, foi_convocado=False, eliminado=False, codigo_cargo=codigo_cargo)
+            .exclude(classificacao__isnull=True)
+            .order_by('classificacao')[:geral]
+        )
+        uuids_qs_geral = qs_geral.values_list('uuid', flat=True)
+        qs_nna = (
+            ConcursoCandidato
+            .objects
+            .filter(lote=lote, foi_convocado=False, eliminado=False, classificacao_nna__isnull=False, codigo_cargo=codigo_cargo, categoria_efetiva='NNA')
+            .exclude(uuid__in=uuids_qs_geral)
+            .order_by('classificacao_nna')[:nna]
+        )
+        tem_nna_faltante, quantidade_faltante_nna = qs_nna.count() < nna, nna - qs_nna.count()
+        qs_pcd = (
+            ConcursoCandidato
+            .objects
+            .filter(lote=lote, foi_convocado=False, eliminado=False, classificacao_pcd__isnull=False, codigo_cargo=codigo_cargo, categoria_efetiva='PCD')
+            .exclude(uuid__in=uuids_qs_geral)
+            .order_by('classificacao_pcd')[:pcd]
+        )
+        tem_pcd_faltante, quantidade_faltante_pcd = qs_pcd.count() < pcd, pcd - qs_pcd.count()
+
+        return qs_geral, qs_nna, qs_pcd, tem_nna_faltante, quantidade_faltante_nna, tem_pcd_faltante, quantidade_faltante_pcd
+
+    def calcular_com_recalculo_se_necessario(geral, nna, pcd):
+        """
+        Executa o cálculo por tipo e, caso faltem NNA/PCD, recalcula apenas mais uma vez
+        ajustando os totais (no máximo 2 execuções).
+        """
+        (
+            qs_geral,
+            qs_nna,
+            qs_pcd,
+            tem_nna_faltante,
+            quantidade_faltante_nna,
+            tem_pcd_faltante,
+            quantidade_faltante_pcd,
+        ) = calcular_quantidades_por_tipo(geral, nna, pcd)
+
+        if tem_nna_faltante or tem_pcd_faltante:
+            geral = geral + quantidade_faltante_nna + quantidade_faltante_pcd
+            nna = nna + quantidade_faltante_nna
+            pcd = pcd + quantidade_faltante_pcd
+            return calcular_quantidades_por_tipo(geral, nna, pcd)
+
+        return (
+            qs_geral,
+            qs_nna,
+            qs_pcd
+        )
+
+    (
+        qs_geral,
+        qs_nna,
+        qs_pcd,
+        *args
+    ) = calcular_com_recalculo_se_necessario(geral_total, nna_total, pcd_total)
     nna_list = list(qs_nna)
     pcd_list = list(qs_pcd)
     geral_list = list(qs_geral)
