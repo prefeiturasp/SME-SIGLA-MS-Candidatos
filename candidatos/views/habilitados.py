@@ -25,7 +25,7 @@ from candidatos.service.escolhas_service import EscolhasService
 from candidatos.service.ranking_service import atualizar_ranking, atualizar_ranking_escolha
 from candidatos.service.reclassificacao_service import aplicar_reclassificacao
 from candidatos.service.eliminacao_service import aplicar_eliminacao
-from candidatos.middleware import get_correlation_id
+from sigla_sdk.context import get_correlation_id
 
 
 logger = logging.getLogger(__name__)

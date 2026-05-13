@@ -2,7 +2,7 @@ import logging
 from typing import Tuple, Optional
 from django.db import transaction
 from candidatos.models import ConcursoCandidato, ConcursoCandidatoReclassificacao
-from candidatos.middleware import get_correlation_id
+from sigla_sdk.context import get_correlation_id
 
 
 logger = logging.getLogger(__name__)
