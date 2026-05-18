@@ -2,24 +2,22 @@ import math
 from typing import Any, Dict, Mapping, Iterable
 from django.db.models import QuerySet, Q
 from django.utils import timezone
-from candidatos.models import ConcursoCandidato
+from candidatos.models import ConcursoCandidato, Parametrizacao
 from .ranking_service import atualizar_ranking, atualizar_ranking_escolha
 
 
-PORCENTAGEM_NNA = 0.2
-PORCENTAGEM_PCD = 0.05
 
+def calcular_quantidade_nna(total_candidatos, porcentagem_nna):
+    return math.ceil(total_candidatos * porcentagem_nna)
 
-def calcular_quantidade_nna(total_candidatos):
-    return math.ceil(total_candidatos * PORCENTAGEM_NNA)
-
-def calcular_quantidade_pcd(total_candidatos):
-    valor = total_candidatos * PORCENTAGEM_PCD
+def calcular_quantidade_pcd(total_candidatos, porcentagem_pcd):
+    valor = total_candidatos * porcentagem_pcd
     frac = valor - math.floor(valor)
     return math.ceil(valor) if frac >= 0.5 else math.floor(valor)
 
-def calcular_quantidade_geral(total_candidatos):
-    return total_candidatos - calcular_quantidade_nna(total_candidatos) - calcular_quantidade_pcd(total_candidatos)
+def calcular_quantidade_geral(total_candidatos, porcentagem_nna, porcentagem_pcd):
+    return total_candidatos - calcular_quantidade_nna(total_candidatos, porcentagem_nna) \
+        - calcular_quantidade_pcd(total_candidatos, porcentagem_pcd)
 
 def calcular_posicao_nna(posicao):
     return (5 * posicao) - 4
@@ -149,6 +147,9 @@ def gerar_sequencia_convocados(total_convocados, lote=None, escolhas_candidato_u
       Em caso de colisão, PCD tem prioridade (é alocado primeiro) e o outro tipo é deslocado
       para o próximo índice disponível.
     """
+    parametrizacao = Parametrizacao.objects.first()
+    porcentagem_nna = parametrizacao.porcentagem_nna
+    porcentagem_pcd = parametrizacao.porcentagem_pcd
     if total_convocados <= 0:
         return []
     # Quantidade já convocada (acumulado) por categoria efetiva
@@ -165,9 +166,9 @@ def gerar_sequencia_convocados(total_convocados, lote=None, escolhas_candidato_u
 
     # Totais cumulativos alvo (já convocados + novo lote)
     cumul_total = convocados_total + total_convocados
-    cumul_nna = calcular_quantidade_nna(cumul_total)
-    cumul_pcd = calcular_quantidade_pcd(cumul_total)
-    cumul_geral = calcular_quantidade_geral(cumul_total)
+    cumul_nna = calcular_quantidade_nna(cumul_total, porcentagem_nna)
+    cumul_pcd = calcular_quantidade_pcd(cumul_total, porcentagem_pcd)
+    cumul_geral = calcular_quantidade_geral(cumul_total, porcentagem_nna, porcentagem_pcd)
 
     # Necessidade deste lote (cumulativo alvo - já convocados)
     nna_total = max(0, cumul_nna - convocados_nna)
@@ -175,28 +176,67 @@ def gerar_sequencia_convocados(total_convocados, lote=None, escolhas_candidato_u
     geral_total = max(0, cumul_geral - convocados_geral)
     sequencia = ['G'] * total_convocados
 
-    qs_geral = (
-        ConcursoCandidato
-        .objects
-        .filter(lote=lote, foi_convocado=False, eliminado=False, codigo_cargo=codigo_cargo)
-        .exclude(classificacao__isnull=True)
-        .order_by('classificacao')[:geral_total]
-    )
-    uuids_qs_geral = qs_geral.values_list('uuid', flat=True)
-    qs_nna = (
-        ConcursoCandidato
-        .objects
-        .filter(lote=lote, foi_convocado=False, eliminado=False, classificacao_nna__isnull=False, codigo_cargo=codigo_cargo, categoria_efetiva='NNA')
-        .exclude(uuid__in=uuids_qs_geral)
-        .order_by('classificacao_nna')[:nna_total]
-    )
-    qs_pcd = (
-        ConcursoCandidato
-        .objects
-        .filter(lote=lote, foi_convocado=False, eliminado=False, classificacao_pcd__isnull=False, codigo_cargo=codigo_cargo, categoria_efetiva='PCD')
-        .exclude(uuid__in=uuids_qs_geral)
-        .order_by('classificacao_pcd')[:pcd_total]
-    )
+    def calcular_quantidades_por_tipo(geral, nna, pcd):
+        qs_geral = (
+            ConcursoCandidato
+            .objects
+            .filter(lote=lote, foi_convocado=False, eliminado=False, codigo_cargo=codigo_cargo)
+            .exclude(classificacao__isnull=True)
+            .order_by('classificacao')[:geral]
+        )
+        uuids_qs_geral = qs_geral.values_list('uuid', flat=True)
+        qs_nna = (
+            ConcursoCandidato
+            .objects
+            .filter(lote=lote, foi_convocado=False, eliminado=False, classificacao_nna__isnull=False, codigo_cargo=codigo_cargo, categoria_efetiva='NNA')
+            .exclude(uuid__in=uuids_qs_geral)
+            .order_by('classificacao_nna')[:nna]
+        )
+        tem_nna_faltante, quantidade_faltante_nna = qs_nna.count() < nna, nna - qs_nna.count()
+        qs_pcd = (
+            ConcursoCandidato
+            .objects
+            .filter(lote=lote, foi_convocado=False, eliminado=False, classificacao_pcd__isnull=False, codigo_cargo=codigo_cargo, categoria_efetiva='PCD')
+            .exclude(uuid__in=uuids_qs_geral)
+            .order_by('classificacao_pcd')[:pcd]
+        )
+        tem_pcd_faltante, quantidade_faltante_pcd = qs_pcd.count() < pcd, pcd - qs_pcd.count()
+
+        return qs_geral, qs_nna, qs_pcd, tem_nna_faltante, quantidade_faltante_nna, tem_pcd_faltante, quantidade_faltante_pcd
+
+    def calcular_com_recalculo_se_necessario(geral, nna, pcd):
+        """
+        Executa o cálculo por tipo e, caso faltem NNA/PCD, recalcula apenas mais uma vez
+        ajustando os totais (no máximo 2 execuções).
+        """
+        (
+            qs_geral,
+            qs_nna,
+            qs_pcd,
+            tem_nna_faltante,
+            quantidade_faltante_nna,
+            tem_pcd_faltante,
+            quantidade_faltante_pcd,
+        ) = calcular_quantidades_por_tipo(geral, nna, pcd)
+
+        if tem_nna_faltante or tem_pcd_faltante:
+            geral = geral + quantidade_faltante_nna + quantidade_faltante_pcd
+            nna = nna + quantidade_faltante_nna
+            pcd = pcd + quantidade_faltante_pcd
+            return calcular_quantidades_por_tipo(geral, nna, pcd)
+
+        return (
+            qs_geral,
+            qs_nna,
+            qs_pcd
+        )
+
+    (
+        qs_geral,
+        qs_nna,
+        qs_pcd,
+        *args
+    ) = calcular_com_recalculo_se_necessario(geral_total, nna_total, pcd_total)
     nna_list = list(qs_nna)
     pcd_list = list(qs_pcd)
     geral_list = list(qs_geral)
@@ -394,4 +434,4 @@ def gerar_sequencia_convocados(total_convocados, lote=None, escolhas_candidato_u
     # Persiste o ranking com a posição final (1-based) para não ficar 0
     atualizar_ranking(final_itens)
     atualizar_ranking_escolha(final_itens)
-    return final_itens
+    return final_itens, porcentagem_nna, porcentagem_pcd

@@ -25,7 +25,7 @@ from candidatos.service.escolhas_service import EscolhasService
 from candidatos.service.ranking_service import atualizar_ranking, atualizar_ranking_escolha
 from candidatos.service.reclassificacao_service import aplicar_reclassificacao
 from candidatos.service.eliminacao_service import aplicar_eliminacao
-from candidatos.middleware import get_correlation_id
+from sigla_sdk.context import get_correlation_id
 
 
 logger = logging.getLogger(__name__)
@@ -644,14 +644,16 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         except Exception as exc:
             logger.error(f"Erro ao buscar escolhas: {exc}")
             escolhas_candidato_uuids = []
-        itens = gerar_sequencia_convocados(quantidade, lote, escolhas_candidato_uuids, codigo_cargo, processo_uuid)
+        itens, porcentagem_nna, porcentagem_pcd = gerar_sequencia_convocados(quantidade, lote, escolhas_candidato_uuids, codigo_cargo, processo_uuid)
         serializer = self.get_serializer(itens, many=True)
 
         return Response({
             'quantidade': quantidade,
             'concurso_uuid': str(concurso_uuid),
             'lote_uuid': str(lote.uuid),
-            'results': serializer.data
+            'results': serializer.data,
+            'porcentagem_nna': porcentagem_nna,
+            'porcentagem_pcd': porcentagem_pcd
         })
 
     @action(detail=False, methods=['get'], url_path='numeros-lote')
