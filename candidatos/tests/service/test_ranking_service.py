@@ -1,14 +1,23 @@
 """
 Testes unitários para candidatos/service/ranking_service.py.
-Cobre atualizar_ranking (linhas 4-12) e atualizar_ranking_escolha (linhas 15-41).
+Cobre atualizar_ranking (linhas 4-12) e atualizar_ranking_escolha (linhas
+15-41).
 """
-import pytest
-from unittest.mock import patch, MagicMock
+
+from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
-from candidatos.models import Candidato, ConcursoCandidato, ConcursoCandidatosLote
-from candidatos.service.ranking_service import atualizar_ranking, atualizar_ranking_escolha
+import pytest
 
+from candidatos.models import (
+    Candidato,
+    ConcursoCandidato,
+    ConcursoCandidatosLote,
+)
+from candidatos.service.ranking_service import (
+    atualizar_ranking,
+    atualizar_ranking_escolha,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -67,7 +76,10 @@ def test_atualizar_ranking_atribui_ranking_e_persiste(dois_cc):
 def test_atualizar_ranking_excecao_nao_propaga():
     """Em caso de erro no bulk_update, o except faz pass (linhas 10-12)."""
     itens = [MagicMock(spec=ConcursoCandidato)]
-    with patch("candidatos.service.ranking_service.ConcursoCandidato.objects.bulk_update", side_effect=Exception("db")):
+    with patch(
+        "candidatos.service.ranking_service.ConcursoCandidato.objects.bulk_update",
+        side_effect=Exception("db"),
+    ):
         atualizar_ranking(itens)
     assert itens[0].ranking == 1
 
@@ -80,14 +92,23 @@ def test_atualizar_ranking_escolha_lista_vazia_nao_quebra():
 
 
 def test_atualizar_ranking_escolha_ordena_pcd_primeiro_e_persiste(lote):
-    """PCD primeiro por classificacao, depois demais; atribui ranking_escolha (linhas 24-37)."""
+    """PCD primeiro por classificacao, depois demais; atribui ranking_escolha
+    (linhas 24-37)."""
     c_geral = ConcursoCandidato.objects.create(
-        candidato=_candidato(), lote=lote, codigo_inscricao="g",
-        classificacao=1, classificacao_pcd=None, ranking_escolha=0
+        candidato=_candidato(),
+        lote=lote,
+        codigo_inscricao="g",
+        classificacao=1,
+        classificacao_pcd=None,
+        ranking_escolha=0,
     )
     c_pcd = ConcursoCandidato.objects.create(
-        candidato=_candidato(), lote=lote, codigo_inscricao="p",
-        classificacao=5, classificacao_pcd=1, ranking_escolha=0
+        candidato=_candidato(),
+        lote=lote,
+        codigo_inscricao="p",
+        classificacao=5,
+        classificacao_pcd=1,
+        ranking_escolha=0,
     )
     itens = [c_geral, c_pcd]
     atualizar_ranking_escolha(itens)
@@ -102,6 +123,9 @@ def test_atualizar_ranking_escolha_excecao_nao_propaga():
     itens = [MagicMock(spec=ConcursoCandidato)]
     itens[0].classificacao_pcd = None
     itens[0].classificacao = 1
-    with patch("candidatos.service.ranking_service.ConcursoCandidato.objects.bulk_update", side_effect=Exception("db")):
+    with patch(
+        "candidatos.service.ranking_service.ConcursoCandidato.objects.bulk_update",
+        side_effect=Exception("db"),
+    ):
         atualizar_ranking_escolha(itens)
     assert itens[0].ranking_escolha == 1

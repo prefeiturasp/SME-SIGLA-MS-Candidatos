@@ -1,19 +1,21 @@
 """
-Testes unitários para o ViewSet de candidatos reclassificados (GET /reclassificados/).
+Testes unitários para o ViewSet de candidatos reclassificados (GET
+/reclassificados/).
 """
-import pytest
+
 from uuid import uuid4
+
+import pytest
 from django.urls import reverse
 from rest_framework.test import APIClient
 
 from candidatos.models import (
     Candidato,
     ConcursoCandidato,
-    ConcursoCandidatosLote,
     ConcursoCandidatoReclassificacao,
+    ConcursoCandidatosLote,
 )
 from candidatos.service.reclassificacao_service import aplicar_reclassificacao
-
 
 pytestmark = pytest.mark.django_db
 
@@ -80,7 +82,9 @@ class TestReclassificadosViewSetList:
         assert resp.data["nna"] == []
         assert resp.data["pcd"] == []
 
-    def test_list_com_reclassificados_nna_e_pcd_retorna_agrupados(self, api_client, lote):
+    def test_list_com_reclassificados_nna_e_pcd_retorna_agrupados(
+        self, api_client, lote
+    ):
         processo_uuid = uuid4()
         # Candidato reclassificado de NNA
         c_nna = _criar_candidato("NNA Reclass", "111.111.111-11")
@@ -100,9 +104,9 @@ class TestReclassificadosViewSetList:
             motivo="",
             executado_por="",
         )
-        ConcursoCandidatoReclassificacao.objects.filter(concurso_candidato=cc_nna).update(
-            processo_uuid=processo_uuid
-        )
+        ConcursoCandidatoReclassificacao.objects.filter(
+            concurso_candidato=cc_nna
+        ).update(processo_uuid=processo_uuid)
 
         # Candidato reclassificado de PCD
         c_pcd = _criar_candidato("PCD Reclass", "222.222.222-22")
@@ -122,9 +126,9 @@ class TestReclassificadosViewSetList:
             motivo="",
             executado_por="",
         )
-        ConcursoCandidatoReclassificacao.objects.filter(concurso_candidato=cc_pcd).update(
-            processo_uuid=processo_uuid
-        )
+        ConcursoCandidatoReclassificacao.objects.filter(
+            concurso_candidato=cc_pcd
+        ).update(processo_uuid=processo_uuid)
 
         url = reverse("reclassificados-list")
         resp = api_client.get(
