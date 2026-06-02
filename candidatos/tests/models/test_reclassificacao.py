@@ -1,16 +1,17 @@
 """
 Testes unitários para o modelo ConcursoCandidatoReclassificacao.
 """
-import pytest
+
 from uuid import uuid4
+
+import pytest
 
 from candidatos.models import (
     Candidato,
     ConcursoCandidato,
-    ConcursoCandidatosLote,
     ConcursoCandidatoReclassificacao,
+    ConcursoCandidatosLote,
 )
-
 
 pytestmark = pytest.mark.django_db
 
@@ -78,7 +79,9 @@ class TestConcursoCandidatoReclassificacao:
         assert rec.desclassificado_de == "PCD"
         assert rec.processo_uuid is not None
 
-    def test_str_retorna_concurso_candidato_id_e_cota(self, concurso_candidato):
+    def test_str_retorna_concurso_candidato_id_e_cota(
+        self, concurso_candidato
+    ):
         rec = ConcursoCandidatoReclassificacao.objects.create(
             concurso_candidato=concurso_candidato,
             desclassificado_de="NNA",
@@ -95,7 +98,9 @@ class TestConcursoCandidatoReclassificacao:
             concurso_candidato=concurso_candidato,
             desclassificado_de="PCD",
         )
-        qs = ConcursoCandidatoReclassificacao.objects.filter(concurso_candidato=concurso_candidato)
+        qs = ConcursoCandidatoReclassificacao.objects.filter(
+            concurso_candidato=concurso_candidato
+        )
         assert list(qs)[0].desclassificado_de == "PCD"  # mais recente primeiro
 
     def test_related_name_historicos_reclassificacao(self, concurso_candidato):
@@ -104,7 +109,10 @@ class TestConcursoCandidatoReclassificacao:
             desclassificado_de="NNA",
         )
         assert concurso_candidato.historicos_reclassificacao.count() == 1
-        assert concurso_candidato.historicos_reclassificacao.first().desclassificado_de == "NNA"
+        assert (
+            concurso_candidato.historicos_reclassificacao.first().desclassificado_de
+            == "NNA"
+        )
 
     def test_classificacao_choices(self):
         assert ConcursoCandidatoReclassificacao.CLASSIFICACAO_CHOICES == (
