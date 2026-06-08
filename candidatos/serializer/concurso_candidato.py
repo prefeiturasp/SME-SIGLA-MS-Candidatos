@@ -326,3 +326,26 @@ class ConcursoCandidatoEliminadoSerializer(serializers.ModelSerializer):
             "rg": getattr(c, "rg", ""),
             "registro_funcional": getattr(c, "registro_funcional", ""),
         }
+
+
+class ExtracaoDadosFiltroSerializer(serializers.Serializer):
+    """Filtro de um ano: ano + lista de processo_uuids daquele ano."""
+
+    ano = serializers.IntegerField()
+    processo_uuids = serializers.ListField(
+        child=serializers.UUIDField(),
+        allow_empty=True,
+    )
+
+
+class ExtracaoDadosSerializer(serializers.Serializer):
+    """
+    Payload do endpoint de extração de dados de habilitados.
+
+    - concurso_uuid: concurso cujos habilitados (todos os lotes) serão contados.
+    - filtros: lista de {ano, processo_uuids} para contar convocados /
+      não-convocados por ano.
+    """
+
+    concurso_uuid = serializers.UUIDField()
+    filtros = ExtracaoDadosFiltroSerializer(many=True)

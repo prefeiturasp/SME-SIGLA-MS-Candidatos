@@ -15,6 +15,7 @@ from candidatos.serializers import (
     ConcursoCandidatoCpfUuidSerializer,
     ConcursoCandidatoSerializer,
     EliminarSerializer,
+    ExtracaoDadosSerializer,
     HabilitadosCalculadosParamsSerializer,
     ReclassificarSerializer,
     SalvarLotesSerializer,
@@ -25,6 +26,7 @@ from candidatos.service.calculo_habilitados_service import (
 from candidatos.service.eliminacao_service import aplicar_eliminacao
 from candidatos.service.escolhas_service import EscolhasService
 from candidatos.service.exceptions import SalvarLotesException
+from candidatos.service.extracao_dados_service import montar_extracao_dados
 from candidatos.service.lotes_service import (
     salvar_lotes as salvar_lotes_service,
 )
@@ -103,6 +105,23 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         if fields:
             kwargs["fields"] = fields.split(",")
         return serializer_class(*args, **kwargs)
+
+    @action(detail=False, methods=["post"], url_path="extracao-dados")
+    def extracao_dados(self, request):
+        """
+        Indicadores de habilitados e convocações para extração de dados.
+
+        POST /habilitados/extracao-dados/
+        Body: {concurso_uuid, filtros: [{ano, processo_uuids}]}
+        """
+        serializer = ExtracaoDadosSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        dados = serializer.validated_data
+        resultado = montar_extracao_dados(
+            concurso_uuid=dados["concurso_uuid"],
+            filtros=dados["filtros"],
+        )
+        return Response(resultado)
 
     @action(detail=False, methods=["get"], url_path="reconvocacao")
     def reconvocacao(self, request):
