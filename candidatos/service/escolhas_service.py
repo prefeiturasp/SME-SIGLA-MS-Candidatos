@@ -1,4 +1,5 @@
 """Módulo service/escolhas_service."""
+
 import logging
 from typing import Any
 
@@ -19,13 +20,13 @@ class EscolhasService:
     @classmethod
     def _get_base_url(cls) -> str:
         """Obtém a URL base do microserviço de Escolhas a partir das.
-        
+
         Args:
             cls: Classe referenciada.
-        
+
         Returns:
             Texto resultante da operação.
-        
+
         Raises:
             ValueError: Se ocorrer erro nesta operação.
         """
@@ -39,14 +40,14 @@ class EscolhasService:
         cls, path: str = "/api/v1/escolhas/reconvocacao/"
     ) -> list[dict[str, Any]]:
         """Busca escolhas com situação de reconvocação.
-        
+
         Args:
             cls: Classe referenciada.
             path: Caminho do endpoint (padrão: /api/v1/escolhas/reconvocacao).
-        
+
         Returns:
             Lista com os registros resultantes.
-        
+
         Raises:
             RequestException: Se ocorrer erro nesta operação.
         """
@@ -107,15 +108,15 @@ class EscolhasService:
         path: str = "/api/v1/escolhas/?situacao__in=escolha,reconvocacao",
     ) -> list[dict[str, Any]]:
         """Busca escolhas com situação de escolha ou reconvocação.
-        
+
         Args:
             cls: Classe referenciada.
             concurso_uuid: UUID do concurso.
             path: Caminho do endpoint (padrão:.
-        
+
         Returns:
             Lista com os registros resultantes.
-        
+
         Raises:
             RequestException: Se ocorrer erro nesta operação.
         """

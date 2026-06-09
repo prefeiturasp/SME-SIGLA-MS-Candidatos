@@ -1,4 +1,5 @@
 """Módulo service/candidato_lote_service."""
+
 from typing import Any
 
 from rest_framework import status
@@ -12,13 +13,13 @@ def processar_criacao_candidatos_lote(
     data: dict[str, Any],
 ) -> tuple[dict[str, Any], int]:
     """Espera payload:.
-    
+
     Args:
         data: Dados de entrada.
-    
+
     Returns:
         Resultado da operação.
-    
+
     Raises:
         Nenhuma exceção específica documentada.
     """
