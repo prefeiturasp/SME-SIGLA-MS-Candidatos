@@ -1,3 +1,4 @@
+"""Módulo serializer/__init__."""
 from .candidato import (
     CandidatoConcursoCreateSerializer,
     CandidatoSerializer,
