@@ -112,13 +112,15 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         Indicadores de habilitados e convocações para extração de dados.
 
         POST /habilitados/extracao-dados/
-        Body: {concurso_uuid, filtros: [{ano, processo_uuids}]}
+        Body: {concurso_uuid?, filtros?: [{ano, processo_uuids}]}
+        Sem `filtros`: retorna a chave "total" com os convocados.
+        Sem `concurso_uuid`: agrega habilitados/convocados de todos os concursos.
         """
         serializer = ExtracaoDadosSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         dados = serializer.validated_data
         resultado = montar_extracao_dados(
-            concurso_uuid=dados["concurso_uuid"],
+            concurso_uuid=dados.get("concurso_uuid"),
             filtros=dados["filtros"],
         )
         return Response(resultado)

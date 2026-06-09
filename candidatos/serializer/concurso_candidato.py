@@ -343,9 +343,13 @@ class ExtracaoDadosSerializer(serializers.Serializer):
     Payload do endpoint de extração de dados de habilitados.
 
     - concurso_uuid: concurso cujos habilitados (todos os lotes) serão contados.
-    - filtros: lista de {ano, processo_uuids} para contar convocados /
-      não-convocados por ano.
+      Opcional; ausente → agrega habilitados/convocados de todos os concursos.
+    - filtros: lista opcional de {ano, processo_uuids} para contar convocados /
+      não-convocados por ano. Quando ausente (ou vazia), o resultado traz uma
+      única contagem agregada ("total") de todos os convocados do concurso.
     """
 
-    concurso_uuid = serializers.UUIDField()
-    filtros = ExtracaoDadosFiltroSerializer(many=True)
+    concurso_uuid = serializers.UUIDField(required=False, allow_null=True)
+    filtros = ExtracaoDadosFiltroSerializer(
+        many=True, required=False, default=list
+    )

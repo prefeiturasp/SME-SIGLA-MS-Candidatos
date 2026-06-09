@@ -102,7 +102,91 @@ def test_extracao_dados_agrega_habilitados_e_convocados_por_ano(api_client):
     assert data["2025"] == {"convocados": 1, "nao-convocados": 4}
 
 
-def test_extracao_dados_exige_concurso_uuid(api_client):
+def test_extracao_dados_sem_filtros_retorna_total(api_client):
     url = reverse("habilitados-extracao-dados")
-    resp = api_client.post(url, {"filtros": []}, format="json")
-    assert resp.status_code == 400
+    concurso_uuid = uuid4()
+
+    lote = ConcursoCandidatosLote.objects.create(
+        concurso_uuid=concurso_uuid, concurso_nome="Lote"
+    )
+
+    # 2 convocados, 2 nao-convocados no concurso
+    criar_concurso_candidato(lote, "GERAL", True, uuid4())
+    criar_concurso_candidato(lote, "PCD", True, uuid4())
+    criar_concurso_candidato(lote, "GERAL", False, None)
+    criar_concurso_candidato(lote, "NNA", False, None)
+
+    # Convocado de outro concurso nao deve contar
+    outro_lote = ConcursoCandidatosLote.objects.create(
+        concurso_uuid=uuid4(), concurso_nome="Outro"
+    )
+    criar_concurso_candidato(outro_lote, "GERAL", True, uuid4())
+
+    resp = api_client.post(
+        url, {"concurso_uuid": str(concurso_uuid)}, format="json"
+    )
+
+    assert resp.status_code == 200, resp.content
+    data = resp.json()
+
+    assert data["habilitados"] == {
+        "total": 4,
+        "geral": 2,
+        "pcd": 1,
+        "nna": 1,
+    }
+    # ALL: todos foi_convocado=True do concurso (2), sem quebra por ano
+    assert data["total"] == {"convocados": 2, "nao-convocados": 2}
+    # nenhuma chave de ano presente
+    assert set(data.keys()) == {"habilitados", "total"}
+
+
+def test_extracao_dados_filtros_vazio_lista(api_client):
+    url = reverse("habilitados-extracao-dados")
+    concurso_uuid = uuid4()
+
+    lote = ConcursoCandidatosLote.objects.create(
+        concurso_uuid=concurso_uuid, concurso_nome="Lote"
+    )
+    criar_concurso_candidato(lote, "GERAL", True, uuid4())
+    criar_concurso_candidato(lote, "GERAL", False, None)
+
+    resp = api_client.post(
+        url,
+        {"concurso_uuid": str(concurso_uuid), "filtros": []},
+        format="json",
+    )
+
+    assert resp.status_code == 200, resp.content
+    data = resp.json()
+    assert data["total"] == {"convocados": 1, "nao-convocados": 1}
+    assert set(data.keys()) == {"habilitados", "total"}
+
+
+def test_extracao_dados_sem_concurso_agrega_todos(api_client):
+    url = reverse("habilitados-extracao-dados")
+
+    # candidatos de concursos diferentes -> todos contam no agregado
+    lote_a = ConcursoCandidatosLote.objects.create(
+        concurso_uuid=uuid4(), concurso_nome="A"
+    )
+    lote_b = ConcursoCandidatosLote.objects.create(
+        concurso_uuid=uuid4(), concurso_nome="B"
+    )
+    criar_concurso_candidato(lote_a, "GERAL", True, uuid4())
+    criar_concurso_candidato(lote_a, "PCD", False, None)
+    criar_concurso_candidato(lote_b, "GERAL", True, uuid4())
+
+    resp = api_client.post(url, {}, format="json")
+
+    assert resp.status_code == 200, resp.content
+    data = resp.json()
+    assert data["habilitados"] == {
+        "total": 3,
+        "geral": 2,
+        "pcd": 1,
+        "nna": 0,
+    }
+    # convocados de todos os concursos (2)
+    assert data["total"] == {"convocados": 2, "nao-convocados": 1}
+    assert set(data.keys()) == {"habilitados", "total"}
