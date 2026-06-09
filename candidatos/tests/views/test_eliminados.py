@@ -10,26 +10,75 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def api_client() -> Any:
-    """Executa api client."""
+    """Executa api client.
+    
+    Returns:
+        Resultado da operação.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     return APIClient()
 
 def _candidato(**kwargs: Any) -> Any:
-    """Executa  candidato."""
+    """Executa  candidato.
+    
+    Args:
+        **kwargs: Argumentos nomeados variáveis.
+    
+    Returns:
+        Resultado da operação.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     return Candidato.objects.create(nome=kwargs.get('nome', 'Teste'), cpf=kwargs.get('cpf', f'{uuid4().int % 10 ** 11:011d}'), email=kwargs.get('email', f'{uuid4().hex[:8]}@example.com'), telefone='', data_nascimento='1990-01-01', genero='M', endereco='', cidade='', estado='', cep='', status='ativo', observacoes='')
 
 def _cc(lote: Any, candidato: Any=None, **kwargs: Any) -> Any:
-    """Executa  cc."""
+    """Executa  cc.
+    
+    Args:
+        lote: Parâmetro lote da operação.
+        candidato: Parâmetro candidato da operação.
+        **kwargs: Argumentos nomeados variáveis.
+    
+    Returns:
+        Resultado da operação.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     return ConcursoCandidato.objects.create(candidato=candidato or _candidato(), lote=lote, codigo_inscricao=kwargs.get('codigo_inscricao', uuid4().hex[:8]), eliminado=kwargs.get('eliminado', True), classificacao=kwargs.get('classificacao'), classificacao_nna=kwargs.get('classificacao_nna'), classificacao_pcd=kwargs.get('classificacao_pcd'))
 
 def test_parametros_obrigatorios(api_client: Any) -> None:
-    """Verifica parametros obrigatorios."""
+    """Verifica parametros obrigatorios.
+    
+    Args:
+        api_client: Cliente de API para requisições de teste.
+    
+    Returns:
+        Não retorna valor.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     url = reverse('eliminados-list')
     assert api_client.get(url).status_code == 400
     assert api_client.get(url, {'concurso_uuid': str(uuid4())}).status_code == 400
     assert api_client.get(url, {'concurso_uuid': str(uuid4()), 'processo_uuid': str(uuid4()), 'classificacao_max': '10'}).status_code == 400
 
 def test_sem_lote_retorna_listas_vazias(api_client: Any) -> None:
-    """Verifica sem lote retorna listas vazias."""
+    """Verifica sem lote retorna listas vazias.
+    
+    Args:
+        api_client: Cliente de API para requisições de teste.
+    
+    Returns:
+        Não retorna valor.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     url = reverse('eliminados-list')
     concurso_uuid = uuid4()
     processo_uuid = uuid4()
@@ -38,7 +87,17 @@ def test_sem_lote_retorna_listas_vazias(api_client: Any) -> None:
     assert resp.data == {'geral': [], 'nna': [], 'pcd': []}
 
 def test_retorna_eliminados_separados_e_filtra_classificacao(api_client: Any) -> None:
-    """Verifica retorna eliminados separados e filtra classificacao."""
+    """Verifica retorna eliminados separados e filtra classificacao.
+    
+    Args:
+        api_client: Cliente de API para requisições de teste.
+    
+    Returns:
+        Não retorna valor.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     concurso_uuid = uuid4()
     processo_uuid = uuid4()
     lote = ConcursoCandidatosLote.objects.create(concurso_uuid=concurso_uuid, concurso_nome='X')
@@ -64,7 +123,17 @@ def test_retorna_eliminados_separados_e_filtra_classificacao(api_client: Any) ->
     assert len(resp2.data['pcd']) == 1
 
 def test_usa_ultimo_lote(api_client: Any) -> None:
-    """Verifica usa ultimo lote."""
+    """Verifica usa ultimo lote.
+    
+    Args:
+        api_client: Cliente de API para requisições de teste.
+    
+    Returns:
+        Não retorna valor.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     concurso_uuid = uuid4()
     processo_uuid = uuid4()
     lote_antigo = ConcursoCandidatosLote.objects.create(concurso_uuid=concurso_uuid, concurso_nome='A')

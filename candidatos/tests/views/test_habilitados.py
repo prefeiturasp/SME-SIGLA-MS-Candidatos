@@ -11,22 +11,58 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def api_client() -> Any:
-    """Executa api client."""
+    """Executa api client.
+    
+    Returns:
+        Resultado da operação.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     return APIClient()
 
 @pytest.fixture
 def lote() -> Any:
-    """Executa lote."""
+    """Executa lote.
+    
+    Returns:
+        Resultado da operação.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     return ConcursoCandidatosLote.objects.create(concurso_uuid=uuid4(), concurso_nome='Concurso Teste')
 
 def criar_candidato(nome: Any, cpf: Any, email: Any=None) -> Any:
-    """Executa criar candidato."""
+    """Executa criar candidato.
+    
+    Args:
+        nome: Parâmetro nome da operação.
+        cpf: Parâmetro cpf da operação.
+        email: Parâmetro email da operação.
+    
+    Returns:
+        Resultado da operação.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     if email is None:
         email = f'user-{uuid4().hex[:8]}@example.com'
     return Candidato.objects.create(nome=nome, cpf=cpf, email=email, telefone='', data_nascimento='1990-01-01', genero='M', endereco='', cidade='', estado='', cep='', status='ativo', observacoes='')
 
 def test_habilitados_filtra_por_ultimo_lote_e_limites(api_client: Any) -> None:
-    """Verifica habilitados filtra por ultimo lote e limites."""
+    """Verifica habilitados filtra por ultimo lote e limites.
+    
+    Args:
+        api_client: Cliente de API para requisições de teste.
+    
+    Returns:
+        Não retorna valor.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     url = reverse('habilitados-reposicao')
     concurso_uuid = uuid4()
     lote1 = ConcursoCandidatosLote.objects.create(concurso_uuid=concurso_uuid, concurso_nome='X')
@@ -53,9 +89,15 @@ def test_habilitados_filtra_por_ultimo_lote_e_limites(api_client: Any) -> None:
 
 def test_habilitados_list_quando_concurso_uuid_filtra_apenas_ultimo_lote(api_client: Any) -> None:
     """`HabilitadosViewSet.get_queryset()` deve restringir ao último lote do.
-
-    concurso
-    sempre que `concurso_uuid` (ou `lote__concurso_uuid`) for informado.
+    
+    Args:
+        api_client: Cliente de API para requisições de teste.
+    
+    Returns:
+        Não retorna valor.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
     """
     concurso_uuid = uuid4()
     lote_antigo = ConcursoCandidatosLote.objects.create(concurso_uuid=concurso_uuid, concurso_nome='Antigo')
@@ -72,7 +114,17 @@ def test_habilitados_list_quando_concurso_uuid_filtra_apenas_ultimo_lote(api_cli
     assert resp.data[0]['candidato']['cpf'] == '888.888.888-88'
 
 def test_habilitados_list_quando_concurso_uuid_sem_lote_retorna_vazio(api_client: Any) -> None:
-    """Verifica habilitados list quando concurso uuid sem lote retorna vazio."""
+    """Verifica habilitados list quando concurso uuid sem lote retorna vazio.
+    
+    Args:
+        api_client: Cliente de API para requisições de teste.
+    
+    Returns:
+        Não retorna valor.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     url = reverse('habilitados-list')
     resp = api_client.get(url, {'concurso_uuid': str(uuid4())})
     assert resp.status_code == 200
@@ -80,8 +132,15 @@ def test_habilitados_list_quando_concurso_uuid_sem_lote_retorna_vazio(api_client
 
 def test_habilitados_list_quando_lote_uuid_informado_nao_restringe_ao_ultimo_lote(api_client: Any) -> None:
     """Se o filtro for por `lote__uuid` diretamente (sem `concurso_uuid`),.
-
-    o `get_queryset()` não restringe ao último lote (conforme docstring).
+    
+    Args:
+        api_client: Cliente de API para requisições de teste.
+    
+    Returns:
+        Não retorna valor.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
     """
     concurso_uuid = uuid4()
     lote1 = ConcursoCandidatosLote.objects.create(concurso_uuid=concurso_uuid, concurso_nome='L1')
@@ -100,7 +159,19 @@ class TestReclassificacaoHabilitados:
     """Testes unitários para o endpoint POST /habilitados/reclassificar/."""
 
     def test_reclassificar_de_nna_retorna_200_e_atualiza_categoria(self, api_client: Any, lote: Any) -> None:
-        """Verifica reclassificar de nna retorna 200 e atualiza categoria."""
+        """Verifica reclassificar de nna retorna 200 e atualiza categoria.
+        
+        Args:
+            self: Instância do objeto.
+            api_client: Cliente de API para requisições de teste.
+            lote: Parâmetro lote da operação.
+        
+        Returns:
+            Não retorna valor.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         c = criar_candidato('Candidato NNA', '111.111.111-11')
         cc = ConcursoCandidato.objects.create(candidato=c, lote=lote, codigo_inscricao='001', classificacao=10, classificacao_nna=1, classificacao_pcd=None, categoria_efetiva='NNA')
         url = reverse('habilitados-reclassificar')
@@ -115,7 +186,18 @@ class TestReclassificacaoHabilitados:
         assert ConcursoCandidatoReclassificacao.objects.filter(concurso_candidato=cc, desclassificado_de='NNA').exists()
 
 def test_habilitados_desconvocar_sem_codigo_cargo_desconvoca_todos(api_client: Any, lote: Any) -> None:
-    """Sem codigo_cargo, desconvoca todos os cargos do processo."""
+    """Sem codigo_cargo, desconvoca todos os cargos do processo.
+    
+    Args:
+        api_client: Cliente de API para requisições de teste.
+        lote: Parâmetro lote da operação.
+    
+    Returns:
+        Não retorna valor.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     processo_uuid = uuid4()
     c1 = criar_candidato('C1', '111.111.111-11')
     c2 = criar_candidato('C2', '222.222.222-22')
@@ -136,8 +218,16 @@ def test_habilitados_desconvocar_sem_codigo_cargo_desconvoca_todos(api_client: A
 
 def test_habilitados_desconvocar_com_codigo_cargo_desconvoca_so_um(api_client: Any, lote: Any) -> None:
     """Quando codigo_cargo é enviado, desconvoca apenas os registros daquele.
-
-    cargo.
+    
+    Args:
+        api_client: Cliente de API para requisições de teste.
+        lote: Parâmetro lote da operação.
+    
+    Returns:
+        Não retorna valor.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
     """
     processo_uuid = uuid4()
     c1 = criar_candidato('C1', '333.333.333-33')
@@ -158,14 +248,35 @@ def test_habilitados_desconvocar_com_codigo_cargo_desconvoca_so_um(api_client: A
     assert str(cc2.processo_uuid) == str(processo_uuid)
 
 def test_habilitados_desconvocar_sem_processo_uuid_retorna_400(api_client: Any) -> None:
-    """Verifica habilitados desconvocar sem processo uuid retorna 400."""
+    """Verifica habilitados desconvocar sem processo uuid retorna 400.
+    
+    Args:
+        api_client: Cliente de API para requisições de teste.
+    
+    Returns:
+        Não retorna valor.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     url = reverse('habilitados-desconvocar')
     resp = api_client.patch(url, {'codigo_cargo': '1008'}, format='json')
     assert resp.status_code == 400
     assert 'processo_uuid' in resp.data['detail']
 
 def test_habilitados_buscar_por_cpfs_retorna_dados_do_processo(api_client: Any, lote: Any) -> None:
-    """Verifica habilitados buscar por cpfs retorna dados do processo."""
+    """Verifica habilitados buscar por cpfs retorna dados do processo.
+    
+    Args:
+        api_client: Cliente de API para requisições de teste.
+        lote: Parâmetro lote da operação.
+    
+    Returns:
+        Não retorna valor.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     processo_uuid = uuid4()
     c1 = criar_candidato('C1', '12345678901')
     c2 = criar_candidato('C2', '98765432100')
@@ -184,7 +295,17 @@ def test_habilitados_buscar_por_cpfs_retorna_dados_do_processo(api_client: Any, 
     assert resp.data[0]['cpf'] == '98765432100'
 
 def test_habilitados_buscar_por_cpfs_order_by_invalido_retorna_400(api_client: Any) -> None:
-    """Verifica habilitados buscar por cpfs order by invalido retorna 400."""
+    """Verifica habilitados buscar por cpfs order by invalido retorna 400.
+    
+    Args:
+        api_client: Cliente de API para requisições de teste.
+    
+    Returns:
+        Não retorna valor.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     url = reverse('habilitados-buscar-por-cpfs')
     payload = {'cpfs': ['12345678901'], 'processo_uuid': str(uuid4())}
     resp = api_client.post(url + '?order_by=campo_inexistente', payload, format='json')
@@ -192,7 +313,17 @@ def test_habilitados_buscar_por_cpfs_order_by_invalido_retorna_400(api_client: A
     assert resp.data['detail'] == 'Parâmetro order_by inválido'
 
 def test_habilitados_calculados_sem_lote_retorna_404(api_client: Any) -> None:
-    """Verifica habilitados calculados sem lote retorna 404."""
+    """Verifica habilitados calculados sem lote retorna 404.
+    
+    Args:
+        api_client: Cliente de API para requisições de teste.
+    
+    Returns:
+        Não retorna valor.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     url = reverse('habilitados-calculados')
     resp = api_client.get(url, {'quantidade': 5, 'concurso_uuid': str(uuid4()), 'processo_uuid': str(uuid4()), 'codigo_cargo': '1008'})
     assert resp.status_code == 404
@@ -201,7 +332,19 @@ def test_habilitados_calculados_sem_lote_retorna_404(api_client: Any) -> None:
 @patch('candidatos.views.habilitados.EscolhasService.buscar_escolhas')
 @patch('candidatos.views.habilitados.gerar_sequencia_convocados')
 def test_habilitados_calculados_sucesso_mockando_externos(mock_gerar_sequencia: Any, mock_buscar_escolhas: Any, api_client: Any) -> None:
-    """Verifica habilitados calculados sucesso mockando externos."""
+    """Verifica habilitados calculados sucesso mockando externos.
+    
+    Args:
+        mock_gerar_sequencia: Parâmetro mock gerar sequencia da operação.
+        mock_buscar_escolhas: Parâmetro mock buscar escolhas da operação.
+        api_client: Cliente de API para requisições de teste.
+    
+    Returns:
+        Não retorna valor.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     concurso_uuid = uuid4()
     processo_uuid = uuid4()
     lote = ConcursoCandidatosLote.objects.create(concurso_uuid=concurso_uuid, concurso_nome='X')
@@ -228,7 +371,19 @@ def test_habilitados_calculados_sucesso_mockando_externos(mock_gerar_sequencia: 
 @patch('candidatos.views.habilitados.EscolhasService.buscar_escolhas', side_effect=Exception('ms caiu'))
 @patch('candidatos.views.habilitados.gerar_sequencia_convocados')
 def test_habilitados_calculados_quando_escolhas_falha_continua_com_lista_vazia(mock_gerar_sequencia: Any, mock_buscar_escolhas: Any, api_client: Any) -> None:
-    """Verifica habilitados calculados quando escolhas falha continua com lista vazia."""
+    """Verifica habilitados calculados quando escolhas falha continua com lista vazia.
+    
+    Args:
+        mock_gerar_sequencia: Parâmetro mock gerar sequencia da operação.
+        mock_buscar_escolhas: Parâmetro mock buscar escolhas da operação.
+        api_client: Cliente de API para requisições de teste.
+    
+    Returns:
+        Não retorna valor.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     concurso_uuid = uuid4()
     processo_uuid = uuid4()
     lote = ConcursoCandidatosLote.objects.create(concurso_uuid=concurso_uuid, concurso_nome='X')
@@ -243,7 +398,19 @@ def test_habilitados_calculados_quando_escolhas_falha_continua_com_lista_vazia(m
     assert args[2] == []
 
     def test_reclassificar_de_pcd_retorna_200_e_atualiza_categoria(self, api_client: Any, lote: Any) -> None:  # type: ignore[no-untyped-def]
-        """Verifica reclassificar de pcd retorna 200 e atualiza categoria."""
+        """Verifica reclassificar de pcd retorna 200 e atualiza categoria.
+        
+        Args:
+            self: Instância do objeto.
+            api_client: Cliente de API para requisições de teste.
+            lote: Parâmetro lote da operação.
+        
+        Returns:
+            Não retorna valor.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         c = criar_candidato('Candidato PCD', '222.222.222-22')
         cc = ConcursoCandidato.objects.create(candidato=c, lote=lote, codigo_inscricao='002', classificacao=20, classificacao_nna=None, classificacao_pcd=1, categoria_efetiva='PCD')
         url = reverse('habilitados-reclassificar')
@@ -255,13 +422,35 @@ def test_habilitados_calculados_quando_escolhas_falha_continua_com_lista_vazia(m
         assert cc.categoria_efetiva == 'GERAL'
 
     def test_reclassificar_payload_invalido_retorna_400(self, api_client: Any) -> None:  # type: ignore[no-untyped-def]
-        """Verifica reclassificar payload invalido retorna 400."""
+        """Verifica reclassificar payload invalido retorna 400.
+        
+        Args:
+            self: Instância do objeto.
+            api_client: Cliente de API para requisições de teste.
+        
+        Returns:
+            Não retorna valor.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         url = reverse('habilitados-reclassificar')
         resp = api_client.post(url, {}, format='json')
         assert resp.status_code == 400
 
     def test_reclassificar_candidato_uuid_inexistente_retorna_500(self, api_client: Any) -> None:  # type: ignore[no-untyped-def]
-        """Verifica reclassificar candidato uuid inexistente retorna 500."""
+        """Verifica reclassificar candidato uuid inexistente retorna 500.
+        
+        Args:
+            self: Instância do objeto.
+            api_client: Cliente de API para requisições de teste.
+        
+        Returns:
+            Não retorna valor.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         url = reverse('habilitados-reclassificar')
         payload = {'candidato_uuid': str(uuid4()), 'desclassificar_de': 'NNA', 'motivo': ''}
         resp = api_client.post(url, payload, format='json')
@@ -269,7 +458,19 @@ def test_habilitados_calculados_quando_escolhas_falha_continua_com_lista_vazia(m
         assert 'detail' in resp.data
 
     def test_reclassificar_sem_classificacao_nna_retorna_400(self, api_client: Any, lote: Any) -> None:  # type: ignore[no-untyped-def]
-        """Verifica reclassificar sem classificacao nna retorna 400."""
+        """Verifica reclassificar sem classificacao nna retorna 400.
+        
+        Args:
+            self: Instância do objeto.
+            api_client: Cliente de API para requisições de teste.
+            lote: Parâmetro lote da operação.
+        
+        Returns:
+            Não retorna valor.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         c = criar_candidato('Só PCD', '333.333.333-33')
         cc = ConcursoCandidato.objects.create(candidato=c, lote=lote, codigo_inscricao='003', classificacao=30, classificacao_nna=None, classificacao_pcd=1, categoria_efetiva='PCD')
         url = reverse('habilitados-reclassificar')
@@ -279,7 +480,19 @@ def test_habilitados_calculados_quando_escolhas_falha_continua_com_lista_vazia(m
         assert 'NNA' in (resp.data.get('detail') or '')
 
     def test_reclassificar_duplicado_para_mesma_cota_retorna_400(self, api_client: Any, lote: Any) -> None:  # type: ignore[no-untyped-def]
-        """Verifica reclassificar duplicado para mesma cota retorna 400."""
+        """Verifica reclassificar duplicado para mesma cota retorna 400.
+        
+        Args:
+            self: Instância do objeto.
+            api_client: Cliente de API para requisições de teste.
+            lote: Parâmetro lote da operação.
+        
+        Returns:
+            Não retorna valor.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         c = criar_candidato('NNA Duplicado', '444.444.444-44')
         cc = ConcursoCandidato.objects.create(candidato=c, lote=lote, codigo_inscricao='004', classificacao=40, classificacao_nna=1, classificacao_pcd=None, categoria_efetiva='NNA')
         url = reverse('habilitados-reclassificar')
@@ -295,54 +508,143 @@ class TestReconvocacao:
     """Define TestReconvocacao."""
 
     def test_erro_servico_retorna_503(self, api_client: Any) -> None:
-        """Verifica erro servico retorna 503."""
+        """Verifica erro servico retorna 503.
+        
+        Args:
+            self: Instância do objeto.
+            api_client: Cliente de API para requisições de teste.
+        
+        Returns:
+            Não retorna valor.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         with patch('candidatos.views.habilitados.EscolhasService.buscar_reconvocacoes', side_effect=Exception('falha')):
             resp = api_client.get(reverse('habilitados-reconvocacao'), {'concurso_uuid': str(uuid4()), 'quantidade': '1'})
         assert resp.status_code == 503
         assert 'reconvocações' in resp.data.get('detail', '')
 
     def test_sem_reconvocacoes_retorna_lista_vazia(self, api_client: Any) -> None:
-        """Verifica sem reconvocacoes retorna lista vazia."""
+        """Verifica sem reconvocacoes retorna lista vazia.
+        
+        Args:
+            self: Instância do objeto.
+            api_client: Cliente de API para requisições de teste.
+        
+        Returns:
+            Não retorna valor.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         with patch('candidatos.views.habilitados.EscolhasService.buscar_reconvocacoes', return_value=[]):
             resp = api_client.get(reverse('habilitados-reconvocacao'), {'concurso_uuid': str(uuid4()), 'quantidade': '1'})
         assert resp.status_code == 200
         assert resp.data == []
 
     def test_sem_concurso_uuid_retorna_lista_vazia(self, api_client: Any) -> None:
-        """Verifica sem concurso uuid retorna lista vazia."""
+        """Verifica sem concurso uuid retorna lista vazia.
+        
+        Args:
+            self: Instância do objeto.
+            api_client: Cliente de API para requisições de teste.
+        
+        Returns:
+            Não retorna valor.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         with patch('candidatos.views.habilitados.EscolhasService.buscar_reconvocacoes', return_value=[{'candidato_uuid': str(uuid4())}]):
             resp = api_client.get(reverse('habilitados-reconvocacao'), {'quantidade': '1'})
         assert resp.status_code == 200
         assert resp.data == []
 
     def test_sem_quantidade_retorna_400(self, api_client: Any) -> None:
-        """Verifica sem quantidade retorna 400."""
+        """Verifica sem quantidade retorna 400.
+        
+        Args:
+            self: Instância do objeto.
+            api_client: Cliente de API para requisições de teste.
+        
+        Returns:
+            Não retorna valor.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         with patch('candidatos.views.habilitados.EscolhasService.buscar_reconvocacoes', return_value=[{'candidato_uuid': str(uuid4())}]):
             resp = api_client.get(reverse('habilitados-reconvocacao'), {'concurso_uuid': str(uuid4())})
         assert resp.status_code == 400
         assert 'quantidade' in resp.data.get('detail', '').lower()
 
     def test_quantidade_invalida_retorna_400(self, api_client: Any) -> None:
-        """Verifica quantidade invalida retorna 400."""
+        """Verifica quantidade invalida retorna 400.
+        
+        Args:
+            self: Instância do objeto.
+            api_client: Cliente de API para requisições de teste.
+        
+        Returns:
+            Não retorna valor.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         with patch('candidatos.views.habilitados.EscolhasService.buscar_reconvocacoes', return_value=[{'candidato_uuid': str(uuid4())}]):
             resp = api_client.get(reverse('habilitados-reconvocacao'), {'concurso_uuid': str(uuid4()), 'quantidade': 'abc'})
         assert resp.status_code == 400
 
     def test_quantidade_zero_retorna_400(self, api_client: Any) -> None:
-        """Verifica quantidade zero retorna 400."""
+        """Verifica quantidade zero retorna 400.
+        
+        Args:
+            self: Instância do objeto.
+            api_client: Cliente de API para requisições de teste.
+        
+        Returns:
+            Não retorna valor.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         with patch('candidatos.views.habilitados.EscolhasService.buscar_reconvocacoes', return_value=[{'candidato_uuid': str(uuid4())}]):
             resp = api_client.get(reverse('habilitados-reconvocacao'), {'concurso_uuid': str(uuid4()), 'quantidade': '0'})
         assert resp.status_code == 400
 
     def test_sem_lote_retorna_lista_vazia(self, api_client: Any) -> None:
-        """Verifica sem lote retorna lista vazia."""
+        """Verifica sem lote retorna lista vazia.
+        
+        Args:
+            self: Instância do objeto.
+            api_client: Cliente de API para requisições de teste.
+        
+        Returns:
+            Não retorna valor.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         with patch('candidatos.views.habilitados.EscolhasService.buscar_reconvocacoes', return_value=[{'candidato_uuid': str(uuid4())}]):
             resp = api_client.get(reverse('habilitados-reconvocacao'), {'concurso_uuid': str(uuid4()), 'quantidade': '1'})
         assert resp.status_code == 200
         assert resp.data == []
 
     def test_retorna_convocados_na_lista_reconvocacoes(self, api_client: Any, lote: Any) -> None:
-        """Verifica retorna convocados na lista reconvocacoes."""
+        """Verifica retorna convocados na lista reconvocacoes.
+        
+        Args:
+            self: Instância do objeto.
+            api_client: Cliente de API para requisições de teste.
+            lote: Parâmetro lote da operação.
+        
+        Returns:
+            Não retorna valor.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         c = criar_candidato('Reconv', '555.555.555-55')
         cc = ConcursoCandidato.objects.create(candidato=c, lote=lote, codigo_inscricao='rc1', foi_convocado=True)
         with patch('candidatos.views.habilitados.EscolhasService.buscar_reconvocacoes', return_value=[{'candidato_uuid': str(cc.uuid)}]):
@@ -354,7 +656,19 @@ class TestReconvocacao:
         assert resp.data[0]['codigo_inscricao'] == 'rc1'
 
     def test_filtra_por_codigo_cargo(self, api_client: Any, lote: Any) -> None:
-        """Verifica filtra por codigo cargo."""
+        """Verifica filtra por codigo cargo.
+        
+        Args:
+            self: Instância do objeto.
+            api_client: Cliente de API para requisições de teste.
+            lote: Parâmetro lote da operação.
+        
+        Returns:
+            Não retorna valor.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         c1 = criar_candidato('C1', '666.666.666-66')
         c2 = criar_candidato('C2', '777.777.777-77')
         cc1 = ConcursoCandidato.objects.create(candidato=c1, lote=lote, codigo_inscricao='a', foi_convocado=True, codigo_cargo='CARGO_A')
@@ -371,12 +685,35 @@ class TestEliminar:
     """Define TestEliminar."""
 
     def test_payload_invalido_retorna_400(self, api_client: Any) -> None:
-        """Verifica payload invalido retorna 400."""
+        """Verifica payload invalido retorna 400.
+        
+        Args:
+            self: Instância do objeto.
+            api_client: Cliente de API para requisições de teste.
+        
+        Returns:
+            Não retorna valor.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         resp = api_client.post(reverse('habilitados-eliminar'), {}, format='json')
         assert resp.status_code == 400
 
     def test_sucesso_retorna_200_com_dados(self, api_client: Any, lote: Any) -> None:
-        """Verifica sucesso retorna 200 com dados."""
+        """Verifica sucesso retorna 200 com dados.
+        
+        Args:
+            self: Instância do objeto.
+            api_client: Cliente de API para requisições de teste.
+            lote: Parâmetro lote da operação.
+        
+        Returns:
+            Não retorna valor.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         cc = ConcursoCandidato.objects.create(candidato=criar_candidato('Elim', '888.888.888-88'), lote=lote, codigo_inscricao='el1')
         hist_mock = MagicMock()
         hist_mock.uuid = uuid4()
@@ -388,7 +725,18 @@ class TestEliminar:
         assert resp.data['acao'] == 'ELIMINAR'
 
     def test_value_error_retorna_400(self, api_client: Any) -> None:
-        """Verifica value error retorna 400."""
+        """Verifica value error retorna 400.
+        
+        Args:
+            self: Instância do objeto.
+            api_client: Cliente de API para requisições de teste.
+        
+        Returns:
+            Não retorna valor.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         with patch('candidatos.views.habilitados.aplicar_eliminacao', side_effect=ValueError('candidato não encontrado')):
             resp = api_client.post(reverse('habilitados-eliminar'), {'candidato_uuid': str(uuid4()), 'motivo': ''}, format='json')
         assert resp.status_code == 400
@@ -398,22 +746,67 @@ class TestBuscarPorUuids:
     """Define TestBuscarPorUuids."""
 
     def test_sem_uuids_retorna_400(self, api_client: Any) -> None:
-        """Verifica sem uuids retorna 400."""
+        """Verifica sem uuids retorna 400.
+        
+        Args:
+            self: Instância do objeto.
+            api_client: Cliente de API para requisições de teste.
+        
+        Returns:
+            Não retorna valor.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         resp = api_client.post(reverse('habilitados-buscar-por-uuids'), {}, format='json')
         assert resp.status_code == 400
 
     def test_lista_vazia_retorna_400(self, api_client: Any) -> None:
-        """Verifica lista vazia retorna 400."""
+        """Verifica lista vazia retorna 400.
+        
+        Args:
+            self: Instância do objeto.
+            api_client: Cliente de API para requisições de teste.
+        
+        Returns:
+            Não retorna valor.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         resp = api_client.post(reverse('habilitados-buscar-por-uuids'), {'uuids': []}, format='json')
         assert resp.status_code == 400
 
     def test_uuid_invalido_retorna_400(self, api_client: Any) -> None:
-        """Verifica uuid invalido retorna 400."""
+        """Verifica uuid invalido retorna 400.
+        
+        Args:
+            self: Instância do objeto.
+            api_client: Cliente de API para requisições de teste.
+        
+        Returns:
+            Não retorna valor.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         resp = api_client.post(reverse('habilitados-buscar-por-uuids'), {'uuids': ['nao-e-uuid']}, format='json')
         assert resp.status_code == 400
 
     def test_retorna_candidatos_encontrados(self, api_client: Any, lote: Any) -> None:
-        """Verifica retorna candidatos encontrados."""
+        """Verifica retorna candidatos encontrados.
+        
+        Args:
+            self: Instância do objeto.
+            api_client: Cliente de API para requisições de teste.
+            lote: Parâmetro lote da operação.
+        
+        Returns:
+            Não retorna valor.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         cc = ConcursoCandidato.objects.create(candidato=criar_candidato('Uuid', '999.999.999-99'), lote=lote, codigo_inscricao='uu1')
         resp = api_client.post(reverse('habilitados-buscar-por-uuids'), {'uuids': [str(cc.uuid)]}, format='json')
         assert resp.status_code == 200
@@ -422,13 +815,36 @@ class TestBuscarPorUuids:
         assert resp.data['results'][0]['codigo_inscricao'] == 'uu1'
 
     def test_uuid_inexistente_retorna_vazio(self, api_client: Any) -> None:
-        """Verifica uuid inexistente retorna vazio."""
+        """Verifica uuid inexistente retorna vazio.
+        
+        Args:
+            self: Instância do objeto.
+            api_client: Cliente de API para requisições de teste.
+        
+        Returns:
+            Não retorna valor.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         resp = api_client.post(reverse('habilitados-buscar-por-uuids'), {'uuids': [str(uuid4())]}, format='json')
         assert resp.status_code == 200
         assert resp.data['results'] == []
 
     def test_order_by_invalido_retorna_400(self, api_client: Any, lote: Any) -> None:
-        """Verifica order by invalido retorna 400."""
+        """Verifica order by invalido retorna 400.
+        
+        Args:
+            self: Instância do objeto.
+            api_client: Cliente de API para requisições de teste.
+            lote: Parâmetro lote da operação.
+        
+        Returns:
+            Não retorna valor.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         cc = ConcursoCandidato.objects.create(candidato=criar_candidato('O', '101.101.101-10'), lote=lote, codigo_inscricao='oo1')
         resp = api_client.post(reverse('habilitados-buscar-por-uuids') + '?order_by=campo_inexistente', {'uuids': [str(cc.uuid)]}, format='json')
         assert resp.status_code == 400

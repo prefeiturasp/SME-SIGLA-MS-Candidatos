@@ -22,14 +22,16 @@ logger = logging.getLogger(__name__)
 @transaction.atomic
 def salvar_lotes(concurso_uuid: str, lotes: list[dict[str, Any]]) -> int:
     """Grava dados de lote nos ConcursoCandidatos do concurso informado.
-
-    1. Reset: zera campos de lote de todos os registros que já tinham o mesmo
-    numero_lote no concurso.
-    2. Para cada item do arquivo, busca ConcursoCandidato por chave_inscrito (=
-    codigo_inscricao).
-    3. Atualiza ConcursoCandidato (numero_lote, codigo_sigpec, numero_vaga)
-       e Candidato (registro_funcional, vinculo).
-    4. Retorna total de candidatos atualizados.
+    
+    Args:
+        concurso_uuid: Parâmetro concurso uuid da operação.
+        lotes: Parâmetro lotes da operação.
+    
+    Returns:
+        Valor inteiro calculado.
+    
+    Raises:
+        SalvarLotesException: Se ocorrer erro nesta operação.
     """
     erros: list[str] = []
 

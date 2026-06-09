@@ -23,7 +23,20 @@ class CandidatoViewSet(viewsets.ModelViewSet):
     ordering = ['nome']
 
     def create(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """Executa create."""
+        """Executa create.
+        
+        Args:
+            self: Instância do objeto.
+            request: Requisição HTTP recebida.
+            *args: Argumentos posicionais variáveis.
+            **kwargs: Argumentos nomeados variáveis.
+        
+        Returns:
+            Resposta HTTP com os dados serializados.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         input_serializer = CandidatosLoteCreateSerializer(data=request.data)
         input_serializer.is_valid(raise_exception=True)
         resp_data, status_code = processar_criacao_candidatos_lote(input_serializer.validated_data)
@@ -32,14 +45,16 @@ class CandidatoViewSet(viewsets.ModelViewSet):
     @action(methods=['get'], detail=False, url_path='buscar')
     def buscar(self, request: Any) -> Any:
         """Busca por nome, CPF, RG e/ou registro funcional na tabela.
-
-        candidatos_concursocandidato.
-        Os parâmetros informados são combinados com AND (todos devem ser
-        atendidos).
-        Retorna lista de candidatos com concursos (apenas os ConcursoCandidato
-        que bateram na busca).
-        Query params: nome, cpf, rg, registro_funcional (pelo menos um
-        obrigatório).
+        
+        Args:
+            self: Instância do objeto.
+            request: Requisição HTTP recebida.
+        
+        Returns:
+            Resultado da operação.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
         """
         nome = request.query_params.get('nome', '').strip()
         cpf = request.query_params.get('cpf', '').strip()

@@ -28,7 +28,19 @@ class ConcursoCandidatoAdmin(admin.ModelAdmin):
     actions = ['marcar_nao_convocados']
 
     def marcar_nao_convocados(self, request: Any, queryset: Any) -> None:
-        """Ação de admin para marcar registros como não convocados em lote."""
+        """Ação de admin para marcar registros como não convocados em lote.
+        
+        Args:
+            self: Instância do objeto.
+            request: Requisição HTTP recebida.
+            queryset: Parâmetro queryset da operação.
+        
+        Returns:
+            Não retorna valor.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         qtd = queryset.update(foi_convocado=False, data_convocacao=None, processo_uuid=None, ranking=0, ranking_escolha=0)
         self.message_user(request, f'{qtd} registro(s) marcados como não convocados.', level=messages.SUCCESS)
     marcar_nao_convocados.short_description = 'Marcar como NÃO convocados (foi_convocado=False)'  # type: ignore[attr-defined]

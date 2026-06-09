@@ -9,19 +9,21 @@ from candidatos.serializers import ConcursoCandidatoReclassificadoSerializer
 logger = logging.getLogger(__name__)
 
 class ReclassificadosViewSet(viewsets.ViewSet):
-    """Endpoint para listar candidatos reclassificados (de NNA/PCD -> GERAL) por.
-
-    concurso_uuid.
-    GET /reclassificados/?concurso_uuid=<uuid>
-    Retorna:
-    {
-      "nna": [...],
-      "pcd": [...]
-    }.
-    """
+    """Endpoint para listar candidatos reclassificados (de NNA/PCD -> GERAL) por."""
 
     def list(self, request: Any) -> Any:
-        """Executa list."""
+        """Executa list.
+        
+        Args:
+            self: Instância do objeto.
+            request: Requisição HTTP recebida.
+        
+        Returns:
+            Resposta HTTP com os dados serializados.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         concurso_uuid = request.query_params.get('concurso_uuid')
         processo_uuid = request.query_params.get('processo_uuid')
         if not concurso_uuid or not processo_uuid:

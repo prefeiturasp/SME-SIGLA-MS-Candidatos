@@ -8,15 +8,46 @@ from candidatos.service.lotes_service import SalvarLotesException, salvar_lotes
 pytestmark = pytest.mark.django_db
 
 def _criar_candidato(nome: str, cpf: str, email: str) -> Candidato:
-    """Executa  criar candidato."""
+    """Executa  criar candidato.
+    
+    Args:
+        nome: Parâmetro nome da operação.
+        cpf: Parâmetro cpf da operação.
+        email: Parâmetro email da operação.
+    
+    Returns:
+        Resultado da operação.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     return Candidato.objects.create(nome=nome, cpf=cpf, email=email)
 
 def _criar_concurso_candidato(lote: ConcursoCandidatosLote, candidato: Candidato, codigo_inscricao: str) -> ConcursoCandidato:
-    """Executa  criar concurso candidato."""
+    """Executa  criar concurso candidato.
+    
+    Args:
+        lote: Parâmetro lote da operação.
+        candidato: Parâmetro candidato da operação.
+        codigo_inscricao: Parâmetro codigo inscricao da operação.
+    
+    Returns:
+        Resultado da operação.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     return ConcursoCandidato.objects.create(lote=lote, candidato=candidato, codigo_inscricao=codigo_inscricao)
 
 def test_salvar_lotes_persiste_chave_inscrito_quando_informada() -> None:
-    """Verifica salvar lotes persiste chave inscrito quando informada."""
+    """Verifica salvar lotes persiste chave inscrito quando informada.
+    
+    Returns:
+        Não retorna valor.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     concurso_uuid = str(uuid.uuid4())
     lote = ConcursoCandidatosLote.objects.create(concurso_uuid=concurso_uuid, concurso_nome='Concurso Teste')
     candidato = _criar_candidato('Alice', '111.111.111-11', 'alice@example.com')
@@ -27,7 +58,14 @@ def test_salvar_lotes_persiste_chave_inscrito_quando_informada() -> None:
     assert cc.chave_inscrito == 'CHV-123'
 
 def test_salvar_lotes_define_chave_inscrito_como_none_quando_nao_informada() -> None:
-    """Verifica salvar lotes define chave inscrito como none quando nao informada."""
+    """Verifica salvar lotes define chave inscrito como none quando nao informada.
+    
+    Returns:
+        Não retorna valor.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     concurso_uuid = str(uuid.uuid4())
     lote = ConcursoCandidatosLote.objects.create(concurso_uuid=concurso_uuid, concurso_nome='Concurso Teste')
     candidato = _criar_candidato('Bruno', '222.222.222-22', 'bruno@example.com')
@@ -38,7 +76,14 @@ def test_salvar_lotes_define_chave_inscrito_como_none_quando_nao_informada() -> 
     assert cc.chave_inscrito is None
 
 def test_salvar_lotes_faz_rollback_total_quando_ha_erro() -> None:
-    """Verifica salvar lotes faz rollback total quando ha erro."""
+    """Verifica salvar lotes faz rollback total quando ha erro.
+    
+    Returns:
+        Não retorna valor.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     concurso_uuid = str(uuid.uuid4())
     lote = ConcursoCandidatosLote.objects.create(concurso_uuid=concurso_uuid, concurso_nome='Concurso Teste')
     candidato = _criar_candidato('Carla', '333.333.333-33', 'carla@example.com')

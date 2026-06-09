@@ -9,31 +9,93 @@ from candidatos.models import ConcursoCandidato, Parametrizacao
 from .ranking_service import atualizar_ranking, atualizar_ranking_escolha
 
 def calcular_quantidade_nna(total_candidatos: Any, porcentagem_nna: Any) -> Any:
-    """Executa calcular quantidade nna."""
+    """Executa calcular quantidade nna.
+    
+    Args:
+        total_candidatos: Parâmetro total candidatos da operação.
+        porcentagem_nna: Parâmetro porcentagem nna da operação.
+    
+    Returns:
+        Resultado da operação.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     return math.ceil(total_candidatos * porcentagem_nna)
 
 def calcular_quantidade_pcd(total_candidatos: Any, porcentagem_pcd: Any) -> Any:
-    """Executa calcular quantidade pcd."""
+    """Executa calcular quantidade pcd.
+    
+    Args:
+        total_candidatos: Parâmetro total candidatos da operação.
+        porcentagem_pcd: Parâmetro porcentagem pcd da operação.
+    
+    Returns:
+        Resultado da operação.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     valor = total_candidatos * porcentagem_pcd
     frac = valor - math.floor(valor)
     return math.ceil(valor) if frac >= 0.5 else math.floor(valor)
 
 def calcular_quantidade_geral(total_candidatos: Any, porcentagem_nna: Any, porcentagem_pcd: Any) -> Any:
-    """Executa calcular quantidade geral."""
+    """Executa calcular quantidade geral.
+    
+    Args:
+        total_candidatos: Parâmetro total candidatos da operação.
+        porcentagem_nna: Parâmetro porcentagem nna da operação.
+        porcentagem_pcd: Parâmetro porcentagem pcd da operação.
+    
+    Returns:
+        Resultado da operação.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     return total_candidatos - calcular_quantidade_nna(total_candidatos, porcentagem_nna) - calcular_quantidade_pcd(total_candidatos, porcentagem_pcd)
 
 def calcular_posicao_nna(posicao: Any) -> Any:
-    """Executa calcular posicao nna."""
+    """Executa calcular posicao nna.
+    
+    Args:
+        posicao: Parâmetro posicao da operação.
+    
+    Returns:
+        Resultado da operação.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     return 5 * posicao - 4
 
 def calcular_posicao_pcd(posicao: Any) -> Any:
-    """Executa calcular posicao pcd."""
+    """Executa calcular posicao pcd.
+    
+    Args:
+        posicao: Parâmetro posicao da operação.
+    
+    Returns:
+        Resultado da operação.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     return 10 + (posicao - 1) * 20
 
 def _safe_max_classificacao(final_itens: Any, classificacao_attr: str) -> Any:
     """Retorna o maior valor inteiro encontrado no atributo de classificação.
-
-    informado dentre os itens finais. Ignora valores nulos/inválidos.
+    
+    Args:
+        final_itens: Parâmetro final itens da operação.
+        classificacao_attr: Parâmetro classificacao attr da operação.
+    
+    Returns:
+        Resultado da operação.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
     """
     try:
         valores = []
@@ -58,11 +120,20 @@ def _safe_max_classificacao(final_itens: Any, classificacao_attr: str) -> Any:
 
 def _atualizar_processo_uuid_para_reclassificados(final_itens: Any, categoria: str, classificacao_attr: str, processo_uuid: Any, lote: Any, codigo_cargo: Any) -> None:
     """Atualiza processo_uuid nos históricos de reclassificação para candidatos.
-
-    que foram
-    reclassificados da categoria indicada (NNA/PCD) e cuja classificação
-    original é menor
-    que o maior valor de classificação efetivamente utilizado em final_itens.
+    
+    Args:
+        final_itens: Parâmetro final itens da operação.
+        categoria: Parâmetro categoria da operação.
+        classificacao_attr: Parâmetro classificacao attr da operação.
+        processo_uuid: Parâmetro processo uuid da operação.
+        lote: Parâmetro lote da operação.
+        codigo_cargo: Parâmetro codigo cargo da operação.
+    
+    Returns:
+        Não retorna valor.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
     """
     try:
         if not processo_uuid:
@@ -80,12 +151,18 @@ def _atualizar_processo_uuid_para_reclassificados(final_itens: Any, categoria: s
 
 def _atualizar_processo_uuid_para_eliminados(final_itens: Any, processo_uuid: Any, lote: Any, codigo_cargo: Any) -> None:
     """Atualiza processo_uuid nos históricos de eliminação para candidatos que.
-
-    foram eliminados
-    e cuja classificação (geral/nna/pcd) é menor do que o maior valor de
-    classificação
-    efetivamente utilizado em final_itens, considerando todos os tipos de
-    classificação.
+    
+    Args:
+        final_itens: Parâmetro final itens da operação.
+        processo_uuid: Parâmetro processo uuid da operação.
+        lote: Parâmetro lote da operação.
+        codigo_cargo: Parâmetro codigo cargo da operação.
+    
+    Returns:
+        Não retorna valor.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
     """
     try:
         if not processo_uuid:
@@ -106,13 +183,19 @@ def _atualizar_processo_uuid_para_eliminados(final_itens: Any, processo_uuid: An
 
 def gerar_sequencia_convocados(total_convocados: Any, lote: Any=None, escolhas_candidato_uuids: Any=None, codigo_cargo: Any=None, processo_uuid: Any=None) -> Any:
     """Gera a sequência de convocação com rótulos 'G', 'NNA' e 'PCD', respeitando:.
-
-    - Totais por tipo (NNA: ceil(20%), PCD: arredonda pra cima apenas se frac
-    >= 0.5; Geral = resto)
-    - Posições-alvo de NNA/PCD: 10, 30, 50, ... (calcular_posicao_*).
-      Em caso de colisão, PCD tem prioridade (é alocado primeiro) e o outro
-      tipo é deslocado
-      para o próximo índice disponível.
+    
+    Args:
+        total_convocados: Parâmetro total convocados da operação.
+        lote: Parâmetro lote da operação.
+        escolhas_candidato_uuids: Parâmetro escolhas candidato uuids da operação.
+        codigo_cargo: Parâmetro codigo cargo da operação.
+        processo_uuid: Parâmetro processo uuid da operação.
+    
+    Returns:
+        Resultado da operação.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
     """
     parametrizacao = Parametrizacao.objects.first()
     porcentagem_nna = parametrizacao.porcentagem_nna  # type: ignore[union-attr]
@@ -139,7 +222,19 @@ def gerar_sequencia_convocados(total_convocados: Any, lote: Any=None, escolhas_c
     sequencia = ['G'] * total_convocados
 
     def calcular_quantidades_por_tipo(geral: Any, nna: Any, pcd: Any) -> Any:
-        """Executa calcular quantidades por tipo."""
+        """Executa calcular quantidades por tipo.
+        
+        Args:
+            geral: Parâmetro geral da operação.
+            nna: Parâmetro nna da operação.
+            pcd: Parâmetro pcd da operação.
+        
+        Returns:
+            Resultado da operação.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         qs_geral = ConcursoCandidato.objects.filter(lote=lote, foi_convocado=False, eliminado=False, codigo_cargo=codigo_cargo).exclude(classificacao__isnull=True).order_by('classificacao')[:geral]
         uuids_qs_geral = qs_geral.values_list('uuid', flat=True)
         qs_nna = ConcursoCandidato.objects.filter(lote=lote, foi_convocado=False, eliminado=False, classificacao_nna__isnull=False, codigo_cargo=codigo_cargo, categoria_efetiva='NNA').exclude(uuid__in=uuids_qs_geral).order_by('classificacao_nna')[:nna]
@@ -150,9 +245,17 @@ def gerar_sequencia_convocados(total_convocados: Any, lote: Any=None, escolhas_c
 
     def calcular_com_recalculo_se_necessario(geral: Any, nna: Any, pcd: Any) -> Any:
         """Executa o cálculo por tipo e, caso faltem NNA/PCD, recalcula apenas.
-
-        mais uma vez
-        ajustando os totais (no máximo 2 execuções).
+        
+        Args:
+            geral: Parâmetro geral da operação.
+            nna: Parâmetro nna da operação.
+            pcd: Parâmetro pcd da operação.
+        
+        Returns:
+            Resultado da operação.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
         """
         qs_geral, qs_nna, qs_pcd, tem_nna_faltante, quantidade_faltante_nna, tem_pcd_faltante, quantidade_faltante_pcd = calcular_quantidades_por_tipo(geral, nna, pcd)
         if tem_nna_faltante or tem_pcd_faltante:
@@ -230,7 +333,19 @@ def gerar_sequencia_convocados(total_convocados: Any, lote: Any=None, escolhas_c
                 break
 
     def place_at_or_next_free(index_list: Any, label: Any, remaining: Any) -> Any:
-        """Executa place at or next free."""
+        """Executa place at or next free.
+        
+        Args:
+            index_list: Parâmetro index list da operação.
+            label: Parâmetro label da operação.
+            remaining: Parâmetro remaining da operação.
+        
+        Returns:
+            Resultado da operação.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         placed = 0
         for idx in index_list:
             if placed >= remaining:
@@ -246,7 +361,18 @@ def gerar_sequencia_convocados(total_convocados: Any, lote: Any=None, escolhas_c
     nna_placed = place_at_or_next_free(nna_positions, 'NNA', nna_total)
 
     def backfill_remaining(label: Any, remaining_to_place: Any) -> Any:
-        """Executa backfill remaining."""
+        """Executa backfill remaining.
+        
+        Args:
+            label: Parâmetro label da operação.
+            remaining_to_place: Parâmetro remaining to place da operação.
+        
+        Returns:
+            Resultado da operação.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         placed = 0
         for i in range(total_convocados):
             if placed >= remaining_to_place:
@@ -262,7 +388,17 @@ def gerar_sequencia_convocados(total_convocados: Any, lote: Any=None, escolhas_c
     resultado_itens = [None] * total_convocados
 
     def pop_from(label: Any) -> Any:
-        """Executa pop from."""
+        """Executa pop from.
+        
+        Args:
+            label: Parâmetro label da operação.
+        
+        Returns:
+            Resultado da operação.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         nonlocal idx_nna, idx_pcd, idx_geral
         if label == 'NNA' and idx_nna < len(nna_list):
             item = nna_list[idx_nna]

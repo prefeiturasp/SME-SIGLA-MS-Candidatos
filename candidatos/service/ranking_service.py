@@ -4,7 +4,17 @@ from typing import Any
 from candidatos.models import ConcursoCandidato
 
 def atualizar_ranking(itens: Any) -> None:
-    """Executa atualizar ranking."""
+    """Executa atualizar ranking.
+    
+    Args:
+        itens: Parâmetro itens da operação.
+    
+    Returns:
+        Não retorna valor.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     try:
         for idx, it in enumerate(itens, start=1):
             it.ranking = idx
@@ -15,12 +25,15 @@ def atualizar_ranking(itens: Any) -> None:
 
 def atualizar_ranking_escolha(itens: Any) -> None:
     """Define ranking_escolha conforme regra:.
-
-    - Pegue todos os itens com classificacao_pcd preenchida e ordene-os por
-    classificacao.
-    - Os demais itens devem ser ordenados por classificacao (nulos por último).
-    - Concatene: [pcd_ordenados_por_classificacao] + [demais_na_ordem_atual]
-    - Atribua ranking_escolha = posição (1-based) nessa lista resultante.
+    
+    Args:
+        itens: Parâmetro itens da operação.
+    
+    Returns:
+        Não retorna valor.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
     """
     try:
         'classificacao'

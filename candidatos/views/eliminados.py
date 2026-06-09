@@ -9,21 +9,21 @@ from candidatos.serializers import ConcursoCandidatoEliminadoSerializer
 logger = logging.getLogger(__name__)
 
 class EliminadosViewSet(viewsets.ViewSet):
-    """Endpoint para listar candidatos eliminados por concurso_uuid e.
-
-    processo_uuid,
-    no mesmo padrão do endpoint de reclassificados.
-    GET /eliminados/?concurso_uuid=<uuid>&processo_uuid=<uuid>
-    Retorna um dicionário separado por tipo de classificação:
-    {
-      "geral": [...],
-      "nna": [...],
-      "pcd": [...]
-    }.
-    """
+    """Endpoint para listar candidatos eliminados por concurso_uuid e."""
 
     def list(self, request: Any) -> Any:
-        """Executa list."""
+        """Executa list.
+        
+        Args:
+            self: Instância do objeto.
+            request: Requisição HTTP recebida.
+        
+        Returns:
+            Resposta HTTP com os dados serializados.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         concurso_uuid = request.query_params.get('concurso_uuid')
         processo_uuid = request.query_params.get('processo_uuid')
         classificacao_max = request.query_params.get('classificacao_max')

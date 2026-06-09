@@ -6,7 +6,14 @@ from candidatos.models import Parametrizacao
 pytestmark = pytest.mark.django_db
 
 def test_parametrizacao_create_with_defaults() -> None:
-    """Testa criação de Parametrizacao com valores padrão."""
+    """Testa criação de Parametrizacao com valores padrão.
+    
+    Returns:
+        Não retorna valor.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     parametrizacao = Parametrizacao.objects.create()
     assert parametrizacao.porcentagem_pcd == 0.05
     assert parametrizacao.porcentagem_nna == 0.2
@@ -16,19 +23,40 @@ def test_parametrizacao_create_with_defaults() -> None:
     assert parametrizacao.atualizado_em is not None
 
 def test_parametrizacao_create_with_custom_values() -> None:
-    """Testa criação de Parametrizacao com valores customizados."""
+    """Testa criação de Parametrizacao com valores customizados.
+    
+    Returns:
+        Não retorna valor.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     parametrizacao = Parametrizacao.objects.create(porcentagem_pcd=0.1, porcentagem_nna=0.25)
     assert parametrizacao.porcentagem_pcd == 0.1
     assert parametrizacao.porcentagem_nna == 0.25
 
 def test_parametrizacao_str_representation() -> None:
-    """Testa a representação string do model."""
+    """Testa a representação string do model.
+    
+    Returns:
+        Não retorna valor.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     parametrizacao = Parametrizacao.objects.create(porcentagem_pcd=0.15, porcentagem_nna=0.3)
     expected_str = f'Parametrização - PCD: {parametrizacao.porcentagem_pcd}, NNA: {parametrizacao.porcentagem_nna}'
     assert str(parametrizacao) == expected_str
 
 def test_parametrizacao_ordering() -> None:
-    """Testa que a ordenação é por criado_em decrescente."""
+    """Testa que a ordenação é por criado_em decrescente.
+    
+    Returns:
+        Não retorna valor.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     parametrizacao1 = Parametrizacao.objects.create(porcentagem_pcd=0.05, porcentagem_nna=0.2)
     import time
     time.sleep(0.01)
@@ -38,7 +66,14 @@ def test_parametrizacao_ordering() -> None:
     assert all_parametrizacoes[1] == parametrizacao1
 
 def test_parametrizacao_update() -> None:
-    """Testa atualização de Parametrizacao."""
+    """Testa atualização de Parametrizacao.
+    
+    Returns:
+        Não retorna valor.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     parametrizacao = Parametrizacao.objects.create(porcentagem_pcd=0.05, porcentagem_nna=0.2)
     original_updated = parametrizacao.atualizado_em
     parametrizacao.porcentagem_pcd = 0.15
@@ -50,7 +85,14 @@ def test_parametrizacao_update() -> None:
     assert parametrizacao.atualizado_em > original_updated
 
 def test_parametrizacao_soft_delete() -> None:
-    """Testa soft delete (esta_ativo)."""
+    """Testa soft delete (esta_ativo).
+    
+    Returns:
+        Não retorna valor.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     parametrizacao = Parametrizacao.objects.create(porcentagem_pcd=0.05, porcentagem_nna=0.2)
     assert parametrizacao.esta_ativo is True
     parametrizacao.esta_ativo = False
@@ -59,7 +101,14 @@ def test_parametrizacao_soft_delete() -> None:
     assert parametrizacao.esta_ativo is False
 
 def test_parametrizacao_multiple_instances() -> None:
-    """Testa criação de múltiplas instâncias."""
+    """Testa criação de múltiplas instâncias.
+    
+    Returns:
+        Não retorna valor.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     Parametrizacao.objects.all().delete()
     parametrizacao1 = Parametrizacao.objects.create(porcentagem_pcd=0.05, porcentagem_nna=0.2)
     parametrizacao2 = Parametrizacao.objects.create(porcentagem_pcd=0.1, porcentagem_nna=0.25)

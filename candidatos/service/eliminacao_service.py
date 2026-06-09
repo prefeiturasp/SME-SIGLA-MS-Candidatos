@@ -10,7 +10,19 @@ logger = logging.getLogger(__name__)
 
 @transaction.atomic
 def aplicar_eliminacao(*, candidato_uuid: Any, motivo: str='', executado_por: str='') -> tuple[ConcursoCandidato, ConcursoCandidatoEliminacao]:
-    """Executa aplicar eliminacao."""
+    """Executa aplicar eliminacao.
+    
+    Args:
+        candidato_uuid: Parâmetro candidato uuid da operação.
+        motivo: Parâmetro motivo da operação.
+        executado_por: Parâmetro executado por da operação.
+    
+    Returns:
+        Resultado da operação.
+    
+    Raises:
+        ValueError: Se ocorrer erro nesta operação.
+    """
     logger.info('Aplicando eliminação', extra={'correlation_id': get_correlation_id(), 'candidato_uuid': candidato_uuid, 'motivo': motivo, 'executado_por': executado_por})
     cc = ConcursoCandidato.objects.select_for_update().get(uuid=candidato_uuid)
     if cc.eliminado:

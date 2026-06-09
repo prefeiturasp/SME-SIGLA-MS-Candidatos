@@ -9,9 +9,15 @@ logger = logging.getLogger(__name__)
 
 def _categoria_efetiva_calculada(cc: ConcursoCandidato) -> str:
     """Calcula a categoria_efetiva baseada nas classificações existentes e.
-
-    nos históricos de desclassificação registrados.
-    Prioridade: PCD > NNA > GERAL.
+    
+    Args:
+        cc: Parâmetro cc da operação.
+    
+    Returns:
+        Texto resultante da operação.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
     """
     desclass_pcd = cc.historicos_reclassificacao.filter(desclassificado_de='PCD').exists()
     desclass_nna = cc.historicos_reclassificacao.filter(desclassificado_de='NNA').exists()
@@ -29,9 +35,18 @@ def _categoria_efetiva_calculada(cc: ConcursoCandidato) -> str:
 @transaction.atomic
 def aplicar_reclassificacao(*, candidato_uuid: Any, desclassificar_de: str, motivo: str='', executado_por: str='') -> tuple[ConcursoCandidato, ConcursoCandidatoReclassificacao]:
     """Aplica a reclassificação explícita (desclassificação de NNA/PCD) a um.
-
-    ConcursoCandidato,
-    registra histórico e atualiza categoria_efetiva.
+    
+    Args:
+        candidato_uuid: Parâmetro candidato uuid da operação.
+        desclassificar_de: Parâmetro desclassificar de da operação.
+        motivo: Parâmetro motivo da operação.
+        executado_por: Parâmetro executado por da operação.
+    
+    Returns:
+        Resultado da operação.
+    
+    Raises:
+        ValueError: Se ocorrer erro nesta operação.
     """
     logger.info('Aplicando reclassificação', extra={'correlation_id': get_correlation_id(), 'candidato_uuid': candidato_uuid, 'desclassificar_de': desclassificar_de, 'motivo': motivo, 'executado_por': executado_por})
     cc = ConcursoCandidato.objects.select_for_update().select_related('candidato').get(uuid=candidato_uuid)

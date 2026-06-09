@@ -6,19 +6,32 @@ from candidatos.models import Candidato, ConcursoCandidato
 
 def remover_mascara_cpf(cpf: str) -> str:
     """Remove máscara do CPF, retornando apenas os dígitos.
-
+    
     Args:
-        cpf: CPF com ou sem máscara (ex: "123.456.789-00" ou "12345678900")
-
+        cpf: CPF com ou sem máscara (ex: "123.456.789-00" ou "12345678900").
+    
     Returns:
-        CPF sem máscara (apenas dígitos)
+        Texto resultante da operação.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
     """
     if not cpf:
         return ''
     return ''.join(filter(str.isdigit, str(cpf)))
 
 def upsert_candidato_e_concurso(data: dict[str, Any]) -> tuple[Candidato, ConcursoCandidato]:
-    """Executa upsert candidato e concurso."""
+    """Executa upsert candidato e concurso.
+    
+    Args:
+        data: Dados de entrada.
+    
+    Returns:
+        Resultado da operação.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     uf = data.get('uf') or ''
     genero_map = {'1': 'M', '2': 'F'}
     genero = genero_map.get(data.get('sexo', ''), '')
@@ -31,7 +44,17 @@ def upsert_candidato_e_concurso(data: dict[str, Any]) -> tuple[Candidato, Concur
     candidato = Candidato.objects.create(nome=data.get('nome', ''), cpf=remover_mascara_cpf(data.get('cpf', '')), email=data.get('email', ''), telefone=data.get('telefone', ''), celular=data.get('celular', ''), rg=data.get('rg', ''), registro_funcional=data.get('registro_funcional', ''), vinculo=data.get('vinculo', ''), data_nascimento=data_nasc or datetime(1900, 1, 1).date(), genero=genero, endereco=data.get('endereco', ''), numero=data.get('numero', ''), complemento=data.get('complemento', ''), bairro=data.get('bairro', ''), cidade=data.get('cidade', ''), estado=uf, cep=data.get('cep', ''))
 
     def _none_if_empty(value: Any) -> Any:
-        """Executa  none if empty."""
+        """Executa  none if empty.
+        
+        Args:
+            value: Valor recebido para validação.
+        
+        Returns:
+            Resultado da operação.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         if value is None:
             return None
         try:

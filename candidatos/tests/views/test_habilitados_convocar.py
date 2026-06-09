@@ -11,17 +11,41 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def client() -> Any:
-    """Executa client."""
+    """Executa client.
+    
+    Returns:
+        Resultado da operação.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     return APIClient()
 
 @pytest.fixture
 def lote() -> Any:
-    """Executa lote."""
+    """Executa lote.
+    
+    Returns:
+        Resultado da operação.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     return ConcursoCandidatosLote.objects.create(concurso_uuid=uuid4(), concurso_nome='Concurso Teste')
 
 @pytest.fixture
 def candidatos_no_lote(lote: Any) -> Any:
-    """Executa candidatos no lote."""
+    """Executa candidatos no lote.
+    
+    Args:
+        lote: Parâmetro lote da operação.
+    
+    Returns:
+        Resultado da operação.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     cand1 = Candidato.objects.create(nome='Fulano', cpf='11111111111', email='john_wick@email.com')
     cand2 = Candidato.objects.create(nome='Beltrano', cpf='22222222222', email='jardani@email.com')
     cc1 = ConcursoCandidato.objects.create(lote=lote, candidato=cand1, codigo_inscricao='A1', descricao_cargo='Cargo X')
@@ -29,7 +53,19 @@ def candidatos_no_lote(lote: Any) -> Any:
     return (cc1, cc2)
 
 def test_convocar_sucesso(client: Any, lote: Any, candidatos_no_lote: Any) -> None:
-    """Verifica convocar sucesso."""
+    """Verifica convocar sucesso.
+    
+    Args:
+        client: Parâmetro client da operação.
+        lote: Parâmetro lote da operação.
+        candidatos_no_lote: Parâmetro candidatos no lote da operação.
+    
+    Returns:
+        Não retorna valor.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     url = reverse('habilitados-convocar')
     cc1, cc2 = candidatos_no_lote
     payload = {'concurso_uuid': str(lote.concurso_uuid), 'candidatos': [str(cc1.uuid), str(cc2.uuid)]}
@@ -42,14 +78,34 @@ def test_convocar_sucesso(client: Any, lote: Any, candidatos_no_lote: Any) -> No
     assert cc1.data_convocacao is not None and cc2.data_convocacao is not None
 
 def test_convocar_lote_inexistente(client: Any) -> None:
-    """Verifica convocar lote inexistente."""
+    """Verifica convocar lote inexistente.
+    
+    Args:
+        client: Parâmetro client da operação.
+    
+    Returns:
+        Não retorna valor.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     url = reverse('habilitados-convocar')
     payload = {'concurso_uuid': str(uuid4()), 'candidatos': []}
     resp = client.patch(url, payload, format='json')
     assert resp.status_code == status.HTTP_404_NOT_FOUND
 
 def test_convocar_payload_invalido(client: Any) -> None:
-    """Verifica convocar payload invalido."""
+    """Verifica convocar payload invalido.
+    
+    Args:
+        client: Parâmetro client da operação.
+    
+    Returns:
+        Não retorna valor.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
+    """
     url = reverse('habilitados-convocar')
     resp = client.patch(url, {}, format='json')
     assert resp.status_code == status.HTTP_400_BAD_REQUEST

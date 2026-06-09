@@ -9,11 +9,34 @@ class Command(BaseCommand):
     help = 'Remove todos os registros da tabela de candidatos'
 
     def add_arguments(self, parser: Any) -> None:
-        """Registra argumentos da linha de comando."""
+        """Registra argumentos da linha de comando.
+        
+        Args:
+            self: Instância do objeto.
+            parser: Parâmetro parser da operação.
+        
+        Returns:
+            Não retorna valor.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         parser.add_argument('--confirm', action='store_true', help='Confirma a exclusão de todos os candidatos')
 
     def handle(self, *args: Any, **options: Any) -> None:
-        """Executa a lógica principal do comando."""
+        """Executa a lógica principal do comando.
+        
+        Args:
+            self: Instância do objeto.
+            *args: Argumentos posicionais variáveis.
+            **options: Parâmetro options da operação.
+        
+        Returns:
+            Não retorna valor.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         confirm = options['confirm']
         total_registros = Candidato.objects.count()
         if total_registros == 0:

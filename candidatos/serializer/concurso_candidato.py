@@ -8,7 +8,16 @@ class DynamicFieldsSerializer(serializers.ModelSerializer):
     """Define DynamicFieldsSerializer."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Executa   init  ."""
+        """Executa   init  .
+        
+        Args:
+            self: Instância do objeto.
+            *args: Argumentos posicionais variáveis.
+            **kwargs: Argumentos nomeados variáveis.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         fields = kwargs.pop('fields', None)
         super().__init__(*args, **kwargs)
         if fields is not None:
@@ -33,13 +42,32 @@ class ConcursoCandidatoSerializer(DynamicFieldsSerializer):
 
     def get_concurso_candidato_uuid(self, obj: Any) -> Any:
         """UUID da linha na tabela candidatos_concursocandidato.
-
-        (ConcursoCandidato).
+        
+        Args:
+            self: Instância do objeto.
+            obj: Parâmetro obj da operação.
+        
+        Returns:
+            Valor calculado para o campo ou propriedade.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
         """
         return str(obj.uuid) if getattr(obj, 'uuid', None) else None
 
     def get_concurso_uuid(self, obj: Any) -> Any:
-        """Retorna o UUID do concurso (campo do modelo ou do lote)."""
+        """Retorna o UUID do concurso (campo do modelo ou do lote).
+        
+        Args:
+            self: Instância do objeto.
+            obj: Parâmetro obj da operação.
+        
+        Returns:
+            Valor calculado para o campo ou propriedade.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         if getattr(obj, 'concurso_uuid', None):
             return str(obj.concurso_uuid)
         lote = getattr(obj, 'lote', None)
@@ -48,14 +76,36 @@ class ConcursoCandidatoSerializer(DynamicFieldsSerializer):
         return None
 
     def get_concurso_nome(self, obj: Any) -> Any:
-        """Retorna o nome do concurso (do lote, quando existir)."""
+        """Retorna o nome do concurso (do lote, quando existir).
+        
+        Args:
+            self: Instância do objeto.
+            obj: Parâmetro obj da operação.
+        
+        Returns:
+            Valor calculado para o campo ou propriedade.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         lote = getattr(obj, 'lote', None)
         if lote and getattr(lote, 'concurso_nome', None):
             return lote.concurso_nome
         return None
 
     def get_candidato(self, obj: Any) -> Any:
-        """Executa get candidato."""
+        """Executa get candidato.
+        
+        Args:
+            self: Instância do objeto.
+            obj: Parâmetro obj da operação.
+        
+        Returns:
+            Valor calculado para o campo ou propriedade.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         c = obj.candidato
         if not c:
             return None
@@ -63,8 +113,16 @@ class ConcursoCandidatoSerializer(DynamicFieldsSerializer):
 
     def get_reclassificacoes(self, obj: Any) -> Any:
         """Retorna histórico de reclassificações (desclassificações de NNA/PCD),.
-
-        se houver, com dados essenciais.
+        
+        Args:
+            self: Instância do objeto.
+            obj: Parâmetro obj da operação.
+        
+        Returns:
+            Valor calculado para o campo ou propriedade.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
         """
         try:
             historicos = getattr(obj, 'historicos_reclassificacao', None)
@@ -78,25 +136,16 @@ class ConcursoCandidatoSerializer(DynamicFieldsSerializer):
             return []
 
 class BuscarPorUuidsSerializer(serializers.Serializer):
-    """Serializer para validação do payload da action buscar_por_uuids.
-
-    Valida que uuids é uma lista não vazia de UUIDs válidos.
-    """
+    """Serializer para validação do payload da action buscar_por_uuids."""
     uuids = serializers.ListField(child=serializers.UUIDField(), min_length=1, error_messages={'required': 'O campo "uuids" é obrigatório', 'empty': 'A lista de UUIDs não pode estar vazia', 'min_length': 'A lista de UUIDs deve conter pelo menos 1 item', 'invalid': 'O campo "uuids" deve ser uma lista de UUIDs válidos'})
 
 class BuscarPorCpfsSerializer(serializers.Serializer):
-    """Serializer para validação do payload da action buscar_por_cpfs.
-
-    Valida que cpfs é uma lista não vazia de CPFs válidos e processo_uuid.
-    """
+    """Serializer para validação do payload da action buscar_por_cpfs."""
     cpfs = serializers.ListField(child=serializers.CharField(max_length=14), min_length=1, error_messages={'required': 'O campo "cpfs" é obrigatório', 'empty': 'A lista de CPFs não pode estar vazia', 'min_length': 'A lista de CPFs deve conter pelo menos 1 item', 'invalid': 'O campo "cpfs" deve ser uma lista de CPFs válidos'})
     processo_uuid = serializers.UUIDField(required=True, error_messages={'required': 'O campo "processo_uuid" é obrigatório', 'invalid': 'O campo "processo_uuid" deve ser um UUID válido'})
 
 class ConcursoCandidatoCpfUuidSerializer(serializers.ModelSerializer):
-    """Serializer simplificado que retorna apenas o CPF do candidato e o UUID do.
-
-    ConcursoCandidato.
-    """
+    """Serializer simplificado que retorna apenas o CPF do candidato e o UUID do."""
     cpf = serializers.SerializerMethodField()
 
     class Meta:
@@ -105,58 +154,58 @@ class ConcursoCandidatoCpfUuidSerializer(serializers.ModelSerializer):
         fields = ['uuid', 'cpf']
 
     def get_cpf(self, obj: Any) -> Any:
-        """Retorna o CPF do candidato relacionado."""
+        """Retorna o CPF do candidato relacionado.
+        
+        Args:
+            self: Instância do objeto.
+            obj: Parâmetro obj da operação.
+        
+        Returns:
+            Valor calculado para o campo ou propriedade.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         if obj.candidato:
             return obj.candidato.cpf
         return None
 
 class HabilitadosCalculadosParamsSerializer(serializers.Serializer):
-    """Valida parâmetros de consulta contendo 'quantidade' e 'concurso_uuid'.
-
-    Útil para endpoints que recebem esses dois parâmetros via querystring.
-    """
+    """Valida parâmetros de consulta contendo 'quantidade' e 'concurso_uuid'."""
     quantidade = serializers.IntegerField(min_value=1, required=True, error_messages={'required': 'O parâmetro "quantidade" é obrigatório', 'invalid': 'O parâmetro "quantidade" deve ser um número inteiro', 'min_value': 'O parâmetro "quantidade" deve ser maior que zero'})
     concurso_uuid = serializers.UUIDField(required=True, error_messages={'required': 'O parâmetro "concurso_uuid" é obrigatório', 'invalid': 'O parâmetro "concurso_uuid" deve ser um UUID válido'})
     processo_uuid = serializers.UUIDField(required=True, error_messages={'required': 'O parâmetro "processo_uuid" é obrigatório', 'invalid': 'O parâmetro "processo_uuid" deve ser um UUID válido'})
     codigo_cargo = serializers.CharField(required=False, error_messages={'required': 'O parâmetro "codigo_cargo" é obrigatório', 'invalid': 'O parâmetro "codigo_cargo" deve ser uma string válida'})
 
 class ReclassificarSerializer(serializers.Serializer):
-    """Payload para reclassificação explícita:.
-
-    {
-        "candidato_uuid": "<uuid>",
-        "desclassificar_de": "NNA" | "PCD",
-        "motivo": "opcional"
-    }.
-    """
+    """Payload para reclassificação explícita:."""
     candidato_uuid = serializers.UUIDField(required=True)
     desclassificar_de = serializers.ChoiceField(choices=[('NNA', 'NNA'), ('PCD', 'PCD')], required=True)
     nova_classificacao = serializers.ChoiceField(choices=[('GERAL', 'GERAL'), ('NNA', 'NNA'), ('PCD', 'PCD')], required=False)
     motivo = serializers.CharField(required=False, allow_blank=True, default='')
 
     def validate(self, attrs: Any) -> Any:
-        """Executa validate."""
+        """Executa validate.
+        
+        Args:
+            self: Instância do objeto.
+            attrs: Atributos em validação.
+        
+        Returns:
+            Resultado da operação.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         return attrs
 
 class EliminarSerializer(serializers.Serializer):
-    """Payload para eliminação explícita:.
-
-    {
-        "concurso_candidato_uuid": "<uuid>",
-        "motivo": "opcional"
-    }.
-    """
+    """Payload para eliminação explícita:."""
     candidato_uuid = serializers.UUIDField(required=True)
     motivo = serializers.CharField(required=False, allow_blank=True, default='')
 
 class ConcursoCandidatoReclassificadoSerializer(serializers.ModelSerializer):
-    """Serializer compacto para saída de reclassificados.
-
-    Campos do candidato: nome, cpf, rg, registro_funcional
-    Campos do concurso_candidato: uuid, codigo_cargo, classificacao,
-    classificacao_pcd,
-    classificacao_nna, categoria_efetiva, criado_em.
-    """
+    """Serializer compacto para saída de reclassificados."""
     candidato = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
@@ -166,7 +215,18 @@ class ConcursoCandidatoReclassificadoSerializer(serializers.ModelSerializer):
         read_only_fields = ['criado_em', 'atualizado_em', 'esta_ativo']
 
     def get_candidato(self, obj: Any) -> Any:
-        """Executa get candidato."""
+        """Executa get candidato.
+        
+        Args:
+            self: Instância do objeto.
+            obj: Parâmetro obj da operação.
+        
+        Returns:
+            Valor calculado para o campo ou propriedade.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         c = obj.candidato
         if not c:
             return None
@@ -188,12 +248,7 @@ class SalvarLotesSerializer(serializers.Serializer):
     lotes = serializers.ListField(child=LoteItemSerializer(), min_length=1)
 
 class ConcursoCandidatoEliminadoSerializer(serializers.ModelSerializer):
-    """Serializer compacto para saída de eliminados.
-
-    Inclui dados essenciais do candidato e do registro de ConcursoCandidato,
-    preservando campos de eliminação (eliminado_em, eliminado_motivo,
-    eliminado_por).
-    """
+    """Serializer compacto para saída de eliminados."""
     candidato = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
@@ -203,7 +258,18 @@ class ConcursoCandidatoEliminadoSerializer(serializers.ModelSerializer):
         read_only_fields = ['criado_em', 'atualizado_em', 'esta_ativo']
 
     def get_candidato(self, obj: Any) -> Any:
-        """Executa get candidato."""
+        """Executa get candidato.
+        
+        Args:
+            self: Instância do objeto.
+            obj: Parâmetro obj da operação.
+        
+        Returns:
+            Valor calculado para o campo ou propriedade.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         c = obj.candidato
         if not c:
             return None

@@ -19,8 +19,15 @@ class EscolhasService:
     @classmethod
     def _get_base_url(cls) -> str:
         """Obtém a URL base do microserviço de Escolhas a partir das.
-
-        configurações.
+        
+        Args:
+            cls: Classe referenciada.
+        
+        Returns:
+            Texto resultante da operação.
+        
+        Raises:
+            ValueError: Se ocorrer erro nesta operação.
         """
         base_url = getattr(settings, "ESCOLHAS_API_URL", None)
         if not base_url:
@@ -32,15 +39,16 @@ class EscolhasService:
         cls, path: str = "/api/v1/escolhas/reconvocacao/"
     ) -> list[dict[str, Any]]:
         """Busca escolhas com situação de reconvocação.
-
+        
         Args:
-            path: Caminho do endpoint (padrão: /api/v1/escolhas/reconvocacao)
-
+            cls: Classe referenciada.
+            path: Caminho do endpoint (padrão: /api/v1/escolhas/reconvocacao).
+        
         Returns:
-            Lista de dicionários com 'uuid' e 'candidato_uuid'
+            Lista com os registros resultantes.
+        
         Raises:
-            requests.RequestException: Em caso de erro na requisição
-            ValueError: Se a URL não estiver configurada.
+            RequestException: Se ocorrer erro nesta operação.
         """
         base_url = cls._get_base_url()
         url = f"{base_url}{path}"
@@ -99,17 +107,17 @@ class EscolhasService:
         path: str = "/api/v1/escolhas/?situacao__in=escolha,reconvocacao",
     ) -> list[dict[str, Any]]:
         """Busca escolhas com situação de escolha ou reconvocação.
-
+        
         Args:
-            concurso_uuid: UUID do concurso
-            path: Caminho do endpoint (padrão:
-            /api/v1/escolhas/?situacao=escolha,reconvocacao)
-
+            cls: Classe referenciada.
+            concurso_uuid: UUID do concurso.
+            path: Caminho do endpoint (padrão:.
+        
         Returns:
-            Lista de dicionários com 'uuid' e 'candidato_uuid'
+            Lista com os registros resultantes.
+        
         Raises:
-            requests.RequestException: Em caso de erro na requisição
-            ValueError: Se a URL não estiver configurada.
+            RequestException: Se ocorrer erro nesta operação.
         """
         base_url = cls._get_base_url()
         url = f"{base_url}{path}&concurso_uuid={concurso_uuid}&page_size=10000"

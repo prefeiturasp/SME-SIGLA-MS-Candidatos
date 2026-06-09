@@ -6,10 +6,7 @@ from .base import BaseModel
 from .concurso_candidato import ConcursoCandidato
 
 class ConcursoCandidatoReclassificacao(BaseModel):
-    """Histórico de reclassificações explícitas, registrando desclassificação.
-
-    de cotas sem alterar os campos de classificação originais.
-    """
+    """Histórico de reclassificações explícitas, registrando desclassificação."""
     CLASSIFICACAO_CHOICES = (('GERAL', 'GERAL'), ('NNA', 'NNA'), ('PCD', 'PCD'))
     concurso_candidato = models.ForeignKey(ConcursoCandidato, on_delete=models.CASCADE, related_name='historicos_reclassificacao', verbose_name='ConcursoCandidato')
     desclassificado_de = models.CharField(max_length=5, choices=CLASSIFICACAO_CHOICES, verbose_name='Desclassificado de')
@@ -26,5 +23,15 @@ class ConcursoCandidatoReclassificacao(BaseModel):
         unique_together = (('concurso_candidato', 'desclassificado_de'),)
 
     def __str__(self) -> Any:
-        """Executa   str  ."""
+        """Executa   str  .
+        
+        Args:
+            self: Instância do objeto.
+        
+        Returns:
+            Resultado da operação.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         return f'{self.concurso_candidato_id} - {self.desclassificado_de}'

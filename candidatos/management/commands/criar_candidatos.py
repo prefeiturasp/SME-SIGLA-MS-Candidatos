@@ -11,11 +11,34 @@ class Command(BaseCommand):
     help = 'Cria candidatos de exemplo para desenvolvimento'
 
     def add_arguments(self, parser: Any) -> None:
-        """Registra argumentos da linha de comando."""
+        """Registra argumentos da linha de comando.
+        
+        Args:
+            self: Instância do objeto.
+            parser: Parâmetro parser da operação.
+        
+        Returns:
+            Não retorna valor.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         parser.add_argument('--count', type=int, default=10, help='Número de candidatos a serem criados (padrão: 10)')
 
     def handle(self, *args: Any, **options: Any) -> None:
-        """Executa a lógica principal do comando."""
+        """Executa a lógica principal do comando.
+        
+        Args:
+            self: Instância do objeto.
+            *args: Argumentos posicionais variáveis.
+            **options: Parâmetro options da operação.
+        
+        Returns:
+            Não retorna valor.
+        
+        Raises:
+            Nenhuma exceção específica documentada.
+        """
         count = options['count']
         self.stdout.write(self.style.SUCCESS(f'Criando {count} candidatos...'))
         nomes = ['João Silva', 'Maria Santos', 'Pedro Oliveira', 'Ana Costa', 'Carlos Pereira', 'Lucia Ferreira', 'Roberto Alves', 'Fernanda Lima', 'Marcos Souza', 'Juliana Rocha', 'Rafael Mendes', 'Camila Dias', 'Diego Rodrigues', 'Patricia Nunes', 'Thiago Barbosa', 'Larissa Gomes', 'Felipe Castro', 'Beatriz Moreira', 'Gabriel Martins', 'Isabela Ramos']

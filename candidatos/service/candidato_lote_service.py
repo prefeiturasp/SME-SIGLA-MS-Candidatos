@@ -12,12 +12,15 @@ def processar_criacao_candidatos_lote(
     data: dict[str, Any],
 ) -> tuple[dict[str, Any], int]:
     """Espera payload:.
-
-    {
-        "concurso_uuid": "uuid",
-        "concurso_nome": "nome",
-        "candidatos": [ {dados do candidato + campos de concurso}, ... ]
-    }.
+    
+    Args:
+        data: Dados de entrada.
+    
+    Returns:
+        Resultado da operação.
+    
+    Raises:
+        Nenhuma exceção específica documentada.
     """
     concurso_uuid = data.get("concurso_uuid")
     if not concurso_uuid:
