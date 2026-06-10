@@ -17,16 +17,13 @@ logger = logging.getLogger(__name__)
 
 
 def _categoria_efetiva_calculada(cc: ConcursoCandidato) -> str:
-    """Calcula a categoria_efetiva baseada nas classificações existentes e.
+    """Determina a categoria efetiva com base nas classificações e histórico.
 
     Args:
-        cc: Parâmetro cc.
+        cc: Registro de ConcursoCandidato a avaliar.
 
     Returns:
-        Texto resultante da operação.
-
-    Raises:
-        Nenhuma exceção específica documentada.
+        Categoria efetiva (``PCD``, ``NNA`` ou ``GERAL``).
     """
     desclass_pcd = cc.historicos_reclassificacao.filter(
         desclassificado_de="PCD"
@@ -54,19 +51,19 @@ def aplicar_reclassificacao(
     motivo: str = "",
     executado_por: str = "",
 ) -> tuple[ConcursoCandidato, ConcursoCandidatoReclassificacao]:
-    """Aplica a reclassificação explícita (desclassificação de NNA/PCD) a um.
+    """Aplica desclassificação de NNA ou PCD e atualiza a categoria efetiva.
 
     Args:
-        candidato_uuid: Parâmetro candidato uuid.
-        desclassificar_de: Parâmetro desclassificar de.
-        motivo: Parâmetro motivo.
-        executado_por: Parâmetro executado por.
+        candidato_uuid: UUID do ConcursoCandidato a reclassificar.
+        desclassificar_de: Categoria de origem (``NNA`` ou ``PCD``).
+        motivo: Justificativa da reclassificação.
+        executado_por: Usuário responsável pela operação.
 
     Returns:
-        Resultado da operação.
+        Tupla com o registro atualizado e o histórico de reclassificação.
 
     Raises:
-        ValueError: Se ocorrer erro nesta operação.
+        ValueError: Se parâmetros forem inválidos ou operação negada.
     """
     logger.info(
         "Aplicando reclassificação",

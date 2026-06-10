@@ -35,7 +35,7 @@ pytestmark = pytest.mark.django_db
 
 
 def _candidato(**kwargs: Any) -> Any:
-    """Executa  candidato."""
+    """Candidato de exemplo para os testes."""
     return Candidato.objects.create(
         nome=kwargs.get("nome", "Teste"),
         cpf=kwargs.get("cpf", f"{uuid4().int % 10 ** 11:011d}"),
@@ -58,7 +58,7 @@ def _cc(
     codigo_cargo: Any = "CARGO1",
     **kwargs: Any,
 ) -> Any:
-    """Executa  cc."""
+    """ConcursoCandidato de exemplo para os testes."""
     return ConcursoCandidato.objects.create(
         candidato=candidato or _candidato(),
         lote=lote,
@@ -75,7 +75,7 @@ def _cc(
 
 @pytest.fixture
 def lote() -> Any:
-    """Executa lote."""
+    """Lote de concurso usado nos testes."""
     return ConcursoCandidatosLote.objects.create(
         concurso_uuid=uuid4(), concurso_nome="Concurso Teste"
     )
@@ -189,7 +189,7 @@ class TestSafeMaxClassificacao:
 
             @property
             def classificacao(self) -> None:
-                """Executa classificacao."""
+                """Valor de classificação usado no mock."""
                 raise ValueError("erro")
 
             classificacao_nna = None

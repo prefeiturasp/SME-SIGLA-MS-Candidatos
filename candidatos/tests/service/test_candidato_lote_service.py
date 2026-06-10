@@ -19,7 +19,7 @@ pytestmark = pytest.mark.django_db
 
 
 def payload_exemplo() -> Any:
-    """Executa payload exemplo."""
+    """Payload de exemplo para importação."""
     return {
         "concurso_uuid": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
         "concurso_nome": "Concurso X",

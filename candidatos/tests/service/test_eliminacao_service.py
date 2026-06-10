@@ -23,7 +23,7 @@ pytestmark = pytest.mark.django_db
 
 
 def _candidato(**kwargs: Any) -> Any:
-    """Executa  candidato."""
+    """Candidato de exemplo para os testes."""
     return Candidato.objects.create(
         nome=kwargs.get("nome", "Teste"),
         cpf=kwargs.get("cpf", f"{uuid4().int % 10 ** 11:011d}"),
@@ -42,7 +42,7 @@ def _candidato(**kwargs: Any) -> Any:
 
 @pytest.fixture
 def lote() -> Any:
-    """Executa lote."""
+    """Lote de concurso usado nos testes."""
     return ConcursoCandidatosLote.objects.create(
         concurso_uuid=uuid4(), concurso_nome="Concurso Teste"
     )
@@ -50,7 +50,7 @@ def lote() -> Any:
 
 @pytest.fixture
 def cc_habilitado(lote: Any) -> Any:
-    """Executa cc habilitado."""
+    """ConcursoCandidato habilitado para convocação."""
     return ConcursoCandidato.objects.create(
         candidato=_candidato(),
         lote=lote,
@@ -121,7 +121,7 @@ def test_aplicar_eliminacao_uuid_inexistente_levanta_does_not_exist() -> None:
 def _make_candidato(
     cpf: Any = "00000000001", email: Any = "c1@test.com"
 ) -> Any:
-    """Executa  make candidato."""
+    """Factory de Candidato para o teste."""
     return Candidato.objects.create(
         nome="Candidato Teste",
         cpf=cpf,
@@ -131,7 +131,7 @@ def _make_candidato(
 
 
 def _make_cc(candidato: Any = None, **kwargs: Any) -> Any:
-    """Executa  make cc."""
+    """Factory de ConcursoCandidato para o teste."""
     if candidato is None:
         candidato = _make_candidato()
     return ConcursoCandidato.objects.create(
@@ -241,7 +241,7 @@ def test_aplicar_eliminacao_atomicidade(monkeypatch: Any) -> None:
     cc = _make_cc()
 
     def create_raise(*args: Any, **kwargs: Any) -> None:
-        """Executa create raise."""
+        """Simula falha na criação do registro."""
         raise RuntimeError("Falha simulada")
 
     monkeypatch.setattr(

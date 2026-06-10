@@ -56,15 +56,5 @@ class ConcursoCandidatoReclassificacao(BaseModel):
         unique_together = (("concurso_candidato", "desclassificado_de"),)
 
     def __str__(self) -> Any:
-        """Executa   str  .
-
-        Args:
-            self: Instância do objeto.
-
-        Returns:
-            Resultado da operação.
-
-        Raises:
-            Nenhuma exceção específica documentada.
-        """
+        """Retorna identificação da reclassificação e categoria de origem."""
         return f"{self.concurso_candidato_id} - {self.desclassificado_de}"

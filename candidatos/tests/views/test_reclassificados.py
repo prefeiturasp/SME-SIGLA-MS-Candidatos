@@ -25,12 +25,12 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def api_client() -> Any:
-    """Executa api client."""
+    """Cliente HTTP para requisições de teste."""
     return APIClient()
 
 
 def _criar_candidato(nome: Any, cpf: Any, email: Any = None) -> Any:
-    """Executa  criar candidato."""
+    """Cria candidato de exemplo no banco."""
     if email is None:
         email = f"user-{uuid4().hex[:8]}@example.com"
     return Candidato.objects.create(
@@ -51,7 +51,7 @@ def _criar_candidato(nome: Any, cpf: Any, email: Any = None) -> Any:
 
 @pytest.fixture
 def lote() -> Any:
-    """Executa lote."""
+    """Lote de concurso usado nos testes."""
     return ConcursoCandidatosLote.objects.create(
         concurso_uuid=uuid4(), concurso_nome="Concurso Teste"
     )

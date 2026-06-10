@@ -8,16 +8,13 @@ from candidatos.models import ConcursoCandidato
 
 
 def atualizar_ranking(itens: Any) -> None:
-    """Executa atualizar ranking.
+    """Atribui ranking sequencial aos candidatos e persiste em lote.
 
     Args:
-        itens: Parâmetro itens.
+        itens: Lista de ConcursoCandidato na ordem desejada.
 
     Returns:
-        Não retorna valor.
-
-    Raises:
-        Nenhuma exceção específica documentada.
+        Nenhum valor; persiste o campo ranking no banco.
     """
     try:
         for idx, it in enumerate(itens, start=1):
@@ -29,16 +26,13 @@ def atualizar_ranking(itens: Any) -> None:
 
 
 def atualizar_ranking_escolha(itens: Any) -> None:
-    """Define ranking_escolha conforme regra:.
+    """Define ranking_escolha priorizando PCD e depois demais candidatos.
 
     Args:
-        itens: Parâmetro itens.
+        itens: Lista de ConcursoCandidato a reordenar.
 
     Returns:
-        Não retorna valor.
-
-    Raises:
-        Nenhuma exceção específica documentada.
+        Nenhum valor; persiste o campo ranking_escolha no banco.
     """
     try:
         "classificacao"

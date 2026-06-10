@@ -15,10 +15,7 @@ def remover_mascara_cpf(cpf: str) -> str:
         cpf: CPF com ou sem máscara (ex: "123.456.789-00" ou "12345678900").
 
     Returns:
-        Texto resultante da operação.
-
-    Raises:
-        Nenhuma exceção específica documentada.
+        CPF contendo somente dígitos numéricos.
     """
     if not cpf:
         return ""
@@ -28,16 +25,13 @@ def remover_mascara_cpf(cpf: str) -> str:
 def upsert_candidato_e_concurso(
     data: dict[str, Any],
 ) -> tuple[Candidato, ConcursoCandidato]:
-    """Executa upsert candidato e concurso.
+    """Cria candidato e registro de concurso a partir dos dados recebidos.
 
     Args:
-        data: Dados de entrada.
+        data: Dicionário com dados pessoais e de classificação do candidato.
 
     Returns:
-        Resultado da operação.
-
-    Raises:
-        Nenhuma exceção específica documentada.
+        Tupla com o Candidato e o ConcursoCandidato recém-criados.
     """
     uf = data.get("uf") or ""
     genero_map = {"1": "M", "2": "F"}
@@ -71,16 +65,13 @@ def upsert_candidato_e_concurso(
     )
 
     def _none_if_empty(value: Any) -> Any:
-        """Executa  none if empty.
+        """Converte strings vazias em None para campos opcionais.
 
         Args:
-            value: Valor recebido para validação.
+            value: Valor recebido do payload.
 
         Returns:
-            Resultado da operação.
-
-        Raises:
-            Nenhuma exceção específica documentada.
+            Valor original ou ``None`` quando vazio ou apenas espaços.
         """
         if value is None:
             return None

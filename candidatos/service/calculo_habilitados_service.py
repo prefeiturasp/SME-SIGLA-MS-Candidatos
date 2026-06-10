@@ -17,17 +17,15 @@ from .ranking_service import atualizar_ranking, atualizar_ranking_escolha
 def calcular_quantidade_nna(
     total_candidatos: Any, porcentagem_nna: Any
 ) -> Any:
-    """Executa calcular quantidade nna.
+    """Calcula a quantidade de vagas reservadas a NNA.
 
     Args:
-        total_candidatos: Parâmetro total candidatos.
-        porcentagem_nna: Parâmetro porcentagem nna.
+        total_candidatos: Total de candidatos considerados no cálculo.
+        porcentagem_nna: Percentual aplicado sobre o total para NNA.
 
     Returns:
-        Resultado da operação.
-
-    Raises:
-        Nenhuma exceção específica documentada.
+        Quantidade de vagas NNA, arredondada para cima a partir da
+        porcentagem sobre o total.
     """
     return math.ceil(total_candidatos * porcentagem_nna)
 
@@ -35,17 +33,15 @@ def calcular_quantidade_nna(
 def calcular_quantidade_pcd(
     total_candidatos: Any, porcentagem_pcd: Any
 ) -> Any:
-    """Executa calcular quantidade pcd.
+    """Calcula a quantidade de vagas reservadas a PCD.
 
     Args:
-        total_candidatos: Parâmetro total candidatos.
-        porcentagem_pcd: Parâmetro porcentagem pcd.
+        total_candidatos: Total de candidatos considerados no cálculo.
+        porcentagem_pcd: Percentual aplicado sobre o total para PCD.
 
     Returns:
-        Resultado da operação.
-
-    Raises:
-        Nenhuma exceção específica documentada.
+        Quantidade de vagas PCD, obtida pela porcentagem sobre o total com
+        arredondamento matemático.
     """
     valor = total_candidatos * porcentagem_pcd
     frac = valor - math.floor(valor)
@@ -55,18 +51,16 @@ def calcular_quantidade_pcd(
 def calcular_quantidade_geral(
     total_candidatos: Any, porcentagem_nna: Any, porcentagem_pcd: Any
 ) -> Any:
-    """Executa calcular quantidade geral.
+    """Calcula a quantidade de vagas da ampla concorrência.
 
     Args:
-        total_candidatos: Parâmetro total candidatos.
-        porcentagem_nna: Parâmetro porcentagem nna.
-        porcentagem_pcd: Parâmetro porcentagem pcd.
+        total_candidatos: Total de candidatos considerados no cálculo.
+        porcentagem_nna: Percentual reservado a NNA.
+        porcentagem_pcd: Percentual reservado a PCD.
 
     Returns:
-        Resultado da operação.
-
-    Raises:
-        Nenhuma exceção específica documentada.
+        Quantidade de vagas gerais, equivalente ao total menos as reservas
+        de NNA e PCD.
     """
     return (
         total_candidatos
@@ -76,31 +70,25 @@ def calcular_quantidade_geral(
 
 
 def calcular_posicao_nna(posicao: Any) -> Any:
-    """Executa calcular posicao nna.
+    """Calcula a posição absoluta na sequência para a n-ésima vaga NNA.
 
     Args:
-        posicao: Parâmetro posicao.
+        posicao: Índice da vaga NNA (1-based).
 
     Returns:
-        Resultado da operação.
-
-    Raises:
-        Nenhuma exceção específica documentada.
+        Posição absoluta na fila de convocação conforme a regra 5n - 4.
     """
     return 5 * posicao - 4
 
 
 def calcular_posicao_pcd(posicao: Any) -> Any:
-    """Executa calcular posicao pcd.
+    """Calcula a posição absoluta na sequência para a n-ésima vaga PCD.
 
     Args:
-        posicao: Parâmetro posicao.
+        posicao: Índice da vaga PCD (1-based).
 
     Returns:
-        Resultado da operação.
-
-    Raises:
-        Nenhuma exceção específica documentada.
+        Posição absoluta na fila de convocação (regra 10 + (n - 1) * 20).
     """
     return 10 + (posicao - 1) * 20
 
@@ -109,14 +97,12 @@ def _safe_max_classificacao(final_itens: Any, classificacao_attr: str) -> Any:
     """Retorna o maior valor inteiro encontrado no atributo de classificação.
 
     Args:
-        final_itens: Parâmetro final itens.
-        classificacao_attr: Parâmetro classificacao attr.
+        final_itens: Candidatos já selecionados para a convocação.
+        classificacao_attr: Atributo consultado (``classificacao``,
+            ``classificacao_nna`` ou ``classificacao_pcd``).
 
     Returns:
-        Resultado da operação.
-
-    Raises:
-        Nenhuma exceção específica documentada.
+        Maior classificação encontrada ou ``None`` se inválido.
     """
     try:
         valores = []
@@ -148,21 +134,18 @@ def _atualizar_processo_uuid_para_reclassificados(
     lote: Any,
     codigo_cargo: Any,
 ) -> None:
-    """Atualiza processo_uuid nos históricos de reclassificação para.
+    """Atualiza processo_uuid nos históricos de reclassificação.
 
     Args:
-        final_itens: Parâmetro final itens.
-        categoria: Parâmetro categoria.
-        classificacao_attr: Parâmetro classificacao attr.
-        processo_uuid: Parâmetro processo uuid.
-        lote: Parâmetro lote.
-        codigo_cargo: Parâmetro codigo cargo.
+        final_itens: Candidatos convocados nesta sequência.
+        categoria: Categoria desclassificada (``NNA`` ou ``PCD``).
+        classificacao_attr: Atributo de classificação usado como referência.
+        processo_uuid: UUID do processo de convocação atual.
+        lote: Lote do concurso.
+        codigo_cargo: Código do cargo filtrado.
 
     Returns:
-        Não retorna valor.
-
-    Raises:
-        Nenhuma exceção específica documentada.
+        Nenhum valor; atualiza registros de reclassificação no banco.
     """
     try:
         if not processo_uuid:
@@ -193,19 +176,16 @@ def _atualizar_processo_uuid_para_reclassificados(
 def _atualizar_processo_uuid_para_eliminados(
     final_itens: Any, processo_uuid: Any, lote: Any, codigo_cargo: Any
 ) -> None:
-    """Atualiza processo_uuid nos históricos de eliminação para candidatos que.
+    """Atualiza processo_uuid nos históricos de eliminação abaixo dos limites.
 
     Args:
-        final_itens: Parâmetro final itens.
-        processo_uuid: Parâmetro processo uuid.
-        lote: Parâmetro lote.
-        codigo_cargo: Parâmetro codigo cargo.
+        final_itens: Candidatos convocados nesta sequência.
+        processo_uuid: UUID do processo de convocação atual.
+        lote: Lote do concurso.
+        codigo_cargo: Código do cargo filtrado.
 
     Returns:
-        Não retorna valor.
-
-    Raises:
-        Nenhuma exceção específica documentada.
+        Nenhum valor; atualiza registros de eliminação no banco.
     """
     try:
         if not processo_uuid:
@@ -250,20 +230,17 @@ def gerar_sequencia_convocados(
     codigo_cargo: Any = None,
     processo_uuid: Any = None,
 ) -> Any:
-    """Gera a sequência de convocação com rótulos 'G', 'NNA' e 'PCD',.
+    """Gera a sequência de convocação com rótulos G, NNA e PCD.
 
     Args:
-        total_convocados: Parâmetro total convocados.
-        lote: Parâmetro lote.
-        escolhas_candidato_uuids: Parâmetro escolhas candidato uuids.
-        codigo_cargo: Parâmetro codigo cargo.
-        processo_uuid: Parâmetro processo uuid.
+        total_convocados: Quantidade de candidatos a convocar nesta rodada.
+        lote: Lote do concurso (opcional).
+        escolhas_candidato_uuids: UUIDs de candidatos com escolha confirmada.
+        codigo_cargo: Filtro por cargo (opcional).
+        processo_uuid: UUID do processo para vincular históricos.
 
     Returns:
-        Resultado da operação.
-
-    Raises:
-        Nenhuma exceção específica documentada.
+        Tupla com a lista de candidatos convocados e as porcentagens NNA e PCD.
     """
     parametrizacao = Parametrizacao.objects.first()
     porcentagem_nna = parametrizacao.porcentagem_nna  # type: ignore[union-attr]
@@ -298,18 +275,15 @@ def gerar_sequencia_convocados(
     sequencia = ["G"] * total_convocados
 
     def calcular_quantidades_por_tipo(geral: Any, nna: Any, pcd: Any) -> Any:
-        """Executa calcular quantidades por tipo.
+        """Seleciona candidatos por categoria (geral, NNA e PCD).
 
         Args:
-            geral: Parâmetro geral.
-            nna: Parâmetro nna.
-            pcd: Parâmetro pcd.
+            geral: Quantidade de vagas de ampla concorrência.
+            nna: Quantidade de vagas NNA.
+            pcd: Quantidade de vagas PCD.
 
         Returns:
-            Resultado da operação.
-
-        Raises:
-            Nenhuma exceção específica documentada.
+            Tupla com os querysets por categoria e indicadores de faltantes.
         """
         qs_geral = (
             ConcursoCandidato.objects.filter(
@@ -367,18 +341,15 @@ def gerar_sequencia_convocados(
     def calcular_com_recalculo_se_necessario(
         geral: Any, nna: Any, pcd: Any
     ) -> Any:
-        """Executa o cálculo por tipo e, caso faltem NNA/PCD, recalcula apenas.
+        """Recalcula quantidades por tipo quando faltam candidatos NNA ou PCD.
 
         Args:
-            geral: Parâmetro geral.
-            nna: Parâmetro nna.
-            pcd: Parâmetro pcd.
+            geral: Quantidade de vagas de ampla concorrência.
+            nna: Quantidade de vagas NNA.
+            pcd: Quantidade de vagas PCD.
 
         Returns:
-            Resultado da operação.
-
-        Raises:
-            Nenhuma exceção específica documentada.
+            Tupla com os querysets por categoria após eventual recálculo.
         """
         (
             qs_geral,
@@ -485,18 +456,15 @@ def gerar_sequencia_convocados(
     def place_at_or_next_free(
         index_list: Any, label: Any, remaining: Any
     ) -> Any:
-        """Executa place at or next free.
+        """Posiciona rótulos na sequência ou na próxima posição livre.
 
         Args:
-            index_list: Parâmetro index list.
-            label: Parâmetro label.
-            remaining: Parâmetro remaining.
+            index_list: Posições preferenciais na sequência.
+            label: Rótulo a inserir (``NNA`` ou ``PCD``).
+            remaining: Quantidade restante a posicionar.
 
         Returns:
-            Resultado da operação.
-
-        Raises:
-            Nenhuma exceção específica documentada.
+            Quantidade de rótulos efetivamente posicionados.
         """
         placed = 0
         for idx in index_list:
@@ -514,17 +482,14 @@ def gerar_sequencia_convocados(
     nna_placed = place_at_or_next_free(nna_positions, "NNA", nna_total)
 
     def backfill_remaining(label: Any, remaining_to_place: Any) -> Any:
-        """Executa backfill remaining.
+        """Preenche posições G restantes com o rótulo informado.
 
         Args:
-            label: Parâmetro label.
-            remaining_to_place: Parâmetro remaining to place.
+            label: Rótulo a inserir (``NNA`` ou ``PCD``).
+            remaining_to_place: Quantidade ainda não posicionada.
 
         Returns:
-            Resultado da operação.
-
-        Raises:
-            Nenhuma exceção específica documentada.
+            Quantidade de posições preenchidas.
         """
         placed = 0
         for i in range(total_convocados):
@@ -542,16 +507,13 @@ def gerar_sequencia_convocados(
     resultado_itens = [None] * total_convocados
 
     def pop_from(label: Any) -> Any:
-        """Executa pop from.
+        """Remove e retorna o próximo candidato da fila da categoria.
 
         Args:
-            label: Parâmetro label.
+            label: Categoria da fila (``G``, ``NNA`` ou ``PCD``).
 
         Returns:
-            Resultado da operação.
-
-        Raises:
-            Nenhuma exceção específica documentada.
+            Próximo ``ConcursoCandidato`` da fila ou ``None`` se esgotada.
         """
         nonlocal idx_nna, idx_pcd, idx_geral
         if label == "NNA" and idx_nna < len(nna_list):

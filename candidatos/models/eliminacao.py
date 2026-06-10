@@ -37,15 +37,5 @@ class ConcursoCandidatoEliminacao(BaseModel):
         ordering = ["-criado_em"]
 
     def __str__(self) -> Any:
-        """Executa   str  .
-
-        Args:
-            self: Instância do objeto.
-
-        Returns:
-            Resultado da operação.
-
-        Raises:
-            Nenhuma exceção específica documentada.
-        """
+        """Retorna identificação do registro de eliminação."""
         return f"{self.concurso_candidato_id} - ELIMINACAO"

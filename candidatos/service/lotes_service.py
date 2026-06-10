@@ -24,11 +24,11 @@ def salvar_lotes(concurso_uuid: str, lotes: list[dict[str, Any]]) -> int:
     """Grava dados de lote nos ConcursoCandidatos do concurso informado.
 
     Args:
-        concurso_uuid: Parâmetro concurso uuid.
-        lotes: Parâmetro lotes.
+        concurso_uuid: UUID do concurso cujos candidatos serão atualizados.
+        lotes: Lista de dicionários com dados de lote por candidato.
 
     Returns:
-        Valor inteiro calculado.
+        Quantidade de candidatos atualizados com sucesso.
 
     Raises:
         SalvarLotesException: Se ocorrer erro nesta operação.

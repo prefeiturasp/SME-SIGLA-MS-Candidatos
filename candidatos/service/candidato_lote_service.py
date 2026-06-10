@@ -12,16 +12,14 @@ from .candidato_service import upsert_candidato_e_concurso
 def processar_criacao_candidatos_lote(
     data: dict[str, Any],
 ) -> tuple[dict[str, Any], int]:
-    """Espera payload:.
+    """Processa criação em lote de candidatos vinculados a um concurso.
 
     Args:
-        data: Dados de entrada.
+        data: Payload com ``concurso_uuid``, ``concurso_nome`` e lista de
+            candidatos.
 
     Returns:
-        Resultado da operação.
-
-    Raises:
-        Nenhuma exceção específica documentada.
+        Tupla com corpo da resposta e código HTTP (201 ou 400).
     """
     concurso_uuid = data.get("concurso_uuid")
     if not concurso_uuid:

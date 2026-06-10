@@ -13,16 +13,7 @@ class DynamicFieldsSerializer(serializers.ModelSerializer):
     """Define DynamicFieldsSerializer."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Executa   init  .
-
-        Args:
-            self: Instância do objeto.
-            *args: Argumentos posicionais variáveis.
-            **kwargs: Argumentos nomeados variáveis.
-
-        Raises:
-            Nenhuma exceção específica documentada.
-        """
+        """Restringe campos serializados quando ``fields`` é informado."""
         fields = kwargs.pop("fields", None)
         super().__init__(*args, **kwargs)
         if fields is not None:
@@ -49,17 +40,13 @@ class ConcursoCandidatoSerializer(DynamicFieldsSerializer):
         read_only_fields = ["criado_em", "atualizado_em", "esta_ativo"]
 
     def get_concurso_candidato_uuid(self, obj: Any) -> Any:
-        """UUID da linha na tabela candidatos_concursocandidato.
+        """Retorna o UUID do registro ConcursoCandidato.
 
         Args:
-            self: Instância do objeto.
-            obj: Parâmetro obj.
+            obj: Instância de ConcursoCandidato sendo serializada.
 
         Returns:
-            Valor calculado para o campo ou propriedade.
-
-        Raises:
-            Nenhuma exceção específica documentada.
+            UUID do registro como string ou ``None``.
         """
         return str(obj.uuid) if getattr(obj, "uuid", None) else None
 
@@ -67,14 +54,10 @@ class ConcursoCandidatoSerializer(DynamicFieldsSerializer):
         """Retorna o UUID do concurso (campo do modelo ou do lote).
 
         Args:
-            self: Instância do objeto.
-            obj: Parâmetro obj.
+            obj: Instância de ConcursoCandidato sendo serializada.
 
         Returns:
-            Valor calculado para o campo ou propriedade.
-
-        Raises:
-            Nenhuma exceção específica documentada.
+            UUID do concurso como string ou ``None``.
         """
         if getattr(obj, "concurso_uuid", None):
             return str(obj.concurso_uuid)
@@ -87,14 +70,10 @@ class ConcursoCandidatoSerializer(DynamicFieldsSerializer):
         """Retorna o nome do concurso (do lote, quando existir).
 
         Args:
-            self: Instância do objeto.
-            obj: Parâmetro obj.
+            obj: Instância de ConcursoCandidato sendo serializada.
 
         Returns:
-            Valor calculado para o campo ou propriedade.
-
-        Raises:
-            Nenhuma exceção específica documentada.
+            Nome do concurso ou ``None`` quando não houver lote associado.
         """
         lote = getattr(obj, "lote", None)
         if lote and getattr(lote, "concurso_nome", None):
@@ -102,17 +81,13 @@ class ConcursoCandidatoSerializer(DynamicFieldsSerializer):
         return None
 
     def get_candidato(self, obj: Any) -> Any:
-        """Executa get candidato.
+        """Monta dicionário com dados pessoais do candidato relacionado.
 
         Args:
-            self: Instância do objeto.
-            obj: Parâmetro obj.
+            obj: Instância de ConcursoCandidato sendo serializada.
 
         Returns:
-            Valor calculado para o campo ou propriedade.
-
-        Raises:
-            Nenhuma exceção específica documentada.
+            Dicionário com campos do candidato ou ``None`` se inexistente.
         """
         c = obj.candidato
         if not c:
@@ -140,17 +115,13 @@ class ConcursoCandidatoSerializer(DynamicFieldsSerializer):
         }
 
     def get_reclassificacoes(self, obj: Any) -> Any:
-        """Retorna histórico de reclassificações (desclassificações de.
+        """Retorna histórico de reclassificações do candidato no concurso.
 
         Args:
-            self: Instância do objeto.
-            obj: Parâmetro obj.
+            obj: Instância de ConcursoCandidato sendo serializada.
 
         Returns:
-            Valor calculado para o campo ou propriedade.
-
-        Raises:
-            Nenhuma exceção específica documentada.
+            Lista de dicionários com dados de cada reclassificação.
         """
         try:
             historicos = getattr(obj, "historicos_reclassificacao", None)
@@ -231,14 +202,10 @@ class ConcursoCandidatoCpfUuidSerializer(serializers.ModelSerializer):
         """Retorna o CPF do candidato relacionado.
 
         Args:
-            self: Instância do objeto.
-            obj: Parâmetro obj.
+            obj: Instância de ConcursoCandidato sendo serializada.
 
         Returns:
-            Valor calculado para o campo ou propriedade.
-
-        Raises:
-            Nenhuma exceção específica documentada.
+            CPF do candidato relacionado ou ``None``.
         """
         if obj.candidato:
             return obj.candidato.cpf
@@ -296,17 +263,13 @@ class ReclassificarSerializer(serializers.Serializer):
     )
 
     def validate(self, attrs: Any) -> Any:
-        """Executa validate.
+        """Valida payload de reclassificação sem alterações adicionais.
 
         Args:
-            self: Instância do objeto.
-            attrs: Atributos em validação.
+            attrs: Atributos já validados pelos campos do serializer.
 
         Returns:
-            Resultado da operação.
-
-        Raises:
-            Nenhuma exceção específica documentada.
+            Atributos validados prontos para uso no serviço.
         """
         return attrs
 
@@ -333,17 +296,13 @@ class ConcursoCandidatoReclassificadoSerializer(serializers.ModelSerializer):
         read_only_fields = ["criado_em", "atualizado_em", "esta_ativo"]
 
     def get_candidato(self, obj: Any) -> Any:
-        """Executa get candidato.
+        """Monta dicionário resumido com dados do candidato reclassificado.
 
         Args:
-            self: Instância do objeto.
-            obj: Parâmetro obj.
+            obj: Instância de ConcursoCandidato sendo serializada.
 
         Returns:
-            Valor calculado para o campo ou propriedade.
-
-        Raises:
-            Nenhuma exceção específica documentada.
+            Dicionário com identificação básica do candidato ou ``None``.
         """
         c = obj.candidato
         if not c:
@@ -390,17 +349,13 @@ class ConcursoCandidatoEliminadoSerializer(serializers.ModelSerializer):
         read_only_fields = ["criado_em", "atualizado_em", "esta_ativo"]
 
     def get_candidato(self, obj: Any) -> Any:
-        """Executa get candidato.
+        """Monta dicionário resumido com dados do candidato eliminado.
 
         Args:
-            self: Instância do objeto.
-            obj: Parâmetro obj.
+            obj: Instância de ConcursoCandidato sendo serializada.
 
         Returns:
-            Valor calculado para o campo ou propriedade.
-
-        Raises:
-            Nenhuma exceção específica documentada.
+            Dicionário com identificação básica do candidato ou ``None``.
         """
         c = obj.candidato
         if not c:

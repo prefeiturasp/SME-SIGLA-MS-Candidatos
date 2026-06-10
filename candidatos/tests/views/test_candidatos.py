@@ -20,13 +20,13 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def candidato_url() -> Any:
-    """Executa candidato url."""
+    """URL do endpoint de candidatos."""
     return reverse("candidato-list")
 
 
 @pytest.fixture
 def buscar_url() -> Any:
-    """Executa buscar url."""
+    """URL do endpoint de busca de candidatos."""
     return reverse("candidato-buscar")
 
 

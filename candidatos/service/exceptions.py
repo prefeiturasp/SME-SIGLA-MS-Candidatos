@@ -4,33 +4,19 @@ from __future__ import annotations
 
 
 class SalvarLotesException(Exception):
-    """Define SalvarLotesException."""
+    """Erro de negócio ao persistir dados de lote de classificação."""
 
     def __init__(self, mensagem: str, detalhes: str | None = None) -> None:
-        """Executa   init  .
+        """Inicializa exceção com mensagem principal e detalhes opcionais.
 
         Args:
-            self: Instância do objeto.
-            mensagem: Parâmetro mensagem.
-            detalhes: Parâmetro detalhes.
-
-        Raises:
-            Nenhuma exceção específica documentada.
+            mensagem: Resumo do erro exibido ao usuário.
+            detalhes: Descrição complementar, como erros por linha do arquivo.
         """
         super().__init__(mensagem)
         self.mensagem = mensagem
         self.detalhes = detalhes or ""
 
     def __str__(self) -> str:
-        """Executa   str  .
-
-        Args:
-            self: Instância do objeto.
-
-        Returns:
-            Texto resultante da operação.
-
-        Raises:
-            Nenhuma exceção específica documentada.
-        """
+        """Retorna a mensagem principal do erro."""
         return self.mensagem

@@ -17,14 +17,14 @@ pytestmark = pytest.mark.django_db
 
 
 def _criar_candidato(nome: str, cpf: str, email: str) -> Candidato:
-    """Executa  criar candidato."""
+    """Cria candidato de exemplo no banco."""
     return Candidato.objects.create(nome=nome, cpf=cpf, email=email)
 
 
 def _criar_concurso_candidato(
     lote: ConcursoCandidatosLote, candidato: Candidato, codigo_inscricao: str
 ) -> ConcursoCandidato:
-    """Executa  criar concurso candidato."""
+    """Cria ConcursoCandidato de exemplo no banco."""
     return ConcursoCandidato.objects.create(
         lote=lote, candidato=candidato, codigo_inscricao=codigo_inscricao
     )

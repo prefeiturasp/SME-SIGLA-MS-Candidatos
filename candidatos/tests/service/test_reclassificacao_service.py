@@ -22,7 +22,7 @@ pytestmark = pytest.mark.django_db
 
 
 def _criar_candidato(nome: Any, cpf: Any, email: Any = None) -> Any:
-    """Executa  criar candidato."""
+    """Cria candidato de exemplo no banco."""
     if email is None:
         email = f"user-{uuid4().hex[:8]}@example.com"
     return Candidato.objects.create(
@@ -43,7 +43,7 @@ def _criar_candidato(nome: Any, cpf: Any, email: Any = None) -> Any:
 
 @pytest.fixture
 def lote() -> Any:
-    """Executa lote."""
+    """Lote de concurso usado nos testes."""
     return ConcursoCandidatosLote.objects.create(
         concurso_uuid=uuid4(), concurso_nome="Concurso Teste"
     )
@@ -304,7 +304,7 @@ class TestAplicarReclassificacao:
 def _make_candidato(
     cpf: Any = "10000000001", email: Any = "rc1@test.com"
 ) -> Any:
-    """Executa  make candidato."""
+    """Factory de Candidato para o teste."""
     return Candidato.objects.create(
         nome="Candidato Reclassificacao",
         cpf=cpf,
@@ -320,7 +320,7 @@ def _make_cc(
     classificacao_nna: Any = None,
     categoria_efetiva: Any = "GERAL",
 ) -> Any:
-    """Executa  make cc."""
+    """Factory de ConcursoCandidato para o teste."""
     if candidato is None:
         candidato = _make_candidato()
     return ConcursoCandidato.objects.create(

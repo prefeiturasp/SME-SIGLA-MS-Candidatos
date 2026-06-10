@@ -13,19 +13,19 @@ from candidatos.models import Candidato
 
 @pytest.fixture
 def api_client() -> Any:
-    """Executa api client."""
+    """Cliente HTTP para requisições de teste."""
     return APIClient()
 
 
 @pytest.fixture
 def candidato_url() -> Any:
-    """Executa candidato url."""
+    """URL do endpoint de candidatos."""
     return reverse("candidato-list")
 
 
 @pytest.fixture
 def candidato_data() -> Any:
-    """Executa candidato data."""
+    """Dados de candidato para criação no teste."""
     return {
         "nome": "João Silva",
         "cpf": "123.456.789-00",
@@ -44,7 +44,7 @@ def candidato_data() -> Any:
 
 @pytest.fixture
 def candidato_data_2() -> Any:
-    """Executa candidato data 2."""
+    """Segundo conjunto de dados de candidato."""
     return {
         "nome": "Maria Santos",
         "cpf": "987.654.321-00",
@@ -63,7 +63,7 @@ def candidato_data_2() -> Any:
 
 @pytest.fixture
 def candidato_data_3() -> Any:
-    """Executa candidato data 3."""
+    """Terceiro conjunto de dados de candidato."""
     return {
         "nome": "Pedro Oliveira",
         "cpf": "111.222.333-44",
@@ -84,7 +84,7 @@ def candidato_data_3() -> Any:
 def candidatos_criados(
     candidato_data: Any, candidato_data_2: Any, candidato_data_3: Any
 ) -> Any:
-    """Executa candidatos criados."""
+    """Candidatos persistidos no banco para o teste."""
     candidato1 = Candidato.objects.create(**candidato_data)
     candidato2 = Candidato.objects.create(**candidato_data_2)
     candidato3 = Candidato.objects.create(**candidato_data_3)

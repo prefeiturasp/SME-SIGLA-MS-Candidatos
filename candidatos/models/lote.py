@@ -23,15 +23,5 @@ class ConcursoCandidatosLote(BaseModel):
         ordering = ["-criado_em"]
 
     def __str__(self) -> Any:
-        """Executa   str  .
-
-        Args:
-            self: Instância do objeto.
-
-        Returns:
-            Resultado da operação.
-
-        Raises:
-            Nenhuma exceção específica documentada.
-        """
+        """Retorna nome e UUID do concurso associado ao lote."""
         return f"{self.concurso_nome} ({self.concurso_uuid})"

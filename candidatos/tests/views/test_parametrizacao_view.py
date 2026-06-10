@@ -16,7 +16,7 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def api_client() -> Any:
-    """Executa api client."""
+    """Cliente HTTP para requisições de teste."""
     return APIClient()
 
 

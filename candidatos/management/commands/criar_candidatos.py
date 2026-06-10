@@ -20,14 +20,10 @@ class Command(BaseCommand):
         """Registra argumentos da linha de comando.
 
         Args:
-            self: Instância do objeto.
-            parser: Parâmetro parser da operação.
+            parser: Parser de argumentos do Django management.
 
         Returns:
-            Não retorna valor.
-
-        Raises:
-            Nenhuma exceção específica documentada.
+            Nenhum valor; registra opções de linha de comando.
         """
         parser.add_argument(
             "--count",
@@ -37,18 +33,14 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args: Any, **options: Any) -> None:
-        """Executa a lógica principal do comando.
+        """Cria candidatos de exemplo para desenvolvimento e testes.
 
         Args:
-            self: Instância do objeto.
-            *args: Argumentos posicionais variáveis.
-            **options: Parâmetro options da operação.
+            *args: Argumentos posicionais do comando.
+            **options: Opções parseadas, incluindo ``count``.
 
         Returns:
-            Não retorna valor.
-
-        Raises:
-            Nenhuma exceção específica documentada.
+            Nenhum valor; exibe progresso e estatísticas no stdout.
         """
         count = options["count"]
         self.stdout.write(self.style.SUCCESS(f"Criando {count} candidatos..."))

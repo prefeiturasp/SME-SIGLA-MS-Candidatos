@@ -122,15 +122,5 @@ class ConcursoCandidato(BaseModel):
         ordering = ["-criado_em"]
 
     def __str__(self) -> Any:
-        """Executa   str  .
-
-        Args:
-            self: Instância do objeto.
-
-        Returns:
-            Resultado da operação.
-
-        Raises:
-            Nenhuma exceção específica documentada.
-        """
+        """Retorna resumo com nome, classificações e ranking do candidato."""
         return f"{self.candidato.nome} - {self.uuid} - {self.classificacao} - {self.classificacao_pcd} - {self.classificacao_nna} - {self.ranking}"  # noqa: E501

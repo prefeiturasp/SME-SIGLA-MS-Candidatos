@@ -205,7 +205,7 @@ import requests as _requests
 
 
 def _mock_response(status_code: Any = 200, json_data: Any = None) -> Any:
-    """Executa  mock response."""
+    """Resposta simulada da API externa."""
     resp = Mock()
     resp.status_code = status_code
     resp.json.return_value = json_data if json_data is not None else []

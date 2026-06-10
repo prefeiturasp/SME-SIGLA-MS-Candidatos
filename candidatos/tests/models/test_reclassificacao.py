@@ -18,7 +18,7 @@ pytestmark = pytest.mark.django_db
 
 
 def _criar_candidato(nome: Any, cpf: Any) -> Any:
-    """Executa  criar candidato."""
+    """Cria candidato de exemplo no banco."""
     return Candidato.objects.create(
         nome=nome,
         cpf=cpf,
@@ -37,7 +37,7 @@ def _criar_candidato(nome: Any, cpf: Any) -> Any:
 
 @pytest.fixture
 def lote() -> Any:
-    """Executa lote."""
+    """Lote de concurso usado nos testes."""
     return ConcursoCandidatosLote.objects.create(
         concurso_uuid=uuid4(), concurso_nome="Concurso Teste"
     )
@@ -45,7 +45,7 @@ def lote() -> Any:
 
 @pytest.fixture
 def concurso_candidato(lote: Any) -> Any:
-    """Executa concurso candidato."""
+    """ConcursoCandidato de exemplo para os testes."""
     c = _criar_candidato("Teste", "111.111.111-11")
     return ConcursoCandidato.objects.create(
         candidato=c,

@@ -31,15 +31,5 @@ class Parametrizacao(BaseModel):
         ordering = ["-criado_em"]
 
     def __str__(self) -> Any:
-        """Executa   str  .
-
-        Args:
-            self: Instância do objeto.
-
-        Returns:
-            Resultado da operação.
-
-        Raises:
-            Nenhuma exceção específica documentada.
-        """
+        """Retorna resumo com percentuais de PCD e NNA configurados."""
         return f"Parametrização - PCD: {self.porcentagem_pcd}, NNA: {self.porcentagem_nna}"  # noqa: E501

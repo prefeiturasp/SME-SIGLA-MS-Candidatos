@@ -18,14 +18,10 @@ class Command(BaseCommand):
         """Registra argumentos da linha de comando.
 
         Args:
-            self: Instância do objeto.
-            parser: Parâmetro parser.
+            parser: Parser de argumentos do Django management.
 
         Returns:
-            Não retorna valor.
-
-        Raises:
-            Nenhuma exceção específica documentada.
+            Nenhum valor; registra opções de linha de comando.
         """
         parser.add_argument(
             "--confirm",
@@ -34,18 +30,14 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args: Any, **options: Any) -> None:
-        """Executa a lógica principal do comando.
+        """Remove todos os candidatos quando confirmado via ``--confirm``.
 
         Args:
-            self: Instância do objeto.
-            *args: Argumentos posicionais variáveis.
-            **options: Parâmetro options da operação.
+            *args: Argumentos posicionais do comando.
+            **options: Opções parseadas, incluindo ``confirm``.
 
         Returns:
-            Não retorna valor.
-
-        Raises:
-            Nenhuma exceção específica documentada.
+            Nenhum valor; exibe progresso e resultado no stdout.
         """
         confirm = options["confirm"]
         total_registros = Candidato.objects.count()

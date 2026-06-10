@@ -76,17 +76,7 @@ class Candidato(BaseModel):
         ordering = ["nome"]
 
     def __str__(self) -> Any:
-        """Executa   str  .
-
-        Args:
-            self: Instância do objeto.
-
-        Returns:
-            Resultado da operação.
-
-        Raises:
-            Nenhuma exceção específica documentada.
-        """
+        """Retorna o nome do candidato."""
         return self.nome
 
 

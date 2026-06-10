@@ -21,13 +21,13 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def client() -> Any:
-    """Executa client."""
+    """Cliente HTTP para requisições de teste."""
     return APIClient()
 
 
 @pytest.fixture
 def lote() -> Any:
-    """Executa lote."""
+    """Lote de concurso usado nos testes."""
     return ConcursoCandidatosLote.objects.create(
         concurso_uuid=uuid4(), concurso_nome="Concurso Teste"
     )
@@ -35,7 +35,7 @@ def lote() -> Any:
 
 @pytest.fixture
 def candidatos_no_lote(lote: Any) -> Any:
-    """Executa candidatos no lote."""
+    """Candidatos vinculados ao lote de teste."""
     cand1 = Candidato.objects.create(
         nome="Fulano", cpf="11111111111", email="john_wick@email.com"
     )

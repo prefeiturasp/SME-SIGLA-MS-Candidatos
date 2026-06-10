@@ -18,17 +18,13 @@ class ReclassificadosViewSet(viewsets.ViewSet):
     """Endpoint para listar candidatos reclassificados (de NNA/PCD ->."""
 
     def list(self, request: Any) -> Any:
-        """Executa list.
+        """Lista candidatos reclassificados de NNA/PCD para ampla concorrência.
 
         Args:
-            self: Instância do objeto.
-            request: Requisição HTTP recebida.
+            request: Requisição HTTP com ``concurso_uuid`` e ``processo_uuid``.
 
         Returns:
-            Resposta HTTP com os dados serializados.
-
-        Raises:
-            Nenhuma exceção específica documentada.
+            Resposta HTTP com reclassificados por categoria de origem.
         """
         concurso_uuid = request.query_params.get("concurso_uuid")
         processo_uuid = request.query_params.get("processo_uuid")

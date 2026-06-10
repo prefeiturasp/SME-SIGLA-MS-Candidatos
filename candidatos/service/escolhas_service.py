@@ -19,16 +19,13 @@ class EscolhasService:
 
     @classmethod
     def _get_base_url(cls) -> str:
-        """Obtém a URL base do microserviço de Escolhas a partir das.
-
-        Args:
-            cls: Classe referenciada.
+        """Obtém a URL base do microserviço de Escolhas a partir do settings.
 
         Returns:
-            Texto resultante da operação.
+            URL base sem barra final.
 
         Raises:
-            ValueError: Se ocorrer erro nesta operação.
+            ValueError: Se ``ESCOLHAS_API_URL`` não estiver configurada.
         """
         base_url = getattr(settings, "ESCOLHAS_API_URL", None)
         if not base_url:
@@ -42,8 +39,7 @@ class EscolhasService:
         """Busca escolhas com situação de reconvocação.
 
         Args:
-            cls: Classe referenciada.
-            path: Caminho do endpoint (padrão: /api/v1/escolhas/reconvocacao).
+            path: Caminho do endpoint de reconvocação.
 
         Returns:
             Lista com os registros resultantes.
@@ -110,9 +106,8 @@ class EscolhasService:
         """Busca escolhas com situação de escolha ou reconvocação.
 
         Args:
-            cls: Classe referenciada.
-            concurso_uuid: UUID do concurso.
-            path: Caminho do endpoint (padrão:.
+            concurso_uuid: UUID do concurso para filtrar escolhas.
+            path: Caminho do endpoint com filtro de situação.
 
         Returns:
             Lista com os registros resultantes.

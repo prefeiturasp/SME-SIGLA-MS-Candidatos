@@ -69,7 +69,7 @@ class CandidatoAdmin(admin.ModelAdmin):
 
 @admin.register(ConcursoCandidato)
 class ConcursoCandidatoAdmin(admin.ModelAdmin):
-    """Define ConcursoCandidatoAdmin."""
+    """Configuração do admin para ConcursoCandidato."""
 
     list_display = [
         "candidato",
@@ -109,19 +109,7 @@ class ConcursoCandidatoAdmin(admin.ModelAdmin):
     actions = ["marcar_nao_convocados"]
 
     def marcar_nao_convocados(self, request: Any, queryset: Any) -> None:
-        """Ação de admin para marcar registros como não convocados em lote.
-
-        Args:
-            self: Instância do objeto.
-            request: Requisição HTTP recebida.
-            queryset: Parâmetro queryset.
-
-        Returns:
-            Não retorna valor.
-
-        Raises:
-            Nenhuma exceção específica documentada.
-        """
+        """Ação de admin para marcar registros como não convocados em lote."""
         qtd = queryset.update(
             foi_convocado=False,
             data_convocacao=None,
@@ -142,7 +130,7 @@ class ConcursoCandidatoAdmin(admin.ModelAdmin):
 
 @admin.register(ConcursoCandidatosLote)
 class ConcursoCandidatosLoteAdmin(admin.ModelAdmin):
-    """Define ConcursoCandidatosLoteAdmin."""
+    """Configuração do admin para ConcursoCandidatosLote."""
 
     list_display = ["concurso_nome", "concurso_uuid", "criado_em"]
     list_filter = ["criado_em"]

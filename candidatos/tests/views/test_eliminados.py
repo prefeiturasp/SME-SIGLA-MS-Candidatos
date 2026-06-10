@@ -21,12 +21,12 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def api_client() -> Any:
-    """Executa api client."""
+    """Cliente HTTP para requisições de teste."""
     return APIClient()
 
 
 def _candidato(**kwargs: Any) -> Any:
-    """Executa  candidato."""
+    """Candidato de exemplo para os testes."""
     return Candidato.objects.create(
         nome=kwargs.get("nome", "Teste"),
         cpf=kwargs.get("cpf", f"{uuid4().int % 10 ** 11:011d}"),
@@ -44,7 +44,7 @@ def _candidato(**kwargs: Any) -> Any:
 
 
 def _cc(lote: Any, candidato: Any = None, **kwargs: Any) -> Any:
-    """Executa  cc."""
+    """ConcursoCandidato de exemplo para os testes."""
     return ConcursoCandidato.objects.create(
         candidato=candidato or _candidato(),
         lote=lote,
