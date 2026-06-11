@@ -1,5 +1,8 @@
 """Agregações para a extração de dados de habilitados / convocados."""
 
+from typing import Any
+from uuid import UUID
+
 from django.db.models import Count
 
 from candidatos.models import ConcursoCandidato
@@ -7,7 +10,10 @@ from candidatos.models import ConcursoCandidato
 CATEGORIAS = ("GERAL", "PCD", "NNA")
 
 
-def montar_extracao_dados(concurso_uuid=None, filtros=None) -> dict:
+def montar_extracao_dados(
+    concurso_uuid: UUID | str | None = None,
+    filtros: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     """
     Monta o dicionário de indicadores de habilitados e convocações.
 
@@ -38,15 +44,28 @@ def montar_extracao_dados(concurso_uuid=None, filtros=None) -> dict:
             }
     else:
         convocados = _contar_convocados(concurso_uuid)
-        resultado.update({
-            "convocados": convocados,
-            "nao-convocados": habilitados["total"] - convocados,
-        })
+        resultado.update(
+            {
+                "convocados": convocados,
+                "nao-convocados": habilitados["total"] - convocados,
+            }
+        )
 
     return resultado
 
 
-def _contar_habilitados(concurso_uuid) -> dict:
+def _contar_habilitados(
+    concurso_uuid: UUID | str | None = None,
+) -> dict[str, int]:
+    """Conta habilitados por categoria efetiva.
+
+    Args:
+        concurso_uuid: Concurso a restringir; ausente → todos os concursos.
+
+    Returns:
+        Dicionário com o ``total`` e a quebra por ``geral`` / ``pcd`` /
+        ``nna``.
+    """
     qs = ConcursoCandidato.objects.all()
     if concurso_uuid:
         qs = qs.filter(lote__concurso_uuid=concurso_uuid)
@@ -62,12 +81,20 @@ def _contar_habilitados(concurso_uuid) -> dict:
     }
 
 
-def _contar_convocados(concurso_uuid, processo_uuids=None) -> int:
+def _contar_convocados(
+    concurso_uuid: UUID | str | None = None,
+    processo_uuids: list[UUID | str] | None = None,
+) -> int:
     """Conta ``foi_convocado=True``.
 
-    - ``concurso_uuid`` informado → restringe ao concurso; ausente → todos.
-    - ``processo_uuids is None`` → modo "ALL": todos os convocados do escopo.
-    - ``processo_uuids`` informado → filtra também pelos processos do ano.
+    Args:
+        concurso_uuid: Concurso a restringir; ausente → todos os concursos.
+        processo_uuids: Processos a filtrar. ``None`` → modo "ALL" (todos os
+            convocados do escopo); lista → filtra também pelos processos do
+            ano.
+
+    Returns:
+        Quantidade de convocados no escopo informado.
     """
     qs = ConcursoCandidato.objects.filter(foi_convocado=True)
     if concurso_uuid:

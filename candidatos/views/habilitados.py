@@ -114,7 +114,8 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         POST /habilitados/extracao-dados/
         Body: {concurso_uuid?, filtros?: [{ano, processo_uuids}]}
         Sem `filtros`: retorna a chave "total" com os convocados.
-        Sem `concurso_uuid`: agrega habilitados/convocados de todos os concursos.
+        Sem `concurso_uuid`: agrega habilitados/convocados de todos os
+        concursos.
         """
         serializer = ExtracaoDadosSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

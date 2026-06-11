@@ -342,8 +342,9 @@ class ExtracaoDadosSerializer(serializers.Serializer):
     """
     Payload do endpoint de extração de dados de habilitados.
 
-    - concurso_uuid: concurso cujos habilitados (todos os lotes) serão contados.
-      Opcional; ausente → agrega habilitados/convocados de todos os concursos.
+    - concurso_uuid: concurso cujos habilitados (todos os lotes) serão
+      contados. Opcional; ausente → agrega habilitados/convocados de todos
+      os concursos.
     - filtros: lista opcional de {ano, processo_uuids} para contar convocados /
       não-convocados por ano. Quando ausente (ou vazia), o resultado traz uma
       única contagem agregada ("total") de todos os convocados do concurso.
