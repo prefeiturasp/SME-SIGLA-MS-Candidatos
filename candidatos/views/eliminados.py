@@ -18,14 +18,7 @@ class EliminadosViewSet(viewsets.ViewSet):
     """Endpoint para listar candidatos eliminados por concurso_uuid e."""
 
     def list(self, request: Any) -> Any:
-        """Lista candidatos eliminados por concurso e classificação.
-
-        Args:
-            request: Requisição HTTP recebida.
-
-        Returns:
-            Resposta HTTP com os dados serializados.
-        """
+        """Lista candidatos eliminados por concurso e classificação."""
         concurso_uuid = request.query_params.get("concurso_uuid")
         processo_uuid = request.query_params.get("processo_uuid")
         classificacao_max = request.query_params.get("classificacao_max")

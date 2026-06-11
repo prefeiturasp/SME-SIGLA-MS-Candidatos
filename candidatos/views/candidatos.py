@@ -46,16 +46,7 @@ class CandidatoViewSet(viewsets.ModelViewSet):
     ordering = ["nome"]
 
     def create(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """Cria lote de candidatos a partir do payload recebido.
-
-        Args:
-            request: Requisição HTTP recebida.
-            *args: Argumentos posicionais repassados ao ViewSet.
-            **kwargs: Argumentos nomeados repassados ao ViewSet.
-
-        Returns:
-            Resposta HTTP com os dados serializados.
-        """
+        """Cria lote de candidatos a partir do payload recebido."""
         input_serializer = CandidatosLoteCreateSerializer(data=request.data)
         input_serializer.is_valid(raise_exception=True)
         resp_data, status_code = processar_criacao_candidatos_lote(
@@ -65,14 +56,7 @@ class CandidatoViewSet(viewsets.ModelViewSet):
 
     @action(methods=["get"], detail=False, url_path="buscar")
     def buscar(self, request: Any) -> Any:
-        """Busca por nome, CPF, RG e/ou registro funcional na tabela.
-
-        Args:
-            request: Requisição HTTP recebida.
-
-        Returns:
-            Resposta HTTP com os dados solicitados.
-        """
+        """Busca por nome, CPF, RG e/ou registro funcional na tabela."""
         nome = request.query_params.get("nome", "").strip()
         cpf = request.query_params.get("cpf", "").strip()
         rg = request.query_params.get("rg", "").strip()

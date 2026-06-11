@@ -26,14 +26,7 @@ class ParametrizacaoViewSet(
     pagination_class = None
 
     def get_object(self) -> Any:
-        """Retorna object.
-
-        Returns:
-            Resposta HTTP com os dados solicitados.
-
-        Raises:
-            NotFound: Quando não existir nenhum registro de parametrização.
-        """
+        """Retorna object."""
         from rest_framework.exceptions import NotFound
 
         obj = self.queryset.first()
@@ -42,16 +35,7 @@ class ParametrizacaoViewSet(
         return obj
 
     def create(self, request: Any, *args: Any, **kwargs: Any) -> Any:
-        """Rejeita criação via POST; parametrização é gerenciada por update.
-
-        Args:
-            request: Requisição HTTP recebida.
-            *args: Argumentos posicionais repassados ao ViewSet.
-            **kwargs: Argumentos nomeados repassados ao ViewSet.
-
-        Returns:
-            Resposta HTTP com os dados serializados.
-        """
+        """Rejeita criação via POST; parametrização é gerenciada por update."""
         return Response(
             {"detail": 'Method "POST" not allowed.'},
             status=status.HTTP_405_METHOD_NOT_ALLOWED,

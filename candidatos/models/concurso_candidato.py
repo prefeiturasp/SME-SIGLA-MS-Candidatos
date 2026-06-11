@@ -123,4 +123,8 @@ class ConcursoCandidato(BaseModel):
 
     def __str__(self) -> Any:
         """Retorna representação textual do registro."""
-        return f"{self.candidato.nome} - {self.uuid} - {self.classificacao} - {self.classificacao_pcd} - {self.classificacao_nna} - {self.ranking}"  # noqa: E501
+        return (
+            f"{self.candidato.nome} - {self.uuid} - "
+            f"{self.classificacao} - {self.classificacao_pcd} - "
+            f"{self.classificacao_nna} - {self.ranking}"
+        )
