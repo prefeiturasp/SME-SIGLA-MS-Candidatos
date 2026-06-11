@@ -37,10 +37,10 @@ def montar_extracao_dados(concurso_uuid=None, filtros=None) -> dict:
             }
     else:
         convocados = _contar_convocados(concurso_uuid)
-        resultado["total"] = {
+        resultado.update({
             "convocados": convocados,
             "nao-convocados": habilitados["total"] - convocados,
-        }
+        })
 
     return resultado
 
