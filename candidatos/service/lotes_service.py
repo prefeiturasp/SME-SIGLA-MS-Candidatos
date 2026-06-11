@@ -1,5 +1,5 @@
-"""
-Serviço de importação de lotes de classificação (migração do legado
+"""Serviço de importação de lotes de classificação (migração do legado.
+
 MS_SES_Classificacao_SalvarMergeLotes).
 
 Atualiza ConcursoCandidato com numero_lote, codigo_sigpec, numero_vaga
@@ -21,18 +21,18 @@ logger = logging.getLogger(__name__)
 
 @transaction.atomic
 def salvar_lotes(concurso_uuid: str, lotes: list[dict[str, Any]]) -> int:
-    """
-    Grava dados de lote nos ConcursoCandidatos do concurso informado.
+    """Salva lotes.
 
-    1. Reset: zera campos de lote de todos os registros que já tinham o mesmo
-    numero_lote no concurso.
-    2. Para cada item do arquivo, busca ConcursoCandidato por chave_inscrito (=
-    codigo_inscricao).
-    3. Atualiza ConcursoCandidato (numero_lote, codigo_sigpec, numero_vaga)
-       e Candidato (registro_funcional, vinculo).
-    4. Retorna total de candidatos atualizados.
-    """
+    Args:
+        concurso_uuid: UUID do concurso relacionado.
+        lotes: Lista de lotes a persistir no serviço de candidatos.
 
+    Returns:
+        Quantidade de registros processados.
+
+    Raises:
+        SalvarLotesException: Se houver erro ao persistir os lotes.
+    """
     erros: list[str] = []
 
     nro_lote_reset = lotes[0]["lote"]

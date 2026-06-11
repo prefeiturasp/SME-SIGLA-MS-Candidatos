@@ -1,4 +1,9 @@
+"""Módulo views/reclassificados."""
+
+from __future__ import annotations
+
 import logging
+from typing import Any
 
 from rest_framework import status, viewsets
 from rest_framework.response import Response
@@ -10,18 +15,10 @@ logger = logging.getLogger(__name__)
 
 
 class ReclassificadosViewSet(viewsets.ViewSet):
-    """
-    Endpoint para listar candidatos reclassificados (de NNA/PCD -> GERAL) por
-    concurso_uuid.
-    GET /reclassificados/?concurso_uuid=<uuid>
-    Retorna:
-    {
-      "nna": [...],
-      "pcd": [...]
-    }
-    """
+    """Endpoint para listar candidatos reclassificados (de NNA/PCD ->."""
 
-    def list(self, request):
+    def list(self, request: Any) -> Any:
+        """Lista candidatos reclassificados de NNA/PCD para ampla concorrência."""
         concurso_uuid = request.query_params.get("concurso_uuid")
         processo_uuid = request.query_params.get("processo_uuid")
         if not concurso_uuid or not processo_uuid:
@@ -29,8 +26,6 @@ class ReclassificadosViewSet(viewsets.ViewSet):
                 {"detail": "concurso_uuid e processo_uuid são obrigatórios"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-        # Usa o último lote do concurso para evitar duplicados
         lote = (
             ConcursoCandidatosLote.objects.filter(concurso_uuid=concurso_uuid)
             .order_by("-criado_em")
@@ -38,7 +33,6 @@ class ReclassificadosViewSet(viewsets.ViewSet):
         )
         if not lote:
             return Response({"nna": [], "pcd": []})
-
         base = ConcursoCandidato.objects.select_related(
             "candidato", "lote"
         ).filter(lote=lote, eliminado=False, categoria_efetiva="GERAL")
@@ -51,7 +45,6 @@ class ReclassificadosViewSet(viewsets.ViewSet):
         qs_pcd = base.filter(
             historicos_reclassificacao__desclassificado_de="PCD"
         ).distinct()
-
         data = {
             "nna": ConcursoCandidatoReclassificadoSerializer(
                 qs_nna, many=True

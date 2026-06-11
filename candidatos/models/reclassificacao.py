@@ -1,3 +1,9 @@
+"""Módulo models/reclassificacao."""
+
+from __future__ import annotations
+
+from typing import Any
+
 from django.db import models
 
 from .base import BaseModel
@@ -5,17 +11,13 @@ from .concurso_candidato import ConcursoCandidato
 
 
 class ConcursoCandidatoReclassificacao(BaseModel):
-    """
-    Histórico de reclassificações explícitas, registrando desclassificação
-    de cotas sem alterar os campos de classificação originais.
-    """
+    """Histórico de reclassificações explícitas, registrando."""
 
     CLASSIFICACAO_CHOICES = (
         ("GERAL", "GERAL"),
         ("NNA", "NNA"),
         ("PCD", "PCD"),
     )
-
     concurso_candidato = models.ForeignKey(
         ConcursoCandidato,
         on_delete=models.CASCADE,
@@ -46,10 +48,13 @@ class ConcursoCandidatoReclassificacao(BaseModel):
     )
 
     class Meta:
+        """Representa Meta."""
+
         verbose_name = "Reclassificação de ConcursoCandidato"
         verbose_name_plural = "Reclassificações de ConcursoCandidato"
         ordering = ["-criado_em"]
         unique_together = (("concurso_candidato", "desclassificado_de"),)
 
-    def __str__(self):
+    def __str__(self) -> Any:
+        """Retorna representação textual do registro."""
         return f"{self.concurso_candidato_id} - {self.desclassificado_de}"

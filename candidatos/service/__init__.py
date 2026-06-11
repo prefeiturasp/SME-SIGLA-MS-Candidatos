@@ -1,3 +1,5 @@
+"""Módulo service/__init__."""
+
 from .calculo_habilitados_service import gerar_sequencia_convocados
 from .candidato_lote_service import processar_criacao_candidatos_lote
 from .candidato_service import upsert_candidato_e_concurso

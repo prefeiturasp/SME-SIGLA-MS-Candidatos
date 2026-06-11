@@ -1,8 +1,11 @@
-"""
-Testes unitários para o ViewSet de candidatos reclassificados (GET
+"""Testes unitários para o ViewSet de candidatos reclassificados (GET.
+
 /reclassificados/).
 """
 
+from __future__ import annotations
+
+from typing import Any
 from uuid import uuid4
 
 import pytest
@@ -21,11 +24,13 @@ pytestmark = pytest.mark.django_db
 
 
 @pytest.fixture
-def api_client():
+def api_client() -> Any:
+    """Cliente HTTP para requisições de teste."""
     return APIClient()
 
 
-def _criar_candidato(nome, cpf, email=None):
+def _criar_candidato(nome: Any, cpf: Any, email: Any = None) -> Any:
+    """Cria candidato de exemplo no banco."""
     if email is None:
         email = f"user-{uuid4().hex[:8]}@example.com"
     return Candidato.objects.create(
@@ -45,48 +50,53 @@ def _criar_candidato(nome, cpf, email=None):
 
 
 @pytest.fixture
-def lote():
+def lote() -> Any:
+    """Lote de concurso usado nos testes."""
     return ConcursoCandidatosLote.objects.create(
-        concurso_uuid=uuid4(),
-        concurso_nome="Concurso Teste",
+        concurso_uuid=uuid4(), concurso_nome="Concurso Teste"
     )
 
 
 class TestReclassificadosViewSetList:
     """Testes para GET /reclassificados/ (list)."""
 
-    def test_list_sem_concurso_uuid_retorna_400(self, api_client):
+    def test_list_sem_concurso_uuid_retorna_400(self, api_client: Any) -> None:
+        """Verifica list sem concurso uuid retorna 400."""
         url = reverse("reclassificados-list")
         resp = api_client.get(url, {"processo_uuid": str(uuid4())})
         assert resp.status_code == 400
         assert "concurso_uuid" in (resp.data.get("detail") or "").lower()
 
-    def test_list_sem_processo_uuid_retorna_400(self, api_client):
+    def test_list_sem_processo_uuid_retorna_400(self, api_client: Any) -> None:
+        """Verifica list sem processo uuid retorna 400."""
         url = reverse("reclassificados-list")
         resp = api_client.get(url, {"concurso_uuid": str(uuid4())})
         assert resp.status_code == 400
         assert "processo_uuid" in (resp.data.get("detail") or "").lower()
 
-    def test_list_sem_params_retorna_400(self, api_client):
+    def test_list_sem_params_retorna_400(self, api_client: Any) -> None:
+        """Verifica list sem params retorna 400."""
         url = reverse("reclassificados-list")
         resp = api_client.get(url)
         assert resp.status_code == 400
 
-    def test_list_concurso_sem_lote_retorna_listas_vazias(self, api_client):
+    def test_list_concurso_sem_lote_retorna_listas_vazias(
+        self, api_client: Any
+    ) -> None:
+        """Verifica list concurso sem lote retorna listas vazias."""
         url = reverse("reclassificados-list")
         resp = api_client.get(
-            url,
-            {"concurso_uuid": str(uuid4()), "processo_uuid": str(uuid4())},
+            url, {"concurso_uuid": str(uuid4()), "processo_uuid": str(uuid4())}
         )
         assert resp.status_code == 200
         assert resp.data["nna"] == []
         assert resp.data["pcd"] == []
 
     def test_list_com_reclassificados_nna_e_pcd_retorna_agrupados(
-        self, api_client, lote
-    ):
+        self, api_client: Any, lote: Any
+    ) -> None:
+        """Verifica list com reclassificados nna e pcd retorna agrupados."""
         processo_uuid = uuid4()
-        # Candidato reclassificado de NNA
         c_nna = _criar_candidato("NNA Reclass", "111.111.111-11")
         cc_nna = ConcursoCandidato.objects.create(
             candidato=c_nna,
@@ -107,8 +117,6 @@ class TestReclassificadosViewSetList:
         ConcursoCandidatoReclassificacao.objects.filter(
             concurso_candidato=cc_nna
         ).update(processo_uuid=processo_uuid)
-
-        # Candidato reclassificado de PCD
         c_pcd = _criar_candidato("PCD Reclass", "222.222.222-22")
         cc_pcd = ConcursoCandidato.objects.create(
             candidato=c_pcd,
@@ -129,7 +137,6 @@ class TestReclassificadosViewSetList:
         ConcursoCandidatoReclassificacao.objects.filter(
             concurso_candidato=cc_pcd
         ).update(processo_uuid=processo_uuid)
-
         url = reverse("reclassificados-list")
         resp = api_client.get(
             url,
@@ -146,7 +153,10 @@ class TestReclassificadosViewSetList:
         assert resp.data["nna"][0]["candidato"]["nome"] == "NNA Reclass"
         assert resp.data["pcd"][0]["candidato"]["nome"] == "PCD Reclass"
 
-    def test_list_nao_retorna_eliminados(self, api_client, lote):
+    def test_list_nao_retorna_eliminados(
+        self, api_client: Any, lote: Any
+    ) -> None:
+        """Verifica list nao retorna eliminados."""
         processo_uuid = uuid4()
         c = _criar_candidato("Eliminado", "333.333.333-33")
         cc = ConcursoCandidato.objects.create(
@@ -164,7 +174,6 @@ class TestReclassificadosViewSetList:
             desclassificado_de="NNA",
             processo_uuid=processo_uuid,
         )
-
         url = reverse("reclassificados-list")
         resp = api_client.get(
             url,

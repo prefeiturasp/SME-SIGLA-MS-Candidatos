@@ -1,3 +1,7 @@
+"""Módulo tests/service/test_lotes_service."""
+
+from __future__ import annotations
+
 import uuid
 
 import pytest
@@ -13,24 +17,21 @@ pytestmark = pytest.mark.django_db
 
 
 def _criar_candidato(nome: str, cpf: str, email: str) -> Candidato:
-    return Candidato.objects.create(
-        nome=nome,
-        cpf=cpf,
-        email=email,
-    )
+    """Cria candidato de exemplo no banco."""
+    return Candidato.objects.create(nome=nome, cpf=cpf, email=email)
 
 
 def _criar_concurso_candidato(
     lote: ConcursoCandidatosLote, candidato: Candidato, codigo_inscricao: str
 ) -> ConcursoCandidato:
+    """Cria ConcursoCandidato de exemplo no banco."""
     return ConcursoCandidato.objects.create(
-        lote=lote,
-        candidato=candidato,
-        codigo_inscricao=codigo_inscricao,
+        lote=lote, candidato=candidato, codigo_inscricao=codigo_inscricao
     )
 
 
-def test_salvar_lotes_persiste_chave_inscrito_quando_informada():
+def test_salvar_lotes_persiste_chave_inscrito_quando_informada() -> None:
+    """Verifica salvar lotes persiste chave inscrito quando informada."""
     concurso_uuid = str(uuid.uuid4())
     lote = ConcursoCandidatosLote.objects.create(
         concurso_uuid=concurso_uuid, concurso_nome="Concurso Teste"
@@ -41,7 +42,6 @@ def test_salvar_lotes_persiste_chave_inscrito_quando_informada():
     cc = _criar_concurso_candidato(
         lote=lote, candidato=candidato, codigo_inscricao="INSC001"
     )
-
     total = salvar_lotes(
         concurso_uuid=concurso_uuid,
         lotes=[
@@ -56,13 +56,15 @@ def test_salvar_lotes_persiste_chave_inscrito_quando_informada():
             }
         ],
     )
-
     cc.refresh_from_db()
     assert total == 1
     assert cc.chave_inscrito == "CHV-123"
 
 
-def test_salvar_lotes_define_chave_inscrito_como_none_quando_nao_informada():
+def test_salvar_lotes_define_chave_inscrito_como_none_quando_nao_informada() -> (  # noqa: E501
+    None
+):
+    """Verifica salvar lotes define chave inscrito como none quando nao."""
     concurso_uuid = str(uuid.uuid4())
     lote = ConcursoCandidatosLote.objects.create(
         concurso_uuid=concurso_uuid, concurso_nome="Concurso Teste"
@@ -73,7 +75,6 @@ def test_salvar_lotes_define_chave_inscrito_como_none_quando_nao_informada():
     cc = _criar_concurso_candidato(
         lote=lote, candidato=candidato, codigo_inscricao="INSC002"
     )
-
     total = salvar_lotes(
         concurso_uuid=concurso_uuid,
         lotes=[
@@ -87,13 +88,13 @@ def test_salvar_lotes_define_chave_inscrito_como_none_quando_nao_informada():
             }
         ],
     )
-
     cc.refresh_from_db()
     assert total == 1
     assert cc.chave_inscrito is None
 
 
-def test_salvar_lotes_faz_rollback_total_quando_ha_erro():
+def test_salvar_lotes_faz_rollback_total_quando_ha_erro() -> None:
+    """Verifica salvar lotes faz rollback total quando ha erro."""
     concurso_uuid = str(uuid.uuid4())
     lote = ConcursoCandidatosLote.objects.create(
         concurso_uuid=concurso_uuid, concurso_nome="Concurso Teste"
@@ -104,7 +105,6 @@ def test_salvar_lotes_faz_rollback_total_quando_ha_erro():
     cc = _criar_concurso_candidato(
         lote=lote, candidato=candidato, codigo_inscricao="INSC003"
     )
-
     cc.numero_lote = 125
     cc.codigo_sigpec = 9
     cc.numero_vaga = 99
@@ -117,7 +117,6 @@ def test_salvar_lotes_faz_rollback_total_quando_ha_erro():
             "chave_inscrito",
         ]
     )
-
     with pytest.raises(SalvarLotesException):
         salvar_lotes(
             concurso_uuid=concurso_uuid,
@@ -142,7 +141,6 @@ def test_salvar_lotes_faz_rollback_total_quando_ha_erro():
                 },
             ],
         )
-
     cc.refresh_from_db()
     assert cc.numero_lote == 125
     assert cc.codigo_sigpec == 9

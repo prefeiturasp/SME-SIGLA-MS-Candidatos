@@ -1,9 +1,12 @@
-"""
-Testes unitários para candidatos/service/calculo_habilitados_service.py.
+"""Testes unitários para candidatos/service/calculo_habilitados_service.py.
+
 Cobre: funções de cálculo, _safe_max_classificacao, _atualizar_processo_uuid_*,
        gerar_sequencia_convocados.
 """
 
+from __future__ import annotations
+
+from typing import Any
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
@@ -31,13 +34,11 @@ from candidatos.service.calculo_habilitados_service import (
 pytestmark = pytest.mark.django_db
 
 
-# --- Helpers ---
-
-
-def _candidato(**kwargs):
+def _candidato(**kwargs: Any) -> Any:
+    """Candidato de exemplo para os testes."""
     return Candidato.objects.create(
         nome=kwargs.get("nome", "Teste"),
-        cpf=kwargs.get("cpf", f"{uuid4().int % 10**11:011d}"),
+        cpf=kwargs.get("cpf", f"{uuid4().int % 10 ** 11:011d}"),
         email=kwargs.get("email", f"{uuid4().hex[:8]}@example.com"),
         telefone="",
         data_nascimento="1990-01-01",
@@ -51,7 +52,13 @@ def _candidato(**kwargs):
     )
 
 
-def _cc(lote, candidato=None, codigo_cargo="CARGO1", **kwargs):
+def _cc(
+    lote: Any,
+    candidato: Any = None,
+    codigo_cargo: Any = "CARGO1",
+    **kwargs: Any,
+) -> Any:
+    """ConcursoCandidato de exemplo para os testes."""
     return ConcursoCandidato.objects.create(
         candidato=candidato or _candidato(),
         lote=lote,
@@ -67,58 +74,58 @@ def _cc(lote, candidato=None, codigo_cargo="CARGO1", **kwargs):
 
 
 @pytest.fixture
-def lote():
+def lote() -> Any:
+    """Lote de concurso usado nos testes."""
     return ConcursoCandidatosLote.objects.create(
-        concurso_uuid=uuid4(),
-        concurso_nome="Concurso Teste",
+        concurso_uuid=uuid4(), concurso_nome="Concurso Teste"
     )
 
 
-# --- Funções puras: calcular_quantidade_* e calcular_posicao_* ---
-
-
 class TestCalcularQuantidade:
-    def test_calcular_quantidade_nna(self):
+    """Representa TestCalcularQuantidade."""
+
+    def test_calcular_quantidade_nna(self) -> None:
+        """Verifica calcular quantidade nna."""
         assert calcular_quantidade_nna(0, 0.2) == 0
-        assert calcular_quantidade_nna(10, 0.2) == 2  # 10 * 0.2
-        assert calcular_quantidade_nna(7, 0.2) == 2  # ceil(1.4)
+        assert calcular_quantidade_nna(10, 0.2) == 2
+        assert calcular_quantidade_nna(7, 0.2) == 2
         assert calcular_quantidade_nna(100, 0.2) == 20
 
-    def test_calcular_quantidade_pcd(self):
+    def test_calcular_quantidade_pcd(self) -> None:
+        """Verifica calcular quantidade pcd."""
         assert calcular_quantidade_pcd(0, 0.05) == 0
-        assert (
-            calcular_quantidade_pcd(100, 0.05) == 5
-        )  # 5.0, frac=0 -> floor 5
-        assert (
-            calcular_quantidade_pcd(30, 0.05) == 2
-        )  # 1.5, frac>=0.5 -> ceil 2
-        assert calcular_quantidade_pcd(20, 0.05) == 1  # 1.0, frac=0 -> floor 1
-        assert (
-            calcular_quantidade_pcd(10, 0.05) == 1
-        )  # 0.5, frac>=0.5 -> ceil 1
+        assert calcular_quantidade_pcd(100, 0.05) == 5
+        assert calcular_quantidade_pcd(30, 0.05) == 2
+        assert calcular_quantidade_pcd(20, 0.05) == 1
+        assert calcular_quantidade_pcd(10, 0.05) == 1
 
-    def test_calcular_quantidade_geral(self):
-        assert calcular_quantidade_geral(100, 0.2, 0.05) == 100 - 20 - 5  # 75
-        assert calcular_quantidade_geral(10, 0.2, 0.05) == 10 - 2 - 1  # 7
+    def test_calcular_quantidade_geral(self) -> None:
+        """Verifica calcular quantidade geral."""
+        assert calcular_quantidade_geral(100, 0.2, 0.05) == 100 - 20 - 5
+        assert calcular_quantidade_geral(10, 0.2, 0.05) == 10 - 2 - 1
 
 
 class TestCalcularPosicao:
-    def test_calcular_posicao_nna(self):
-        assert calcular_posicao_nna(1) == 1  # (5*1)-4
+    """Representa TestCalcularPosicao."""
+
+    def test_calcular_posicao_nna(self) -> None:
+        """Verifica calcular posicao nna."""
+        assert calcular_posicao_nna(1) == 1
         assert calcular_posicao_nna(2) == 6
         assert calcular_posicao_nna(3) == 11
 
-    def test_calcular_posicao_pcd(self):
-        assert calcular_posicao_pcd(1) == 10  # 10 + 0
+    def test_calcular_posicao_pcd(self) -> None:
+        """Verifica calcular posicao pcd."""
+        assert calcular_posicao_pcd(1) == 10
         assert calcular_posicao_pcd(2) == 30
         assert calcular_posicao_pcd(3) == 50
 
 
-# --- _safe_max_classificacao ---
-
-
 class TestSafeMaxClassificacao:
-    def test_retorna_max_classificacao(self):
+    """Representa TestSafeMaxClassificacao."""
+
+    def test_retorna_max_classificacao(self) -> None:
+        """Verifica retorna max classificacao."""
         o1 = MagicMock(
             classificacao=5, classificacao_nna=None, classificacao_pcd=None
         )
@@ -127,7 +134,8 @@ class TestSafeMaxClassificacao:
         )
         assert _safe_max_classificacao([o1, o2], "classificacao") == 10
 
-    def test_ignora_nulos(self):
+    def test_ignora_nulos(self) -> None:
+        """Verifica ignora nulos."""
         o1 = MagicMock(
             classificacao=None, classificacao_nna=None, classificacao_pcd=None
         )
@@ -136,11 +144,8 @@ class TestSafeMaxClassificacao:
         )
         assert _safe_max_classificacao([o1, o2], "classificacao") == 3
 
-    def test_geral_ignora_itens_com_classificacao_nna(self):
-        """
-        Para attr 'classificacao', ignora itens que tenham classificacao_nna
-        preenchido.
-        """
+    def test_geral_ignora_itens_com_classificacao_nna(self) -> None:
+        """Verifica geral ignora itens com classificacao nna."""
         o1 = MagicMock(
             classificacao=10, classificacao_nna=1, classificacao_pcd=None
         )
@@ -149,7 +154,8 @@ class TestSafeMaxClassificacao:
         )
         assert _safe_max_classificacao([o1, o2], "classificacao") == 5
 
-    def test_geral_ignora_itens_com_classificacao_pcd(self):
+    def test_geral_ignora_itens_com_classificacao_pcd(self) -> None:
+        """Verifica geral ignora itens com classificacao pcd."""
         o1 = MagicMock(
             classificacao=10, classificacao_nna=None, classificacao_pcd=1
         )
@@ -158,24 +164,32 @@ class TestSafeMaxClassificacao:
         )
         assert _safe_max_classificacao([o1, o2], "classificacao") == 5
 
-    def test_lista_vazia_retorna_none(self):
+    def test_lista_vazia_retorna_none(self) -> None:
+        """Verifica lista vazia retorna none."""
         assert _safe_max_classificacao([], "classificacao") is None
 
-    def test_todos_nulos_retorna_none(self):
+    def test_todos_nulos_retorna_none(self) -> None:
+        """Verifica todos nulos retorna none."""
         o = MagicMock(
             classificacao=None, classificacao_nna=None, classificacao_pcd=None
         )
         assert _safe_max_classificacao([o], "classificacao") is None
 
-    def test_classificacao_nna_attr(self):
+    def test_classificacao_nna_attr(self) -> None:
+        """Verifica classificacao nna attr."""
         o1 = MagicMock(classificacao_nna=2)
         o2 = MagicMock(classificacao_nna=7)
         assert _safe_max_classificacao([o1, o2], "classificacao_nna") == 7
 
-    def test_ignora_item_que_lanca_excecao_ao_acessar_attr(self):
+    def test_ignora_item_que_lanca_excecao_ao_acessar_attr(self) -> None:
+        """Verifica ignora item que lanca excecao ao acessar attr."""
+
         class BadObj:
+            """Representa BadObj."""
+
             @property
-            def classificacao(self):
+            def classificacao(self) -> None:
+                """Valor de classificação usado no mock."""
                 raise ValueError("erro")
 
             classificacao_nna = None
@@ -188,11 +202,11 @@ class TestSafeMaxClassificacao:
         assert _safe_max_classificacao(lista, "classificacao") == 5
 
 
-# --- _atualizar_processo_uuid_para_reclassificados ---
-
-
 class TestAtualizarProcessoUuidReclassificados:
-    def test_sem_processo_uuid_nao_faz_nada(self, lote):
+    """Representa TestAtualizarProcessoUuidReclassificados."""
+
+    def test_sem_processo_uuid_nao_faz_nada(self, lote: Any) -> None:
+        """Verifica sem processo uuid nao faz nada."""
         _atualizar_processo_uuid_para_reclassificados(
             final_itens=[],
             categoria="NNA",
@@ -203,7 +217,8 @@ class TestAtualizarProcessoUuidReclassificados:
         )
         assert ConcursoCandidatoReclassificacao.objects.count() == 0
 
-    def test_com_limite_atualiza_historicos(self, lote):
+    def test_com_limite_atualiza_historicos(self, lote: Any) -> None:
+        """Verifica com limite atualiza historicos."""
         c = _candidato()
         cc_menor = ConcursoCandidato.objects.create(
             candidato=c,
@@ -218,7 +233,6 @@ class TestAtualizarProcessoUuidReclassificados:
             desclassificado_de="NNA",
             processo_uuid=None,
         )
-        # final_itens com maior classificacao_nna = 5
         obj_maior = MagicMock()
         obj_maior.classificacao_nna = 5
         obj_maior.classificacao_pcd = None
@@ -238,11 +252,11 @@ class TestAtualizarProcessoUuidReclassificados:
         assert rec.processo_uuid == processo_uuid
 
 
-# --- _atualizar_processo_uuid_para_eliminados ---
-
-
 class TestAtualizarProcessoUuidEliminados:
-    def test_sem_processo_uuid_nao_faz_nada(self, lote):
+    """Representa TestAtualizarProcessoUuidEliminados."""
+
+    def test_sem_processo_uuid_nao_faz_nada(self, lote: Any) -> None:
+        """Verifica sem processo uuid nao faz nada."""
         _atualizar_processo_uuid_para_eliminados(
             final_itens=[],
             processo_uuid=None,
@@ -250,7 +264,8 @@ class TestAtualizarProcessoUuidEliminados:
             codigo_cargo="CARGO1",
         )
 
-    def test_com_limites_atualiza_historicos(self, lote):
+    def test_com_limites_atualiza_historicos(self, lote: Any) -> None:
+        """Verifica com limites atualiza historicos."""
         c = _candidato()
         cc = ConcursoCandidato.objects.create(
             candidato=c,
@@ -278,12 +293,12 @@ class TestAtualizarProcessoUuidEliminados:
         assert elim.processo_uuid == processo_uuid
 
 
-# --- gerar_sequencia_convocados ---
-
-
 class TestGerarSequenciaConvocados:
-    def test_total_zero_retorna_lista_vazia(self, lote):
-        with patch(  # noqa: SIM117
+    """Representa TestGerarSequenciaConvocados."""
+
+    def test_total_zero_retorna_lista_vazia(self, lote: Any) -> None:
+        """Verifica total zero retorna lista vazia."""
+        with patch(
             "candidatos.service.calculo_habilitados_service.atualizar_ranking"
         ):
             with patch(
@@ -302,8 +317,9 @@ class TestGerarSequenciaConvocados:
                     == []
                 )
 
-    def test_sem_candidatos_retorna_lista_vazia(self, lote):
-        with patch(  # noqa: SIM117
+    def test_sem_candidatos_retorna_lista_vazia(self, lote: Any) -> None:
+        """Verifica sem candidatos retorna lista vazia."""
+        with patch(
             "candidatos.service.calculo_habilitados_service.atualizar_ranking"
         ):
             with patch(
@@ -318,9 +334,8 @@ class TestGerarSequenciaConvocados:
         assert porcentagem_nna == 0.2
         assert porcentagem_pcd == 0.05
 
-    def test_retorna_geral_quando_so_geral_disponivel(self, lote):
-        # total_convocados=3 → há vaga NNA no lote, mas sem candidatos NNA o recálculo  # noqa: E501
-        # transfere essas vagas para GERAL e preenche os 3 postos com candidatos gerais.  # noqa: E501
+    def test_retorna_geral_quando_so_geral_disponivel(self, lote: Any) -> None:
+        """Verifica retorna geral quando so geral disponivel."""
         for i in range(1, 6):
             _cc(
                 lote,
@@ -329,7 +344,7 @@ class TestGerarSequenciaConvocados:
                 classificacao_nna=None,
                 classificacao_pcd=None,
             )
-        with patch(  # noqa: SIM117
+        with patch(
             "candidatos.service.calculo_habilitados_service.atualizar_ranking"
         ):
             with patch(
@@ -343,8 +358,8 @@ class TestGerarSequenciaConvocados:
             getattr(it, "classificacao", None) is not None for it in itens
         )
 
-    def test_respeita_quantidade_solicitada(self, lote):
-        # total_convocados=4 → idem: sem NNA/PCD, recálculo amplia GERAL até preencher 4 posições.  # noqa: E501
+    def test_respeita_quantidade_solicitada(self, lote: Any) -> None:
+        """Verifica respeita quantidade solicitada."""
         for i in range(1, 11):
             _cc(
                 lote,
@@ -353,7 +368,7 @@ class TestGerarSequenciaConvocados:
                 classificacao_nna=None,
                 classificacao_pcd=None,
             )
-        with patch(  # noqa: SIM117
+        with patch(
             "candidatos.service.calculo_habilitados_service.atualizar_ranking"
         ):
             with patch(
@@ -364,9 +379,8 @@ class TestGerarSequenciaConvocados:
                 )
         assert len(itens) == 4
 
-    def test_inclui_nna_e_pcd_quando_disponiveis(self, lote):
-        # total_convocados=4 → geral_total=3, nna_total=1, pcd_total=0.
-        # Mesmo havendo PCD disponível, pcd_total=0 então retorna 3 (2 gerais + 1 NNA).  # noqa: E501
+    def test_inclui_nna_e_pcd_quando_disponiveis(self, lote: Any) -> None:
+        """Verifica inclui nna e pcd quando disponiveis."""
         _cc(
             lote,
             codigo_cargo="CARGO1",
@@ -395,7 +409,7 @@ class TestGerarSequenciaConvocados:
             classificacao_nna=None,
             categoria_efetiva="PCD",
         )
-        with patch(  # noqa: SIM117
+        with patch(
             "candidatos.service.calculo_habilitados_service.atualizar_ranking"
         ):
             with patch(
@@ -409,11 +423,11 @@ class TestGerarSequenciaConvocados:
         assert "NNA" in categorias or "GERAL" in categorias
         assert "PCD" in categorias or "GERAL" in categorias
 
-    def test_filtra_por_escolhas_candidato_uuids(self, lote):
-        # total_convocados=3 → geral_total=2. escolhas só afeta contagem de já convocados; pool é todo o lote.  # noqa: E501
+    def test_filtra_por_escolhas_candidato_uuids(self, lote: Any) -> None:
+        """Verifica filtra por escolhas candidato uuids."""
         cc1 = _cc(lote, codigo_cargo="CARGO1", classificacao=1)
         _cc(lote, codigo_cargo="CARGO1", classificacao=2)
-        with patch(  # noqa: SIM117
+        with patch(
             "candidatos.service.calculo_habilitados_service.atualizar_ranking"
         ):
             with patch(
@@ -428,7 +442,8 @@ class TestGerarSequenciaConvocados:
         assert len(itens) == 2
         assert itens[0].uuid == cc1.uuid
 
-    def test_nao_conta_eliminados_em_convocados(self, lote):
+    def test_nao_conta_eliminados_em_convocados(self, lote: Any) -> None:
+        """Verifica nao conta eliminados em convocados."""
         _cc(
             lote,
             codigo_cargo="CARGO1",
@@ -443,7 +458,7 @@ class TestGerarSequenciaConvocados:
             foi_convocado=False,
             eliminado=False,
         )
-        with patch(  # noqa: SIM117
+        with patch(
             "candidatos.service.calculo_habilitados_service.atualizar_ranking"
         ):
             with patch(
@@ -454,11 +469,11 @@ class TestGerarSequenciaConvocados:
                 )
         assert len(itens) >= 1
 
-    def test_atribui_ranking_nos_itens(self, lote):
-        # total_convocados=3 → com recálculo, 3 candidatos gerais entram na lista final.  # noqa: E501
+    def test_atribui_ranking_nos_itens(self, lote: Any) -> None:
+        """Verifica atribui ranking nos itens."""
         for i in range(1, 4):
             _cc(lote, codigo_cargo="CARGO1", classificacao=i)
-        with patch(  # noqa: SIM117
+        with patch(
             "candidatos.service.calculo_habilitados_service.atualizar_ranking"
         ) as mock_rank:
             with patch(
@@ -472,12 +487,14 @@ class TestGerarSequenciaConvocados:
         args = mock_rank.call_args[0][0]
         assert len(args) == 3
 
-    def test_com_processo_uuid_chama_atualizacao_historicos(self, lote):
-        # total_convocados=2 → recálculo preenche com 2 gerais quando não há NNA/PCD.  # noqa: E501
+    def test_com_processo_uuid_chama_atualizacao_historicos(
+        self, lote: Any
+    ) -> None:
+        """Verifica com processo uuid chama atualizacao historicos."""
         for i in range(1, 3):
             _cc(lote, codigo_cargo="CARGO1", classificacao=i)
         processo_uuid = uuid4()
-        with patch(  # noqa: SIM117
+        with patch(
             "candidatos.service.calculo_habilitados_service.atualizar_ranking"
         ):
             with patch(
@@ -492,13 +509,9 @@ class TestGerarSequenciaConvocados:
         assert len(itens) == 2
 
     def test_marca_promovido_para_geral_quando_geral_tem_classificacao_nna(
-        self, lote
-    ):
-        """
-        Candidato em geral_list com classificacao_nna e sem histórico NNA é
-        marcado promovido_de NNA.
-        """
-        # total_convocados=5 → pode retornar mais itens; aqui validamos apenas a promoção.  # noqa: E501
+        self, lote: Any
+    ) -> None:
+        """Verifica marca promovido para geral quando geral tem classificacao nna."""
         _cc(
             lote,
             codigo_cargo="CARGO1",
@@ -514,7 +527,7 @@ class TestGerarSequenciaConvocados:
             classificacao_pcd=None,
             categoria_efetiva="GERAL",
         )
-        with patch(  # noqa: SIM117
+        with patch(
             "candidatos.service.calculo_habilitados_service.atualizar_ranking"
         ):
             with patch(
@@ -528,9 +541,10 @@ class TestGerarSequenciaConvocados:
         assert cc_nna.promovido_para_geral is True
         assert cc_nna.promovido_de == "NNA"
 
-    def test_codigo_cargo_vazio_filtra_candidatos_com_cargo_vazio(self, lote):
-        """codigo_cargo='' filtra só candidatos com codigo_cargo vazio."""
-        # total_convocados=5 → geral_total=4. Só 1 candidato com cargo '' → 1 item.  # noqa: E501
+    def test_codigo_cargo_vazio_filtra_candidatos_com_cargo_vazio(
+        self, lote: Any
+    ) -> None:
+        """Verifica codigo cargo vazio filtra candidatos com cargo vazio."""
         ConcursoCandidato.objects.create(
             candidato=_candidato(),
             lote=lote,
@@ -540,7 +554,7 @@ class TestGerarSequenciaConvocados:
             foi_convocado=False,
             eliminado=False,
         )
-        with patch(  # noqa: SIM117
+        with patch(
             "candidatos.service.calculo_habilitados_service.atualizar_ranking"
         ):
             with patch(

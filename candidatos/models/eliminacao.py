@@ -1,3 +1,9 @@
+"""Módulo models/eliminacao."""
+
+from __future__ import annotations
+
+from typing import Any
+
 from django.db import models
 
 from .base import BaseModel
@@ -5,9 +11,7 @@ from .concurso_candidato import ConcursoCandidato
 
 
 class ConcursoCandidatoEliminacao(BaseModel):
-    """
-    Histórico de eliminações/restaurações de ConcursoCandidato.
-    """
+    """Histórico de eliminações/restaurações de ConcursoCandidato."""
 
     concurso_candidato = models.ForeignKey(
         ConcursoCandidato,
@@ -26,9 +30,12 @@ class ConcursoCandidatoEliminacao(BaseModel):
     )
 
     class Meta:
+        """Representa Meta."""
+
         verbose_name = "Eliminação de ConcursoCandidato"
         verbose_name_plural = "Eliminações de ConcursoCandidato"
         ordering = ["-criado_em"]
 
-    def __str__(self):
+    def __str__(self) -> Any:
+        """Retorna representação textual do registro."""
         return f"{self.concurso_candidato_id} - ELIMINACAO"

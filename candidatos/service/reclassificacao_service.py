@@ -1,4 +1,9 @@
+"""Módulo service/reclassificacao_service."""
+
+from __future__ import annotations
+
 import logging
+from typing import Any
 
 from django.db import transaction
 from sigla_sdk.context import get_correlation_id
@@ -12,23 +17,23 @@ logger = logging.getLogger(__name__)
 
 
 def _categoria_efetiva_calculada(cc: ConcursoCandidato) -> str:
+    """Determina a categoria efetiva com base nas classificações e histórico.
+
+    Args:
+        cc: Registro de ConcursoCandidato a avaliar.
+
+    Returns:
+        Conteúdo textual gerado.
     """
-    Calcula a categoria_efetiva baseada nas classificações existentes e
-    nos históricos de desclassificação registrados.
-    Prioridade: PCD > NNA > GERAL.
-    """
-    # Verifica se já há desclassificações registradas
     desclass_pcd = cc.historicos_reclassificacao.filter(
         desclassificado_de="PCD"
     ).exists()
     desclass_nna = cc.historicos_reclassificacao.filter(
         desclassificado_de="NNA"
     ).exists()
-
-    has_pcd_ativo = (cc.classificacao_pcd is not None) and (not desclass_pcd)
-    has_nna_ativo = (cc.classificacao_nna is not None) and (not desclass_nna)
+    has_pcd_ativo = cc.classificacao_pcd is not None and (not desclass_pcd)
+    has_nna_ativo = cc.classificacao_nna is not None and (not desclass_nna)
     has_geral = cc.classificacao is not None
-
     if has_pcd_ativo:
         return "PCD"
     if has_nna_ativo:
@@ -41,15 +46,24 @@ def _categoria_efetiva_calculada(cc: ConcursoCandidato) -> str:
 @transaction.atomic
 def aplicar_reclassificacao(
     *,
-    candidato_uuid,
+    candidato_uuid: Any,
     desclassificar_de: str,
     motivo: str = "",
     executado_por: str = "",
 ) -> tuple[ConcursoCandidato, ConcursoCandidatoReclassificacao]:
-    """
-    Aplica a reclassificação explícita (desclassificação de NNA/PCD) a um
-    ConcursoCandidato,
-    registra histórico e atualiza categoria_efetiva.
+    """Aplica reclassificacao.
+
+    Args:
+        candidato_uuid: UUID do ConcursoCandidato a reclassificar.
+        desclassificar_de: Categoria de origem (``NNA`` ou ``PCD``).
+        motivo: Motivo.
+        executado_por: Executado por.
+
+    Returns:
+        Tupla com os objetos criados ou atualizados.
+
+    Raises:
+        ValueError: Se parâmetros forem inválidos ou operação negada.
     """
     logger.info(
         "Aplicando reclassificação",
@@ -66,26 +80,19 @@ def aplicar_reclassificacao(
         .select_related("candidato")
         .get(uuid=candidato_uuid)
     )
-
     desclassificar_de = (desclassificar_de or "").upper()
     if desclassificar_de not in ("NNA", "PCD"):
         raise ValueError('desclassificar_de inválido. Use "NNA" ou "PCD".')
-
-    # Valida se a cota existe no registro original
     if desclassificar_de == "NNA" and cc.classificacao_nna is None:
         raise ValueError("Candidato não possui classificação NNA.")
     if desclassificar_de == "PCD" and cc.classificacao_pcd is None:
         raise ValueError("Candidato não possui classificação PCD.")
-
-    # Evita duplicidade
     if cc.historicos_reclassificacao.filter(
         desclassificado_de=desclassificar_de
     ).exists():
         raise ValueError(
             f"Já há desclassificação registrada para {desclassificar_de}."
         )
-
-    # Cria histórico
     hist = ConcursoCandidatoReclassificacao.objects.create(
         concurso_candidato=cc,
         desclassificado_de=desclassificar_de,
@@ -95,9 +102,7 @@ def aplicar_reclassificacao(
     nova_categoria = _categoria_efetiva_calculada(cc)
     hist.nova_classificacao = nova_categoria
     hist.save(update_fields=["nova_classificacao"])
-    # Recalcula categoria efetiva e salva
     if cc.categoria_efetiva != nova_categoria:
         cc.categoria_efetiva = nova_categoria
         cc.save(update_fields=["categoria_efetiva", "atualizado_em"])
-
-    return cc, hist
+    return (cc, hist)

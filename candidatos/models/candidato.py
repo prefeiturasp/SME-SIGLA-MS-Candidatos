@@ -1,4 +1,9 @@
+"""Módulo models/candidato."""
+
+from __future__ import annotations
+
 from datetime import date
+from typing import Any
 
 from auditlog.models import AuditlogHistoryField
 from auditlog.registry import auditlog
@@ -8,23 +13,19 @@ from .base import BaseModel
 
 
 class Candidato(BaseModel):
-    """
-    Model for managing candidates
-    """
+    """Model for managing candidates."""
 
     STATUS_CHOICES = [
         ("ativo", "Ativo"),
         ("inativo", "Inativo"),
         ("suspenso", "Suspenso"),
     ]
-
     GENERO_CHOICES = [
         ("M", "Masculino"),
         ("F", "Feminino"),
         ("O", "Outro"),
         ("N", "Prefiro não informar"),
     ]
-
     nome = models.CharField(max_length=200, verbose_name="Nome")
     cpf = models.CharField(max_length=14, verbose_name="CPF")
     email = models.EmailField(max_length=254, verbose_name="Email")
@@ -68,11 +69,14 @@ class Candidato(BaseModel):
     history = AuditlogHistoryField()
 
     class Meta:
+        """Representa Meta."""
+
         verbose_name = "Candidato"
         verbose_name_plural = "Candidatos"
         ordering = ["nome"]
 
-    def __str__(self):
+    def __str__(self) -> Any:
+        """Retorna representação textual do registro."""
         return self.nome
 
 

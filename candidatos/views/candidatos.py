@@ -1,3 +1,9 @@
+"""Módulo views/candidatos."""
+
+from __future__ import annotations
+
+from typing import Any
+
 from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
@@ -16,6 +22,8 @@ from candidatos.service.candidato_lote_service import (
 
 
 class CandidatoViewSet(viewsets.ModelViewSet):
+    """ViewSet para o recurso Candidato."""
+
     queryset = Candidato.objects.all()
     serializer_class = CandidatoSerializer
     lookup_field = "uuid"
@@ -37,7 +45,8 @@ class CandidatoViewSet(viewsets.ModelViewSet):
     ordering_fields = ["nome", "data_nascimento", "created_at"]
     ordering = ["nome"]
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        """Cria lote de candidatos a partir do payload recebido."""
         input_serializer = CandidatosLoteCreateSerializer(data=request.data)
         input_serializer.is_valid(raise_exception=True)
         resp_data, status_code = processar_criacao_candidatos_lote(
@@ -46,24 +55,14 @@ class CandidatoViewSet(viewsets.ModelViewSet):
         return Response(resp_data, status=status_code)
 
     @action(methods=["get"], detail=False, url_path="buscar")
-    def buscar(self, request):
-        """
-        Busca por nome, CPF, RG e/ou registro funcional na tabela
-        candidatos_concursocandidato.
-        Os parâmetros informados são combinados com AND (todos devem ser
-        atendidos).
-        Retorna lista de candidatos com concursos (apenas os ConcursoCandidato
-        que bateram na busca).
-        Query params: nome, cpf, rg, registro_funcional (pelo menos um
-        obrigatório).
-        """
+    def buscar(self, request: Any) -> Any:
+        """Busca por nome, CPF, RG e/ou registro funcional na tabela."""
         nome = request.query_params.get("nome", "").strip()
         cpf = request.query_params.get("cpf", "").strip()
         rg = request.query_params.get("rg", "").strip()
         registro_funcional = request.query_params.get(
             "registro_funcional", ""
         ).strip()
-
         if not any([nome, cpf, rg, registro_funcional]):
             return Response(
                 {
@@ -71,7 +70,6 @@ class CandidatoViewSet(viewsets.ModelViewSet):
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
         q_obj = Q()
         if nome:
             q_obj &= Q(candidato__nome__icontains=nome)
@@ -83,27 +81,23 @@ class CandidatoViewSet(viewsets.ModelViewSet):
             q_obj &= Q(
                 candidato__registro_funcional__icontains=registro_funcional
             )
-
         cc_qs = (
             ConcursoCandidato.objects.filter(q_obj)
             .select_related("candidato", "lote")
             .order_by("candidato__nome")[:300]
         )
         cc_list = list(cc_qs)
-
         candidatos_por_uuid = {}
         for cc in cc_list:
             c = cc.candidato
             if c.uuid not in candidatos_por_uuid:
                 candidatos_por_uuid[c.uuid] = {"candidato": c, "concursos": []}
-            candidatos_por_uuid[c.uuid]["concursos"].append(cc)
-
+            candidatos_por_uuid[c.uuid]["concursos"].append(cc)  # type: ignore[attr-defined]
         resultado = []
-        for c in candidatos_por_uuid.values():
-            item = CandidatoSerializer(c["candidato"]).data
+        for c in candidatos_por_uuid.values():  # type: ignore[assignment]
+            item = CandidatoSerializer(c["candidato"]).data  # type: ignore[index]
             item["concursos"] = ConcursoCandidatoSerializer(
                 c["concursos"], many=True
-            ).data
+            ).data  # type: ignore[index]
             resultado.append(item)
-
         return Response(resultado)

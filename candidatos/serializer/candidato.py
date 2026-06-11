@@ -1,3 +1,5 @@
+"""Módulo serializer/candidato."""
+
 from rest_framework import serializers
 
 from candidatos.models import Candidato
@@ -6,15 +8,21 @@ from .concurso_candidato import ConcursoCandidatoSerializer
 
 
 class CandidatoSerializer(serializers.ModelSerializer):
+    """Serializer do modelo Candidato."""
+
     concursos = ConcursoCandidatoSerializer(many=True, read_only=True)
 
     class Meta:
+        """Representa Meta."""
+
         model = Candidato
         fields = "__all__"
         read_only_fields = ["criado_em", "atualizado_em", "esta_ativo"]
 
 
 class CandidatoConcursoCreateSerializer(serializers.Serializer):
+    """Serializer do modelo CandidatoConcursoCreate."""
+
     nome = serializers.CharField(allow_blank=True, required=False)
     data_nascimento = serializers.CharField(required=False, allow_blank=True)
     sexo = serializers.CharField(required=False, allow_blank=True)
@@ -52,6 +60,8 @@ class CandidatoConcursoCreateSerializer(serializers.Serializer):
 
 
 class CandidatosLoteCreateSerializer(serializers.Serializer):
+    """Serializer do modelo CandidatosLoteCreate."""
+
     concurso_uuid = serializers.UUIDField()
     concurso_nome = serializers.CharField(allow_blank=True, required=False)
     candidatos = CandidatoConcursoCreateSerializer(many=True)

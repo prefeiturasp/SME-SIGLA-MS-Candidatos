@@ -1,5 +1,10 @@
+"""Módulo service/calculo_habilitados_service."""
+
+from __future__ import annotations
+
 import contextlib
 import math
+from typing import Any
 
 from django.db.models import Q
 from django.utils import timezone
@@ -9,19 +14,51 @@ from candidatos.models import ConcursoCandidato, Parametrizacao
 from .ranking_service import atualizar_ranking, atualizar_ranking_escolha
 
 
-def calcular_quantidade_nna(total_candidatos, porcentagem_nna):
+def calcular_quantidade_nna(
+    total_candidatos: Any, porcentagem_nna: Any
+) -> Any:
+    """Calcula quantidade nna.
+
+    Args:
+        total_candidatos: Total de candidatos considerados no cálculo.
+        porcentagem_nna: Percentual aplicado sobre o total para NNA.
+
+    Returns:
+        Quantidade ou código numérico resultante.
+    """
     return math.ceil(total_candidatos * porcentagem_nna)
 
 
-def calcular_quantidade_pcd(total_candidatos, porcentagem_pcd):
+def calcular_quantidade_pcd(
+    total_candidatos: Any, porcentagem_pcd: Any
+) -> Any:
+    """Calcula quantidade pcd.
+
+    Args:
+        total_candidatos: Total de candidatos considerados no cálculo.
+        porcentagem_pcd: Percentual aplicado sobre o total para PCD.
+
+    Returns:
+        Quantidade ou código numérico resultante.
+    """
     valor = total_candidatos * porcentagem_pcd
     frac = valor - math.floor(valor)
     return math.ceil(valor) if frac >= 0.5 else math.floor(valor)
 
 
 def calcular_quantidade_geral(
-    total_candidatos, porcentagem_nna, porcentagem_pcd
-):
+    total_candidatos: Any, porcentagem_nna: Any, porcentagem_pcd: Any
+) -> Any:
+    """Calcula quantidade geral.
+
+    Args:
+        total_candidatos: Total de candidatos considerados no cálculo.
+        porcentagem_nna: Percentual reservado a NNA.
+        porcentagem_pcd: Percentual reservado a PCD.
+
+    Returns:
+        Quantidade ou código numérico resultante.
+    """
     return (
         total_candidatos
         - calcular_quantidade_nna(total_candidatos, porcentagem_nna)
@@ -29,25 +66,44 @@ def calcular_quantidade_geral(
     )
 
 
-def calcular_posicao_nna(posicao):
-    return (5 * posicao) - 4
+def calcular_posicao_nna(posicao: Any) -> Any:
+    """Calcula posicao nna.
+
+    Args:
+        posicao: Índice da vaga NNA (1-based).
+
+    Returns:
+        Quantidade ou código numérico resultante.
+    """
+    return 5 * posicao - 4
 
 
-def calcular_posicao_pcd(posicao):
+def calcular_posicao_pcd(posicao: Any) -> Any:
+    """Calcula posicao pcd.
+
+    Args:
+        posicao: Índice da vaga PCD (1-based).
+
+    Returns:
+        Quantidade ou código numérico resultante.
+    """
     return 10 + (posicao - 1) * 20
 
 
-def _safe_max_classificacao(final_itens, classificacao_attr: str):
-    """
-    Retorna o maior valor inteiro encontrado no atributo de classificação
-    informado dentre os itens finais. Ignora valores nulos/inválidos.
+def _safe_max_classificacao(final_itens: Any, classificacao_attr: str) -> Any:
+    """Obtém max classificacao.
+
+    Args:
+        final_itens: Itens finais da lista de classificação.
+        classificacao_attr: Nome do atributo de classificação consultado.
+
+    Returns:
+        Quantidade ou código numérico resultante.
     """
     try:
         valores = []
         for item in final_itens:
             try:
-                # Quando for 'classificacao' (GERAL), considerar apenas itens que tenham  # noqa: E501
-                # 'classificacao' preenchido e NÃO tenham classificacao_nna/pcd (i.e., são gerais)  # noqa: E501
                 if classificacao_attr == "classificacao":
                     if getattr(item, "classificacao_nna", None) is not None:
                         continue
@@ -67,19 +123,25 @@ def _safe_max_classificacao(final_itens, classificacao_attr: str):
 
 
 def _atualizar_processo_uuid_para_reclassificados(
-    final_itens,
+    final_itens: Any,
     categoria: str,
     classificacao_attr: str,
-    processo_uuid,
-    lote,
-    codigo_cargo,
-):
-    """
-    Atualiza processo_uuid nos históricos de reclassificação para candidatos
-    que foram
-    reclassificados da categoria indicada (NNA/PCD) e cuja classificação
-    original é menor
-    que o maior valor de classificação efetivamente utilizado em final_itens.
+    processo_uuid: Any,
+    lote: Any,
+    codigo_cargo: Any,
+) -> None:
+    """Atualiza processo uuid para reclassificados.
+
+    Args:
+        final_itens: Itens finais da lista de classificação.
+        categoria: Categoria desclassificada (``NNA`` ou ``PCD``).
+        classificacao_attr: Nome do atributo de classificação consultado.
+        processo_uuid: UUID do processo de convocação.
+        lote: Lote.
+        codigo_cargo: Código numérico do cargo.
+
+    Returns:
+        Nenhum valor; persiste alterações no banco.
     """
     try:
         if not processo_uuid:
@@ -104,28 +166,26 @@ def _atualizar_processo_uuid_para_reclassificados(
                 desclassificado_de=categoria,
             ).update(processo_uuid=processo_uuid)
     except Exception:
-        # Não deve quebrar o fluxo principal de geração
         return
 
 
 def _atualizar_processo_uuid_para_eliminados(
-    final_itens,
-    processo_uuid,
-    lote,
-    codigo_cargo,
-):
-    """
-    Atualiza processo_uuid nos históricos de eliminação para candidatos que
-    foram eliminados
-    e cuja classificação (geral/nna/pcd) é menor do que o maior valor de
-    classificação
-    efetivamente utilizado em final_itens, considerando todos os tipos de
-    classificação.
+    final_itens: Any, processo_uuid: Any, lote: Any, codigo_cargo: Any
+) -> None:
+    """Atualiza processo uuid para eliminados.
+
+    Args:
+        final_itens: Itens finais da lista de classificação.
+        processo_uuid: UUID do processo de convocação.
+        lote: Lote.
+        codigo_cargo: Código numérico do cargo.
+
+    Returns:
+        Nenhum valor; persiste alterações no banco.
     """
     try:
         if not processo_uuid:
             return
-        # Limites máximos por tipo de classificação observados no lote final
         limites = {
             "classificacao": _safe_max_classificacao(
                 final_itens, "classificacao"
@@ -137,7 +197,6 @@ def _atualizar_processo_uuid_para_eliminados(
                 final_itens, "classificacao_pcd"
             ),
         }
-        # Monta filtro combinado por qualquer classificação menor que o limite correspondente  # noqa: E501
         filtro_q = Q()
         for attr, limite in limites.items():
             if limite:
@@ -147,9 +206,7 @@ def _atualizar_processo_uuid_para_eliminados(
         from candidatos.models import ConcursoCandidatoEliminacao
 
         eliminados_qs = ConcursoCandidato.objects.filter(
-            lote=lote,
-            codigo_cargo=codigo_cargo,
-            eliminado=True,
+            lote=lote, codigo_cargo=codigo_cargo, eliminado=True
         ).filter(filtro_q)
         if eliminados_qs.exists():
             ConcursoCandidatoEliminacao.objects.filter(
@@ -159,32 +216,33 @@ def _atualizar_processo_uuid_para_eliminados(
                 processo_uuid=None,
             ).update(processo_uuid=processo_uuid)
     except Exception:
-        # Não deve quebrar o fluxo principal de geração
         return
 
 
 def gerar_sequencia_convocados(
-    total_convocados,
-    lote=None,
-    escolhas_candidato_uuids=None,
-    codigo_cargo=None,
-    processo_uuid=None,
-):
-    """
-    Gera a sequência de convocação com rótulos 'G', 'NNA' e 'PCD', respeitando:
-    - Totais por tipo (NNA: ceil(20%), PCD: arredonda pra cima apenas se frac
-    >= 0.5; Geral = resto)
-    - Posições-alvo de NNA/PCD: 10, 30, 50, ... (calcular_posicao_*).
-      Em caso de colisão, PCD tem prioridade (é alocado primeiro) e o outro
-      tipo é deslocado
-      para o próximo índice disponível.
+    total_convocados: Any,
+    lote: Any = None,
+    escolhas_candidato_uuids: Any = None,
+    codigo_cargo: Any = None,
+    processo_uuid: Any = None,
+) -> Any:
+    """Gera sequencia convocados.
+
+    Args:
+        total_convocados: Total convocados.
+        lote: Lote.
+        escolhas_candidato_uuids: UUIDs de candidatos com escolha confirmada.
+        codigo_cargo: Código numérico do cargo.
+        processo_uuid: UUID do processo de convocação.
+
+    Returns:
+        Dicionário com os dados processados.
     """
     parametrizacao = Parametrizacao.objects.first()
-    porcentagem_nna = parametrizacao.porcentagem_nna
-    porcentagem_pcd = parametrizacao.porcentagem_pcd
+    porcentagem_nna = parametrizacao.porcentagem_nna  # type: ignore[union-attr]
+    porcentagem_pcd = parametrizacao.porcentagem_pcd  # type: ignore[union-attr]
     if total_convocados <= 0:
         return []
-    # Quantidade já convocada (acumulado) por categoria efetiva
     convocados_qs = ConcursoCandidato.objects.filter(
         lote=lote, foi_convocado=True, eliminado=False
     )
@@ -201,22 +259,19 @@ def gerar_sequencia_convocados(
     convocados_nna = convocados_qs.filter(categoria_efetiva="NNA").count()
     convocados_pcd = convocados_qs.filter(categoria_efetiva="PCD").count()
     convocados_geral = convocados_qs.filter(categoria_efetiva="GERAL").count()
-
-    # Totais cumulativos alvo (já convocados + novo lote)
     cumul_total = convocados_total + total_convocados
     cumul_nna = calcular_quantidade_nna(cumul_total, porcentagem_nna)
     cumul_pcd = calcular_quantidade_pcd(cumul_total, porcentagem_pcd)
     cumul_geral = calcular_quantidade_geral(
         cumul_total, porcentagem_nna, porcentagem_pcd
     )
-
-    # Necessidade deste lote (cumulativo alvo - já convocados)
     nna_total = max(0, cumul_nna - convocados_nna)
     pcd_total = max(0, cumul_pcd - convocados_pcd)
     geral_total = max(0, cumul_geral - convocados_geral)
     sequencia = ["G"] * total_convocados
 
-    def calcular_quantidades_por_tipo(geral, nna, pcd):
+    def calcular_quantidades_por_tipo(geral: Any, nna: Any, pcd: Any) -> Any:
+        """Calcula quantidades por tipo."""
         qs_geral = (
             ConcursoCandidato.objects.filter(
                 lote=lote,
@@ -260,7 +315,6 @@ def gerar_sequencia_convocados(
             qs_pcd.count() < pcd,
             pcd - qs_pcd.count(),
         )
-
         return (
             qs_geral,
             qs_nna,
@@ -271,12 +325,10 @@ def gerar_sequencia_convocados(
             quantidade_faltante_pcd,
         )
 
-    def calcular_com_recalculo_se_necessario(geral, nna, pcd):
-        """
-        Executa o cálculo por tipo e, caso faltem NNA/PCD, recalcula apenas
-        mais uma vez
-        ajustando os totais (no máximo 2 execuções).
-        """
+    def calcular_com_recalculo_se_necessario(
+        geral: Any, nna: Any, pcd: Any
+    ) -> Any:
+        """Calcula com recalculo se necessario."""
         (
             qs_geral,
             qs_nna,
@@ -286,22 +338,19 @@ def gerar_sequencia_convocados(
             tem_pcd_faltante,
             quantidade_faltante_pcd,
         ) = calcular_quantidades_por_tipo(geral, nna, pcd)
-
         if tem_nna_faltante or tem_pcd_faltante:
             geral = geral + quantidade_faltante_nna + quantidade_faltante_pcd
             nna = nna + quantidade_faltante_nna
             pcd = pcd + quantidade_faltante_pcd
             return calcular_quantidades_por_tipo(geral, nna, pcd)
-
         return (qs_geral, qs_nna, qs_pcd)
 
-    (qs_geral, qs_nna, qs_pcd, *args) = calcular_com_recalculo_se_necessario(
+    qs_geral, qs_nna, qs_pcd, *args = calcular_com_recalculo_se_necessario(
         geral_total, nna_total, pcd_total
     )
     nna_list = list(qs_nna)
     pcd_list = list(qs_pcd)
     geral_list = list(qs_geral)
-    # Inicializa categoria efetiva (somente em memória, sem persistir)
     for obj in geral_list:
         try:
             obj.categoria_efetiva = "GERAL"
@@ -330,32 +379,25 @@ def gerar_sequencia_convocados(
             pass
         obj.save()
     idx_nna = idx_pcd = idx_geral = 0
-
-    # As listas já são retornadas do banco na quantidade e ordem corretas.
-    # Marcar como promovidos, persistindo no banco, os itens que entraram na geral_list mas possuem cota NNA/PCD  # noqa: E501
     promovidos_to_update = []
     now = timezone.now()
     for obj in geral_list:
         try:
-            if (
-                getattr(obj, "classificacao_nna", None) is not None
-                and not obj.historicos_reclassificacao.filter(
+            if getattr(obj, "classificacao_nna", None) is not None and (
+                not obj.historicos_reclassificacao.filter(
                     desclassificado_de="NNA"
                 ).exists()
             ):
-                # promovido de NNA para GERAL
                 obj.categoria_efetiva = "GERAL"
                 obj.promovido_para_geral = True
                 obj.promovido_de = "NNA"
                 obj.promovido_em = now
                 promovidos_to_update.append(obj)
-            elif (
-                getattr(obj, "classificacao_pcd", None) is not None
-                and not obj.historicos_reclassificacao.filter(
+            elif getattr(obj, "classificacao_pcd", None) is not None and (
+                not obj.historicos_reclassificacao.filter(
                     desclassificado_de="PCD"
                 ).exists()
             ):
-                # promovido de PCD para GERAL
                 obj.categoria_efetiva = "GERAL"
                 obj.promovido_para_geral = True
                 obj.promovido_de = "PCD"
@@ -363,7 +405,6 @@ def gerar_sequencia_convocados(
                 promovidos_to_update.append(obj)
         except Exception:
             continue
-
     if promovidos_to_update:
         ConcursoCandidato.objects.bulk_update(
             promovidos_to_update,
@@ -374,39 +415,30 @@ def gerar_sequencia_convocados(
                 "promovido_em",
             ],
         )
-
-    # Posições alvo (1-based) limitadas ao total
-    # Posicionamento incremental: considerar offset dos já convocados,
-    # mas gerar a sequência do novo lote no intervalo (offset, cumul_total]
     offset = convocados_total
     pcd_positions = []
     for i in range(1, cumul_pcd + 1):
         pos_abs = calcular_posicao_pcd(i)
         if offset < pos_abs <= cumul_total:
-            pcd_positions.append(
-                pos_abs - offset - 1
-            )  # índice relativo ao novo lote
+            pcd_positions.append(pos_abs - offset - 1)
             if len(pcd_positions) >= pcd_total:
                 break
     nna_positions = []
     for i in range(1, cumul_nna + 1):
         pos_abs = 3 if i == 1 and cumul_total >= 3 else calcular_posicao_nna(i)
         if offset < pos_abs <= cumul_total:
-            nna_positions.append(
-                pos_abs - offset - 1
-            )  # índice relativo ao novo lote
+            nna_positions.append(pos_abs - offset - 1)
             if len(nna_positions) >= nna_total:
                 break
 
-    # Verificação de reclassificados NNA: pega a maior classificacao_nna selecionada e,  # noqa: E501
-    # se houver reclassificado de NNA com classificacao_nna menor, seta processo_uuid no histórico  # noqa: E501
-
-    def place_at_or_next_free(index_list, label, remaining):
+    def place_at_or_next_free(
+        index_list: Any, label: Any, remaining: Any
+    ) -> Any:
+        """Posiciona rótulos na sequência ou na próxima posição livre."""
         placed = 0
         for idx in index_list:
             if placed >= remaining:
                 break
-            # tenta a posição alvo, senão avança até próxima vaga
             j = idx
             while j < total_convocados and sequencia[j] != "G":
                 j += 1
@@ -415,12 +447,11 @@ def gerar_sequencia_convocados(
                 placed += 1
         return placed
 
-    # Prioridade PCD em caso de colisão
     pcd_placed = place_at_or_next_free(pcd_positions, "PCD", pcd_total)
     nna_placed = place_at_or_next_free(nna_positions, "NNA", nna_total)
 
-    # Se faltou posicionar algum (por posições > total, etc.), completa das esquerdas livres  # noqa: E501
-    def backfill_remaining(label, remaining_to_place):
+    def backfill_remaining(label: Any, remaining_to_place: Any) -> Any:
+        """Preenche posições G restantes com o rótulo informado."""
         placed = 0
         for i in range(total_convocados):
             if placed >= remaining_to_place:
@@ -434,11 +465,10 @@ def gerar_sequencia_convocados(
         backfill_remaining("PCD", pcd_total - pcd_placed)
     if nna_placed < nna_total:
         backfill_remaining("NNA", nna_total - nna_placed)
-
-    # Monta a lista final de objetos com ranking baseado na posição
     resultado_itens = [None] * total_convocados
 
-    def pop_from(label):
+    def pop_from(label: Any) -> Any:
+        """Remove e retorna o próximo candidato da fila da categoria."""
         nonlocal idx_nna, idx_pcd, idx_geral
         if label == "NNA" and idx_nna < len(nna_list):
             item = nna_list[idx_nna]
@@ -457,7 +487,6 @@ def gerar_sequencia_convocados(
     for i, label in enumerate(sequencia):
         item = pop_from(label)
         if item is None:
-            # fallback simples para evitar buracos caso uma lista acabe
             if label != "NNA":
                 item = pop_from("NNA")
             if item is None and label != "PCD":
@@ -465,19 +494,12 @@ def gerar_sequencia_convocados(
             if item is None and label != "G":
                 item = pop_from("G")
         if item is not None:
-            try:  # noqa: SIM105
-                item.ranking = (
-                    i + 1
-                )  # não persiste; apenas atribui na instância
-            except Exception:
-                pass
+            with contextlib.suppress(Exception):
+                item.ranking = i + 1
             resultado_itens[i] = item
-
     final_itens = [it for it in resultado_itens if it is not None]
     with contextlib.suppress(Exception):
-        [str(it.uuid) for it in final_itens]
-
-    # Atualiza processo_uuid nos históricos de reclassificação relevantes (PCD e NNA)  # noqa: E501
+        [str(it.uuid) for it in final_itens]  # type: ignore[attr-defined]
     _atualizar_processo_uuid_para_reclassificados(
         final_itens=final_itens,
         categoria="PCD",
@@ -494,15 +516,12 @@ def gerar_sequencia_convocados(
         lote=lote,
         codigo_cargo=codigo_cargo,
     )
-    # Atualiza processo_uuid nos históricos de eliminação relevantes (todas classificações)  # noqa: E501
     _atualizar_processo_uuid_para_eliminados(
         final_itens=final_itens,
         processo_uuid=processo_uuid,
         lote=lote,
         codigo_cargo=codigo_cargo,
     )
-
-    # Persiste o ranking com a posição final (1-based) para não ficar 0
     atualizar_ranking(final_itens)
     atualizar_ranking_escolha(final_itens)
-    return final_itens, porcentagem_nna, porcentagem_pcd
+    return (final_itens, porcentagem_nna, porcentagem_pcd)
