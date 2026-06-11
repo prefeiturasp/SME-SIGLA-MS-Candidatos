@@ -18,7 +18,8 @@ def montar_extracao_dados(concurso_uuid=None, filtros=None) -> dict:
       - ``convocados``: ``foi_convocado=True`` nos ``processo_uuids`` do ano.
       - ``nao-convocados``: habilitados importados que ainda não foram
         convocados naquele ano = total de habilitados − convocados do ano.
-    - Sem ``filtros`` (None ou lista vazia): uma chave ``total`` agregada com:
+    - Sem ``filtros`` (None ou lista vazia): o agregado vem direto na raiz
+      (sem a chave ``total``), com:
       - ``convocados``: todos os ``foi_convocado=True`` do concurso.
       - ``nao-convocados``: total de habilitados − convocados do concurso.
     """
@@ -37,10 +38,10 @@ def montar_extracao_dados(concurso_uuid=None, filtros=None) -> dict:
             }
     else:
         convocados = _contar_convocados(concurso_uuid)
-        resultado["total"] = {
+        resultado.update({
             "convocados": convocados,
             "nao-convocados": habilitados["total"] - convocados,
-        }
+        })
 
     return resultado
 

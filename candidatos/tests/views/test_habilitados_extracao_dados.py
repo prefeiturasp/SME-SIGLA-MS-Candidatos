@@ -135,10 +135,12 @@ def test_extracao_dados_sem_filtros_retorna_total(api_client):
         "pcd": 1,
         "nna": 1,
     }
-    # ALL: todos foi_convocado=True do concurso (2), sem quebra por ano
-    assert data["total"] == {"convocados": 2, "nao-convocados": 2}
+    # ALL: todos foi_convocado=True do concurso (2), sem quebra por ano.
+    # O agregado vem direto na raiz, sem a chave "total".
+    assert data["convocados"] == 2
+    assert data["nao-convocados"] == 2
     # nenhuma chave de ano presente
-    assert set(data.keys()) == {"habilitados", "total"}
+    assert set(data.keys()) == {"habilitados", "convocados", "nao-convocados"}
 
 
 def test_extracao_dados_filtros_vazio_lista(api_client):
@@ -159,8 +161,9 @@ def test_extracao_dados_filtros_vazio_lista(api_client):
 
     assert resp.status_code == 200, resp.content
     data = resp.json()
-    assert data["total"] == {"convocados": 1, "nao-convocados": 1}
-    assert set(data.keys()) == {"habilitados", "total"}
+    assert data["convocados"] == 1
+    assert data["nao-convocados"] == 1
+    assert set(data.keys()) == {"habilitados", "convocados", "nao-convocados"}
 
 
 def test_extracao_dados_sem_concurso_agrega_todos(api_client):
@@ -188,5 +191,6 @@ def test_extracao_dados_sem_concurso_agrega_todos(api_client):
         "nna": 0,
     }
     # convocados de todos os concursos (2)
-    assert data["total"] == {"convocados": 2, "nao-convocados": 1}
-    assert set(data.keys()) == {"habilitados", "total"}
+    assert data["convocados"] == 2
+    assert data["nao-convocados"] == 1
+    assert set(data.keys()) == {"habilitados", "convocados", "nao-convocados"}
