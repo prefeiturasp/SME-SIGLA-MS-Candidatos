@@ -22,7 +22,7 @@ from candidatos.service.candidato_lote_service import (
 
 
 class CandidatoViewSet(viewsets.ModelViewSet):
-    """Define CandidatoViewSet."""
+    """ViewSet para o recurso Candidato."""
 
     queryset = Candidato.objects.all()
     serializer_class = CandidatoSerializer
@@ -49,12 +49,12 @@ class CandidatoViewSet(viewsets.ModelViewSet):
         """Cria lote de candidatos a partir do payload recebido.
 
         Args:
-            request: Requisição HTTP com dados do lote.
+            request: Requisição HTTP recebida.
             *args: Argumentos posicionais repassados ao ViewSet.
             **kwargs: Argumentos nomeados repassados ao ViewSet.
 
         Returns:
-            Resposta HTTP com UUID do lote e total de itens criados.
+            Resposta HTTP com os dados serializados.
         """
         input_serializer = CandidatosLoteCreateSerializer(data=request.data)
         input_serializer.is_valid(raise_exception=True)
@@ -68,10 +68,10 @@ class CandidatoViewSet(viewsets.ModelViewSet):
         """Busca por nome, CPF, RG e/ou registro funcional na tabela.
 
         Args:
-            request: Requisição HTTP com critérios de busca na query string.
+            request: Requisição HTTP recebida.
 
         Returns:
-            Resposta HTTP com candidatos e concursos associados encontrados.
+            Resposta HTTP com os dados solicitados.
         """
         nome = request.query_params.get("nome", "").strip()
         cpf = request.query_params.get("cpf", "").strip()

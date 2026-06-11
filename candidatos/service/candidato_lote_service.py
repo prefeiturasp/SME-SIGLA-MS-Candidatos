@@ -12,14 +12,13 @@ from .candidato_service import upsert_candidato_e_concurso
 def processar_criacao_candidatos_lote(
     data: dict[str, Any],
 ) -> tuple[dict[str, Any], int]:
-    """Processa criação em lote de candidatos vinculados a um concurso.
+    """Processa criacao candidatos lote.
 
     Args:
-        data: Payload com ``concurso_uuid``, ``concurso_nome`` e lista de
-            candidatos.
+        data: Data.
 
     Returns:
-        Tupla com corpo da resposta e código HTTP (201 ou 400).
+        Tupla com os objetos criados ou atualizados.
     """
     concurso_uuid = data.get("concurso_uuid")
     if not concurso_uuid:

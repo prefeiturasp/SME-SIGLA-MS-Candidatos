@@ -69,14 +69,14 @@ class Candidato(BaseModel):
     history = AuditlogHistoryField()
 
     class Meta:
-        """Define Meta."""
+        """Representa Meta."""
 
         verbose_name = "Candidato"
         verbose_name_plural = "Candidatos"
         ordering = ["nome"]
 
     def __str__(self) -> Any:
-        """Retorna o nome do candidato."""
+        """Retorna representação textual do registro."""
         return self.nome
 
 

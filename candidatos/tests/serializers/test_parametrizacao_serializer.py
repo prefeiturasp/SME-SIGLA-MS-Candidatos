@@ -11,7 +11,7 @@ pytestmark = pytest.mark.django_db
 
 
 def test_parametrizacao_serializer_serialization() -> None:
-    """Testa serialização de Parametrizacao."""
+    """Verifica parametrizacao serializer serialization."""
     parametrizacao = Parametrizacao.objects.create(
         porcentagem_pcd=0.1, porcentagem_nna=0.25
     )
@@ -26,7 +26,7 @@ def test_parametrizacao_serializer_serialization() -> None:
 
 
 def test_parametrizacao_serializer_deserialization() -> None:
-    """Testa deserialização e criação de Parametrizacao."""
+    """Verifica parametrizacao serializer deserialization."""
     data = {"porcentagem_pcd": 0.15, "porcentagem_nna": 0.3}
     serializer = ParametrizacaoSerializer(data=data)
     assert serializer.is_valid()
@@ -37,7 +37,7 @@ def test_parametrizacao_serializer_deserialization() -> None:
 
 
 def test_parametrizacao_serializer_partial_update() -> None:
-    """Testa atualização parcial de Parametrizacao."""
+    """Verifica parametrizacao serializer partial update."""
     parametrizacao = Parametrizacao.objects.create(
         porcentagem_pcd=0.05, porcentagem_nna=0.2
     )
@@ -52,7 +52,7 @@ def test_parametrizacao_serializer_partial_update() -> None:
 
 
 def test_parametrizacao_serializer_read_only_fields() -> None:
-    """Testa que campos read_only não podem ser alterados."""
+    """Verifica parametrizacao serializer read only fields."""
     parametrizacao = Parametrizacao.objects.create(
         porcentagem_pcd=0.05, porcentagem_nna=0.2
     )
@@ -74,7 +74,7 @@ def test_parametrizacao_serializer_read_only_fields() -> None:
 
 
 def test_parametrizacao_serializer_validation() -> None:
-    """Testa validação do serializer."""
+    """Verifica parametrizacao serializer validation."""
     data = {"porcentagem_pcd": 0.1, "porcentagem_nna": 0.25}
     serializer = ParametrizacaoSerializer(data=data)
     assert serializer.is_valid()

@@ -48,7 +48,7 @@ class ConcursoCandidatoReclassificacao(BaseModel):
     )
 
     class Meta:
-        """Define Meta."""
+        """Representa Meta."""
 
         verbose_name = "Reclassificação de ConcursoCandidato"
         verbose_name_plural = "Reclassificações de ConcursoCandidato"
@@ -56,5 +56,5 @@ class ConcursoCandidatoReclassificacao(BaseModel):
         unique_together = (("concurso_candidato", "desclassificado_de"),)
 
     def __str__(self) -> Any:
-        """Retorna identificação da reclassificação e categoria de origem."""
+        """Retorna representação textual do registro."""
         return f"{self.concurso_candidato_id} - {self.desclassificado_de}"

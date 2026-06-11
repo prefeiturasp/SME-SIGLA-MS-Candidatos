@@ -26,10 +26,10 @@ class ParametrizacaoViewSet(
     pagination_class = None
 
     def get_object(self) -> Any:
-        """Retorna sempre o registro de parametrização mais recente.
+        """Retorna object.
 
         Returns:
-            Instância de Parametrizacao mais recente.
+            Resposta HTTP com os dados solicitados.
 
         Raises:
             NotFound: Quando não existir nenhum registro de parametrização.
@@ -50,7 +50,7 @@ class ParametrizacaoViewSet(
             **kwargs: Argumentos nomeados repassados ao ViewSet.
 
         Returns:
-            Resposta HTTP 405 indicando método não permitido.
+            Resposta HTTP com os dados serializados.
         """
         return Response(
             {"detail": 'Method "POST" not allowed.'},

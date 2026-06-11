@@ -21,10 +21,10 @@ class ReclassificadosViewSet(viewsets.ViewSet):
         """Lista candidatos reclassificados de NNA/PCD para ampla concorrência.
 
         Args:
-            request: Requisição HTTP com ``concurso_uuid`` e ``processo_uuid``.
+            request: Requisição HTTP recebida.
 
         Returns:
-            Resposta HTTP com reclassificados por categoria de origem.
+            Resposta HTTP com os dados serializados.
         """
         concurso_uuid = request.query_params.get("concurso_uuid")
         processo_uuid = request.query_params.get("processo_uuid")

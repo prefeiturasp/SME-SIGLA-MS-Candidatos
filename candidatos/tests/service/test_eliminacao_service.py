@@ -237,7 +237,7 @@ def test_aplicar_eliminacao_uuid_inexistente() -> None:
 
 
 def test_aplicar_eliminacao_atomicidade(monkeypatch: Any) -> None:
-    """Se a criação do histórico falhar, o ConcursoCandidato não deve ficar."""
+    """Verifica aplicar eliminacao atomicidade."""
     cc = _make_cc()
 
     def create_raise(*args: Any, **kwargs: Any) -> None:

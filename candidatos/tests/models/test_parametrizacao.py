@@ -10,7 +10,7 @@ pytestmark = pytest.mark.django_db
 
 
 def test_parametrizacao_create_with_defaults() -> None:
-    """Testa criação de Parametrizacao com valores padrão."""
+    """Verifica parametrizacao create with defaults."""
     parametrizacao = Parametrizacao.objects.create()
     assert parametrizacao.porcentagem_pcd == 0.05
     assert parametrizacao.porcentagem_nna == 0.2
@@ -21,7 +21,7 @@ def test_parametrizacao_create_with_defaults() -> None:
 
 
 def test_parametrizacao_create_with_custom_values() -> None:
-    """Testa criação de Parametrizacao com valores customizados."""
+    """Verifica parametrizacao create with custom values."""
     parametrizacao = Parametrizacao.objects.create(
         porcentagem_pcd=0.1, porcentagem_nna=0.25
     )
@@ -30,7 +30,7 @@ def test_parametrizacao_create_with_custom_values() -> None:
 
 
 def test_parametrizacao_str_representation() -> None:
-    """Testa a representação string do model."""
+    """Verifica parametrizacao str representation."""
     parametrizacao = Parametrizacao.objects.create(
         porcentagem_pcd=0.15, porcentagem_nna=0.3
     )
@@ -39,7 +39,7 @@ def test_parametrizacao_str_representation() -> None:
 
 
 def test_parametrizacao_ordering() -> None:
-    """Testa que a ordenação é por criado_em decrescente."""
+    """Verifica parametrizacao ordering."""
     parametrizacao1 = Parametrizacao.objects.create(
         porcentagem_pcd=0.05, porcentagem_nna=0.2
     )
@@ -55,7 +55,7 @@ def test_parametrizacao_ordering() -> None:
 
 
 def test_parametrizacao_update() -> None:
-    """Testa atualização de Parametrizacao."""
+    """Verifica parametrizacao update."""
     parametrizacao = Parametrizacao.objects.create(
         porcentagem_pcd=0.05, porcentagem_nna=0.2
     )
@@ -70,7 +70,7 @@ def test_parametrizacao_update() -> None:
 
 
 def test_parametrizacao_soft_delete() -> None:
-    """Testa soft delete (esta_ativo)."""
+    """Verifica parametrizacao soft delete."""
     parametrizacao = Parametrizacao.objects.create(
         porcentagem_pcd=0.05, porcentagem_nna=0.2
     )
@@ -82,7 +82,7 @@ def test_parametrizacao_soft_delete() -> None:
 
 
 def test_parametrizacao_multiple_instances() -> None:
-    """Testa criação de múltiplas instâncias."""
+    """Verifica parametrizacao multiple instances."""
     Parametrizacao.objects.all().delete()
     parametrizacao1 = Parametrizacao.objects.create(
         porcentagem_pcd=0.05, porcentagem_nna=0.2

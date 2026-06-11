@@ -18,15 +18,15 @@ logger = logging.getLogger(__name__)
 def aplicar_eliminacao(
     *, candidato_uuid: Any, motivo: str = "", executado_por: str = ""
 ) -> tuple[ConcursoCandidato, ConcursoCandidatoEliminacao]:
-    """Marca candidato como eliminado e registra histórico da operação.
+    """Aplica eliminacao.
 
     Args:
         candidato_uuid: UUID do ConcursoCandidato a eliminar.
-        motivo: Justificativa da eliminação.
-        executado_por: Usuário responsável pela operação.
+        motivo: Motivo.
+        executado_por: Executado por.
 
     Returns:
-        Tupla com o registro atualizado e o histórico de eliminação criado.
+        Tupla com os objetos criados ou atualizados.
 
     Raises:
         ValueError: Se o candidato já estiver eliminado.

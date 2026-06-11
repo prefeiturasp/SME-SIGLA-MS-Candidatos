@@ -21,17 +21,17 @@ logger = logging.getLogger(__name__)
 
 @transaction.atomic
 def salvar_lotes(concurso_uuid: str, lotes: list[dict[str, Any]]) -> int:
-    """Grava dados de lote nos ConcursoCandidatos do concurso informado.
+    """Salva lotes.
 
     Args:
-        concurso_uuid: UUID do concurso cujos candidatos serão atualizados.
-        lotes: Lista de dicionários com dados de lote por candidato.
+        concurso_uuid: UUID do concurso relacionado.
+        lotes: Lista de lotes a persistir no serviço de candidatos.
 
     Returns:
-        Quantidade de candidatos atualizados com sucesso.
+        Quantidade de registros processados.
 
     Raises:
-        SalvarLotesException: Se ocorrer erro nesta operação.
+        SalvarLotesException: Se houver erro ao persistir os lotes.
     """
     erros: list[str] = []
 

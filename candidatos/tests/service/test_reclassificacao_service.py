@@ -267,7 +267,7 @@ class TestAplicarReclassificacao:
     def test_reclassificar_de_nna_em_candidato_com_nna_e_pcd_atualiza_para_pcd(
         self, cc_com_nna_e_pcd: Any
     ) -> None:
-        """Desclassificar de NNA mantém PCD ativo -> categoria_efetiva vira."""
+        """Verifica reclassificar de nna em candidato com nna e pcd atualiza para pcd."""
         cc, _ = aplicar_reclassificacao(
             candidato_uuid=str(cc_com_nna_e_pcd.uuid),
             desclassificar_de="NNA",
@@ -280,7 +280,7 @@ class TestAplicarReclassificacao:
     def test_reclassificar_candidato_so_nna_sem_geral_atualiza_para_geral(
         self, lote: Any
     ) -> None:
-        """Candidato só com classificacao_nna (sem classificacao geral) ->."""
+        """Verifica reclassificar candidato so nna sem geral atualiza para geral."""
         c = _criar_candidato("Só NNA", "999.999.999-99")
         cc = ConcursoCandidato.objects.create(
             candidato=c,
@@ -526,7 +526,7 @@ def test_aplicar_reclassificacao_aceita_lowercase() -> None:
 
 
 def test_aplicar_reclassificacao_nao_salva_se_categoria_nao_muda() -> None:
-    """Não chama save se categoria_efetiva já é GERAL (sem PCD/NNA)."""
+    """Verifica aplicar reclassificacao nao salva se categoria nao muda."""
     cc = _make_cc(classificacao_nna=1, categoria_efetiva="NNA")
     ConcursoCandidato.objects.filter(pk=cc.pk).update(
         categoria_efetiva="GERAL"

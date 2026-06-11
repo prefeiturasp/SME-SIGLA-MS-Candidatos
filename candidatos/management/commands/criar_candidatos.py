@@ -12,19 +12,12 @@ from candidatos.models import Candidato
 
 
 class Command(BaseCommand):
-    """Define Command."""
+    """Representa Command."""
 
     help = "Cria candidatos de exemplo para desenvolvimento"
 
     def add_arguments(self, parser: Any) -> None:
-        """Registra argumentos da linha de comando.
-
-        Args:
-            parser: Parser de argumentos do Django management.
-
-        Returns:
-            Nenhum valor; registra opções de linha de comando.
-        """
+        """Registra os argumentos da linha de comando."""
         parser.add_argument(
             "--count",
             type=int,
@@ -33,15 +26,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args: Any, **options: Any) -> None:
-        """Cria candidatos de exemplo para desenvolvimento e testes.
-
-        Args:
-            *args: Argumentos posicionais do comando.
-            **options: Opções parseadas, incluindo ``count``.
-
-        Returns:
-            Nenhum valor; exibe progresso e estatísticas no stdout.
-        """
+        """Roda a lógica principal do comando."""
         count = options["count"]
         self.stdout.write(self.style.SUCCESS(f"Criando {count} candidatos..."))
         nomes = [

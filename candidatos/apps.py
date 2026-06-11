@@ -4,7 +4,7 @@ from django.apps import AppConfig
 
 
 class CandidatosConfig(AppConfig):
-    """Define CandidatosConfig."""
+    """Representa CandidatosConfig."""
 
     default_auto_field = "django.db.models.BigAutoField"
     name = "candidatos"

@@ -30,12 +30,12 @@ class ConcursoCandidatoEliminacao(BaseModel):
     )
 
     class Meta:
-        """Define Meta."""
+        """Representa Meta."""
 
         verbose_name = "Eliminação de ConcursoCandidato"
         verbose_name_plural = "Eliminações de ConcursoCandidato"
         ordering = ["-criado_em"]
 
     def __str__(self) -> Any:
-        """Retorna identificação do registro de eliminação."""
+        """Retorna representação textual do registro."""
         return f"{self.concurso_candidato_id} - ELIMINACAO"

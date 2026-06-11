@@ -105,7 +105,7 @@ def test_habilitados_filtra_por_ultimo_lote_e_limites(api_client: Any) -> None:
 def test_habilitados_list_quando_concurso_uuid_filtra_apenas_ultimo_lote(
     api_client: Any,
 ) -> None:
-    """`HabilitadosViewSet.get_queryset()` deve restringir ao último lote do."""
+    """Verifica habilitados list quando concurso uuid filtra apenas ultimo lote."""
     concurso_uuid = uuid4()
     lote_antigo = ConcursoCandidatosLote.objects.create(
         concurso_uuid=concurso_uuid, concurso_nome="Antigo"
@@ -148,7 +148,7 @@ def test_habilitados_list_quando_concurso_uuid_sem_lote_retorna_vazio(
 def test_habilitados_list_quando_lote_uuid_informado_nao_restringe_ao_ultimo_lote(  # noqa: E501
     api_client: Any,
 ) -> None:
-    """Se o filtro for por `lote__uuid` diretamente (sem `concurso_uuid`),."""
+    """Verifica habilitados list quando lote uuid informado nao restringe ao ultimo lote."""
     concurso_uuid = uuid4()
     lote1 = ConcursoCandidatosLote.objects.create(
         concurso_uuid=concurso_uuid, concurso_nome="L1"
@@ -209,7 +209,7 @@ class TestReclassificacaoHabilitados:
 def test_habilitados_desconvocar_sem_codigo_cargo_desconvoca_todos(
     api_client: Any, lote: Any
 ) -> None:
-    """Sem codigo_cargo, desconvoca todos os cargos do processo."""
+    """Verifica habilitados desconvocar sem codigo cargo desconvoca todos."""
     processo_uuid = uuid4()
     c1 = criar_candidato("C1", "111.111.111-11")
     c2 = criar_candidato("C2", "222.222.222-22")
@@ -248,7 +248,7 @@ def test_habilitados_desconvocar_sem_codigo_cargo_desconvoca_todos(
 def test_habilitados_desconvocar_com_codigo_cargo_desconvoca_so_um(
     api_client: Any, lote: Any
 ) -> None:
-    """Quando codigo_cargo é enviado, desconvoca apenas os registros daquele."""
+    """Verifica habilitados desconvocar com codigo cargo desconvoca so um."""
     processo_uuid = uuid4()
     c1 = criar_candidato("C1", "333.333.333-33")
     c2 = criar_candidato("C2", "444.444.444-44")
@@ -557,7 +557,7 @@ def test_habilitados_calculados_quando_escolhas_falha_continua_com_lista_vazia(
 
 
 class TestReconvocacao:
-    """Define TestReconvocacao."""
+    """Representa TestReconvocacao."""
 
     def test_erro_servico_retorna_503(self, api_client: Any) -> None:
         """Verifica erro servico retorna 503."""
@@ -721,7 +721,7 @@ class TestReconvocacao:
 
 
 class TestEliminar:
-    """Define TestEliminar."""
+    """Representa TestEliminar."""
 
     def test_payload_invalido_retorna_400(self, api_client: Any) -> None:
         """Verifica payload invalido retorna 400."""
@@ -771,7 +771,7 @@ class TestEliminar:
 
 
 class TestBuscarPorUuids:
-    """Define TestBuscarPorUuids."""
+    """Representa TestBuscarPorUuids."""
 
     def test_sem_uuids_retorna_400(self, api_client: Any) -> None:
         """Verifica sem uuids retorna 400."""

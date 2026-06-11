@@ -158,7 +158,7 @@ def test_upsert_cria_novos_candidatos_com_diferentes_datas_de_nascimento() -> (
 
 
 def test_upsert_categoria_efetiva_pcd() -> None:
-    """classificacao_deficiente preenchido define categoria_efetiva PCD."""
+    """Verifica upsert categoria efetiva pcd."""
     _, concurso = upsert_candidato_e_concurso(
         {
             "cpf": "444.444.444-44",
@@ -173,7 +173,7 @@ def test_upsert_categoria_efetiva_pcd() -> None:
 
 
 def test_upsert_categoria_efetiva_nna() -> None:
-    """classificacao_nna preenchido define categoria_efetiva NNA (linhas."""
+    """Verifica upsert categoria efetiva nna."""
     _, concurso = upsert_candidato_e_concurso(
         {
             "cpf": "555.555.555-55",
@@ -188,7 +188,7 @@ def test_upsert_categoria_efetiva_nna() -> None:
 
 
 def test_upsert_none_if_empty_string_retorna_none() -> None:
-    """classificacao_nna/classificacao_deficiente vazios resultam em None."""
+    """Verifica upsert none if empty string retorna none."""
     _, concurso = upsert_candidato_e_concurso(
         {
             "cpf": "666.666.666-66",

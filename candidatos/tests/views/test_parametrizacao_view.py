@@ -46,7 +46,7 @@ def parametrizacao_multiplas() -> Any:
 def test_list_parametrizacao_when_exists(
     api_client: Any, parametrizacao_existente: Any
 ) -> None:
-    """Testa GET /api/v1/parametrizacao/ quando existe parametrização."""
+    """Verifica list parametrizacao when exists."""
     url = reverse("parametrizacao-list")
     response = api_client.get(url)
     assert response.status_code == status.HTTP_200_OK
@@ -58,7 +58,7 @@ def test_list_parametrizacao_when_exists(
 
 
 def test_list_parametrizacao_when_not_exists(api_client: Any) -> None:
-    """Testa GET /api/v1/parametrizacao/ quando não existe parametrização."""
+    """Verifica list parametrizacao when not exists."""
     Parametrizacao.objects.all().delete()
     url = reverse("parametrizacao-list")
     response = api_client.get(url)
@@ -70,7 +70,7 @@ def test_list_parametrizacao_when_not_exists(api_client: Any) -> None:
 def test_list_parametrizacao_returns_most_recent(
     api_client: Any, parametrizacao_multiplas: Any
 ) -> None:
-    """Testa que GET retorna sempre o registro mais recente."""
+    """Verifica list parametrizacao returns most recent."""
     url = reverse("parametrizacao-list")
     response = api_client.get(url)
     assert response.status_code == status.HTTP_200_OK
@@ -84,7 +84,7 @@ def test_list_parametrizacao_returns_most_recent(
 def test_retrieve_parametrizacao_when_exists(
     api_client: Any, parametrizacao_existente: Any
 ) -> None:
-    """Testa GET /api/v1/parametrizacao/{pk}/ quando existe."""
+    """Verifica retrieve parametrizacao when exists."""
     url = reverse(
         "parametrizacao-detail", kwargs={"pk": parametrizacao_existente.uuid}
     )
@@ -98,7 +98,7 @@ def test_retrieve_parametrizacao_when_exists(
 def test_retrieve_parametrizacao_returns_most_recent(
     api_client: Any, parametrizacao_multiplas: Any
 ) -> None:
-    """Testa que retrieve retorna sempre o mais recente, ignorando o pk."""
+    """Verifica retrieve parametrizacao returns most recent."""
     url = reverse(
         "parametrizacao-detail",
         kwargs={"pk": parametrizacao_multiplas["param1"].uuid},
@@ -115,7 +115,7 @@ def test_retrieve_parametrizacao_returns_most_recent(
 def test_patch_parametrizacao_when_exists(
     api_client: Any, parametrizacao_existente: Any
 ) -> None:
-    """Testa PATCH /api/v1/parametrizacao/{pk}/ quando existe parametrização."""
+    """Verifica patch parametrizacao when exists."""
     url = reverse(
         "parametrizacao-detail", kwargs={"pk": parametrizacao_existente.uuid}
     )
@@ -132,7 +132,7 @@ def test_patch_parametrizacao_when_exists(
 def test_patch_parametrizacao_partial_update(
     api_client: Any, parametrizacao_existente: Any
 ) -> None:
-    """Testa PATCH com atualização parcial (apenas um campo)."""
+    """Verifica patch parametrizacao partial update."""
     url = reverse(
         "parametrizacao-detail", kwargs={"pk": parametrizacao_existente.uuid}
     )
@@ -147,7 +147,7 @@ def test_patch_parametrizacao_partial_update(
 
 
 def test_patch_parametrizacao_when_not_exists(api_client: Any) -> None:
-    """Testa PATCH quando não existe parametrização (get_object retorna o mais."""
+    """Verifica patch parametrizacao when not exists."""
     Parametrizacao.objects.all().delete()
     url = reverse(
         "parametrizacao-detail",
@@ -169,7 +169,7 @@ def test_patch_parametrizacao_when_not_exists(api_client: Any) -> None:
 def test_patch_parametrizacao_updates_most_recent(
     api_client: Any, parametrizacao_multiplas: Any
 ) -> None:
-    """Testa que PATCH atualiza sempre o registro mais recente."""
+    """Verifica patch parametrizacao updates most recent."""
     url = reverse(
         "parametrizacao-detail",
         kwargs={"pk": parametrizacao_multiplas["param1"].uuid},
@@ -188,7 +188,7 @@ def test_patch_parametrizacao_updates_most_recent(
 def test_patch_parametrizacao_invalid_data(
     api_client: Any, parametrizacao_existente: Any
 ) -> None:
-    """Testa PATCH com dados inválidos."""
+    """Verifica patch parametrizacao invalid data."""
     url = reverse(
         "parametrizacao-detail", kwargs={"pk": parametrizacao_existente.uuid}
     )
@@ -200,7 +200,7 @@ def test_patch_parametrizacao_invalid_data(
 def test_patch_parametrizacao_empty_payload(
     api_client: Any, parametrizacao_existente: Any
 ) -> None:
-    """Testa PATCH com payload vazio (deve manter valores atuais)."""
+    """Verifica patch parametrizacao empty payload."""
     url = reverse(
         "parametrizacao-detail", kwargs={"pk": parametrizacao_existente.uuid}
     )
@@ -217,7 +217,7 @@ def test_patch_parametrizacao_empty_payload(
 def test_list_parametrizacao_response_structure(
     api_client: Any, parametrizacao_existente: Any
 ) -> None:
-    """Testa estrutura da resposta GET list."""
+    """Verifica list parametrizacao response structure."""
     url = reverse("parametrizacao-list")
     response = api_client.get(url)
     assert response.status_code == status.HTTP_200_OK
@@ -238,7 +238,7 @@ def test_list_parametrizacao_response_structure(
 def test_retrieve_parametrizacao_response_structure(
     api_client: Any, parametrizacao_existente: Any
 ) -> None:
-    """Testa estrutura da resposta GET retrieve."""
+    """Verifica retrieve parametrizacao response structure."""
     url = reverse(
         "parametrizacao-detail", kwargs={"pk": parametrizacao_existente.uuid}
     )
@@ -260,7 +260,7 @@ def test_retrieve_parametrizacao_response_structure(
 def test_patch_parametrizacao_response_structure(
     api_client: Any, parametrizacao_existente: Any
 ) -> None:
-    """Testa estrutura da resposta PATCH."""
+    """Verifica patch parametrizacao response structure."""
     url = reverse(
         "parametrizacao-detail", kwargs={"pk": parametrizacao_existente.uuid}
     )
@@ -283,7 +283,7 @@ def test_patch_parametrizacao_response_structure(
 
 
 def test_post_parametrizacao_not_allowed(api_client: Any) -> None:
-    """Testa que POST não é permitido."""
+    """Verifica post parametrizacao not allowed."""
     url = reverse("parametrizacao-list")
     payload = {"porcentagem_pcd": 0.1, "porcentagem_nna": 0.25}
     response = api_client.post(url, payload, format="json")

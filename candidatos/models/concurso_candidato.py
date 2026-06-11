@@ -14,7 +14,7 @@ CATEGORIA_CHOICES = (("GERAL", "GERAL"), ("NNA", "NNA"), ("PCD", "PCD"))
 
 
 class ConcursoCandidato(BaseModel):
-    """Define ConcursoCandidato."""
+    """Representa ConcursoCandidato."""
 
     lote = models.ForeignKey(
         ConcursoCandidatosLote,
@@ -115,12 +115,12 @@ class ConcursoCandidato(BaseModel):
     )
 
     class Meta:
-        """Define Meta."""
+        """Representa Meta."""
 
         verbose_name = "Concurso do Candidato"
         verbose_name_plural = "Concursos dos Candidatos"
         ordering = ["-criado_em"]
 
     def __str__(self) -> Any:
-        """Retorna resumo com nome, classificações e ranking do candidato."""
+        """Retorna representação textual do registro."""
         return f"{self.candidato.nome} - {self.uuid} - {self.classificacao} - {self.classificacao_pcd} - {self.classificacao_nna} - {self.ranking}"  # noqa: E501

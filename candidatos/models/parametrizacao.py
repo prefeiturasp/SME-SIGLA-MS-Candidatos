@@ -24,12 +24,12 @@ class Parametrizacao(BaseModel):
     )
 
     class Meta:
-        """Define Meta."""
+        """Representa Meta."""
 
         verbose_name = "Parametrização"
         verbose_name_plural = "Parametrizações"
         ordering = ["-criado_em"]
 
     def __str__(self) -> Any:
-        """Retorna resumo com percentuais de PCD e NNA configurados."""
+        """Retorna representação textual do registro."""
         return f"Parametrização - PCD: {self.porcentagem_pcd}, NNA: {self.porcentagem_nna}"  # noqa: E501

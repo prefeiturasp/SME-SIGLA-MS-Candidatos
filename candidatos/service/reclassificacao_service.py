@@ -23,7 +23,7 @@ def _categoria_efetiva_calculada(cc: ConcursoCandidato) -> str:
         cc: Registro de ConcursoCandidato a avaliar.
 
     Returns:
-        Categoria efetiva (``PCD``, ``NNA`` ou ``GERAL``).
+        Conteúdo textual gerado.
     """
     desclass_pcd = cc.historicos_reclassificacao.filter(
         desclassificado_de="PCD"
@@ -51,16 +51,16 @@ def aplicar_reclassificacao(
     motivo: str = "",
     executado_por: str = "",
 ) -> tuple[ConcursoCandidato, ConcursoCandidatoReclassificacao]:
-    """Aplica desclassificação de NNA ou PCD e atualiza a categoria efetiva.
+    """Aplica reclassificacao.
 
     Args:
         candidato_uuid: UUID do ConcursoCandidato a reclassificar.
         desclassificar_de: Categoria de origem (``NNA`` ou ``PCD``).
-        motivo: Justificativa da reclassificação.
-        executado_por: Usuário responsável pela operação.
+        motivo: Motivo.
+        executado_por: Executado por.
 
     Returns:
-        Tupla com o registro atualizado e o histórico de reclassificação.
+        Tupla com os objetos criados ou atualizados.
 
     Raises:
         ValueError: Se parâmetros forem inválidos ou operação negada.

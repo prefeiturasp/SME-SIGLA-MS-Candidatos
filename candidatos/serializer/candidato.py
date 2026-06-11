@@ -8,12 +8,12 @@ from .concurso_candidato import ConcursoCandidatoSerializer
 
 
 class CandidatoSerializer(serializers.ModelSerializer):
-    """Define CandidatoSerializer."""
+    """Serializer do modelo Candidato."""
 
     concursos = ConcursoCandidatoSerializer(many=True, read_only=True)
 
     class Meta:
-        """Define Meta."""
+        """Representa Meta."""
 
         model = Candidato
         fields = "__all__"
@@ -21,7 +21,7 @@ class CandidatoSerializer(serializers.ModelSerializer):
 
 
 class CandidatoConcursoCreateSerializer(serializers.Serializer):
-    """Define CandidatoConcursoCreateSerializer."""
+    """Serializer do modelo CandidatoConcursoCreate."""
 
     nome = serializers.CharField(allow_blank=True, required=False)
     data_nascimento = serializers.CharField(required=False, allow_blank=True)
@@ -60,7 +60,7 @@ class CandidatoConcursoCreateSerializer(serializers.Serializer):
 
 
 class CandidatosLoteCreateSerializer(serializers.Serializer):
-    """Define CandidatosLoteCreateSerializer."""
+    """Serializer do modelo CandidatosLoteCreate."""
 
     concurso_uuid = serializers.UUIDField()
     concurso_nome = serializers.CharField(allow_blank=True, required=False)

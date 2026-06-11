@@ -21,10 +21,10 @@ class EliminadosViewSet(viewsets.ViewSet):
         """Lista candidatos eliminados por concurso e classificação.
 
         Args:
-            request: Requisição HTTP com parâmetros de filtro obrigatórios.
+            request: Requisição HTTP recebida.
 
         Returns:
-            Resposta HTTP com eliminados por categoria (geral, nna, pcd).
+            Resposta HTTP com os dados serializados.
         """
         concurso_uuid = request.query_params.get("concurso_uuid")
         processo_uuid = request.query_params.get("processo_uuid")

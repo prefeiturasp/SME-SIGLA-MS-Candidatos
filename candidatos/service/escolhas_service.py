@@ -19,10 +19,10 @@ class EscolhasService:
 
     @classmethod
     def _get_base_url(cls) -> str:
-        """Obtém a URL base do microserviço de Escolhas a partir do settings.
+        """Obtém base url.
 
         Returns:
-            URL base sem barra final.
+            Conteúdo textual gerado.
 
         Raises:
             ValueError: Se ``ESCOLHAS_API_URL`` não estiver configurada.
@@ -36,16 +36,16 @@ class EscolhasService:
     def buscar_reconvocacoes(
         cls, path: str = "/api/v1/escolhas/reconvocacao/"
     ) -> list[dict[str, Any]]:
-        """Busca escolhas com situação de reconvocação.
+        """Busca reconvocacoes.
 
         Args:
-            path: Caminho do endpoint de reconvocação.
+            path: Path.
 
         Returns:
-            Lista com os registros resultantes.
+            Lista com os registros obtidos.
 
         Raises:
-            RequestException: Se ocorrer erro nesta operação.
+            RequestException: Se a chamada HTTP falhar.
         """
         base_url = cls._get_base_url()
         url = f"{base_url}{path}"
@@ -103,17 +103,17 @@ class EscolhasService:
         concurso_uuid: str,
         path: str = "/api/v1/escolhas/?situacao__in=escolha,reconvocacao",
     ) -> list[dict[str, Any]]:
-        """Busca escolhas com situação de escolha ou reconvocação.
+        """Busca escolhas.
 
         Args:
-            concurso_uuid: UUID do concurso para filtrar escolhas.
-            path: Caminho do endpoint com filtro de situação.
+            concurso_uuid: UUID do concurso relacionado.
+            path: Path.
 
         Returns:
-            Lista com os registros resultantes.
+            Lista com os registros obtidos.
 
         Raises:
-            RequestException: Se ocorrer erro nesta operação.
+            RequestException: Se a chamada HTTP falhar.
         """
         base_url = cls._get_base_url()
         url = f"{base_url}{path}&concurso_uuid={concurso_uuid}&page_size=10000"

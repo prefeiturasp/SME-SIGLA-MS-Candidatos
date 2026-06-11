@@ -82,7 +82,7 @@ def lote() -> Any:
 
 
 class TestCalcularQuantidade:
-    """Define TestCalcularQuantidade."""
+    """Representa TestCalcularQuantidade."""
 
     def test_calcular_quantidade_nna(self) -> None:
         """Verifica calcular quantidade nna."""
@@ -106,7 +106,7 @@ class TestCalcularQuantidade:
 
 
 class TestCalcularPosicao:
-    """Define TestCalcularPosicao."""
+    """Representa TestCalcularPosicao."""
 
     def test_calcular_posicao_nna(self) -> None:
         """Verifica calcular posicao nna."""
@@ -122,7 +122,7 @@ class TestCalcularPosicao:
 
 
 class TestSafeMaxClassificacao:
-    """Define TestSafeMaxClassificacao."""
+    """Representa TestSafeMaxClassificacao."""
 
     def test_retorna_max_classificacao(self) -> None:
         """Verifica retorna max classificacao."""
@@ -145,7 +145,7 @@ class TestSafeMaxClassificacao:
         assert _safe_max_classificacao([o1, o2], "classificacao") == 3
 
     def test_geral_ignora_itens_com_classificacao_nna(self) -> None:
-        """Para attr 'classificacao', ignora itens que tenham."""
+        """Verifica geral ignora itens com classificacao nna."""
         o1 = MagicMock(
             classificacao=10, classificacao_nna=1, classificacao_pcd=None
         )
@@ -185,7 +185,7 @@ class TestSafeMaxClassificacao:
         """Verifica ignora item que lanca excecao ao acessar attr."""
 
         class BadObj:
-            """Define BadObj."""
+            """Representa BadObj."""
 
             @property
             def classificacao(self) -> None:
@@ -203,7 +203,7 @@ class TestSafeMaxClassificacao:
 
 
 class TestAtualizarProcessoUuidReclassificados:
-    """Define TestAtualizarProcessoUuidReclassificados."""
+    """Representa TestAtualizarProcessoUuidReclassificados."""
 
     def test_sem_processo_uuid_nao_faz_nada(self, lote: Any) -> None:
         """Verifica sem processo uuid nao faz nada."""
@@ -253,7 +253,7 @@ class TestAtualizarProcessoUuidReclassificados:
 
 
 class TestAtualizarProcessoUuidEliminados:
-    """Define TestAtualizarProcessoUuidEliminados."""
+    """Representa TestAtualizarProcessoUuidEliminados."""
 
     def test_sem_processo_uuid_nao_faz_nada(self, lote: Any) -> None:
         """Verifica sem processo uuid nao faz nada."""
@@ -294,7 +294,7 @@ class TestAtualizarProcessoUuidEliminados:
 
 
 class TestGerarSequenciaConvocados:
-    """Define TestGerarSequenciaConvocados."""
+    """Representa TestGerarSequenciaConvocados."""
 
     def test_total_zero_retorna_lista_vazia(self, lote: Any) -> None:
         """Verifica total zero retorna lista vazia."""
@@ -511,7 +511,7 @@ class TestGerarSequenciaConvocados:
     def test_marca_promovido_para_geral_quando_geral_tem_classificacao_nna(
         self, lote: Any
     ) -> None:
-        """Candidato em geral_list com classificacao_nna e sem histórico NNA é."""
+        """Verifica marca promovido para geral quando geral tem classificacao nna."""
         _cc(
             lote,
             codigo_cargo="CARGO1",
@@ -544,7 +544,7 @@ class TestGerarSequenciaConvocados:
     def test_codigo_cargo_vazio_filtra_candidatos_com_cargo_vazio(
         self, lote: Any
     ) -> None:
-        """codigo_cargo='' filtra só candidatos com codigo_cargo vazio."""
+        """Verifica codigo cargo vazio filtra candidatos com cargo vazio."""
         ConcursoCandidato.objects.create(
             candidato=_candidato(),
             lote=lote,

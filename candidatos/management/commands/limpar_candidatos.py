@@ -10,19 +10,12 @@ from candidatos.models import Candidato
 
 
 class Command(BaseCommand):
-    """Define Command."""
+    """Representa Command."""
 
     help = "Remove todos os registros da tabela de candidatos"
 
     def add_arguments(self, parser: Any) -> None:
-        """Registra argumentos da linha de comando.
-
-        Args:
-            parser: Parser de argumentos do Django management.
-
-        Returns:
-            Nenhum valor; registra opções de linha de comando.
-        """
+        """Registra os argumentos da linha de comando."""
         parser.add_argument(
             "--confirm",
             action="store_true",
@@ -30,15 +23,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args: Any, **options: Any) -> None:
-        """Remove todos os candidatos quando confirmado via ``--confirm``.
-
-        Args:
-            *args: Argumentos posicionais do comando.
-            **options: Opções parseadas, incluindo ``confirm``.
-
-        Returns:
-            Nenhum valor; exibe progresso e resultado no stdout.
-        """
+        """Roda a lógica principal do comando."""
         confirm = options["confirm"]
         total_registros = Candidato.objects.count()
         if total_registros == 0:

@@ -66,10 +66,10 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
     }
 
     def get_queryset(self) -> Any:
-        """Restringe ao lote mais recente quando concurso_uuid é informado.
+        """Retorna queryset.
 
         Returns:
-            QuerySet filtrado de ConcursoCandidato.
+            Resposta HTTP com os dados solicitados.
         """
         qs = self.queryset
         params = getattr(self.request, "query_params", {})
@@ -90,14 +90,14 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         return qs
 
     def get_serializer(self, *args: Any, **kwargs: Any) -> Any:
-        """Instancia serializer respeitando filtro opcional de campos.
+        """Retorna serializer.
 
         Args:
-            *args: Argumentos repassados ao serializer.
-            **kwargs: Argumentos nomeados repassados ao serializer.
+            *args: Argumentos posicionais repassados ao comando.
+            **kwargs: Argumentos nomeados repassados ao comando.
 
         Returns:
-            Instância do serializer configurada para a requisição.
+            Resposta HTTP com os dados solicitados.
         """
         serializer_class = self.get_serializer_class()
         fields = self.request.query_params.get("fields")
@@ -110,10 +110,10 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         """Busca candidatos habilitados para reconvocação.
 
         Args:
-            request: Requisição HTTP com parâmetros de filtro.
+            request: Requisição HTTP recebida.
 
         Returns:
-            Resposta HTTP com candidatos habilitados para reconvocação.
+            Resposta HTTP com os dados solicitados.
         """
         logger.info(
             "Buscando reconvocações",
@@ -215,10 +215,10 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         """Reclassifica candidato desclassificando-o de NNA ou PCD.
 
         Args:
-            request: Requisição HTTP com dados de reclassificação.
+            request: Requisição HTTP recebida.
 
         Returns:
-            Resposta HTTP com candidato atualizado e histórico criado.
+            Resposta HTTP com os dados solicitados.
         """
         logger.info(
             "Reclassificar candidato",
@@ -274,10 +274,10 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         """Elimina candidato e registra histórico da operação.
 
         Args:
-            request: Requisição HTTP com dados de eliminação.
+            request: Requisição HTTP recebida.
 
         Returns:
-            Resposta HTTP com candidato eliminado e histórico criado.
+            Resposta HTTP com os dados solicitados.
         """
         logger.info(
             "Eliminar candidato",
@@ -332,10 +332,10 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         """Busca candidatos habilitados para reposição.
 
         Args:
-            request: Requisição HTTP com filtros de reposição.
+            request: Requisição HTTP recebida.
 
         Returns:
-            Resposta HTTP com candidatos não convocados para reposição.
+            Resposta HTTP com os dados solicitados.
         """
         logger.info(
             "Buscar candidatos para reposição",
@@ -375,14 +375,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
 
         def to_int(value: Any) -> Any:
-            """Converte valor de query string em inteiro.
-
-            Args:
-                value: Valor textual recebido nos parâmetros.
-
-            Returns:
-                Inteiro convertido ou 0 quando a conversão falhar.
-            """
+            """Converte valor de query string em inteiro."""
             try:
                 return int(str(value))
             except Exception:
@@ -434,10 +427,10 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         """Atualiza status de convocação de múltiplos candidatos.
 
         Args:
-            request: Requisição HTTP com UUIDs e processo de convocação.
+            request: Requisição HTTP recebida.
 
         Returns:
-            Resposta HTTP com UUIDs atualizados e total convocado.
+            Resposta HTTP com os dados solicitados.
         """
         logger.info(
             "Convocar candidatos",
@@ -489,10 +482,10 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         """Marca candidatos como não convocados por processo.
 
         Args:
-            request: Requisição HTTP com processo e cargo opcional.
+            request: Requisição HTTP recebida.
 
         Returns:
-            Resposta HTTP com UUIDs desconvocados e total afetado.
+            Resposta HTTP com os dados solicitados.
         """
         logger.info(
             "Desconvocar candidatos",
@@ -534,13 +527,13 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["post"], url_path="buscar-por-uuids")
     def buscar_por_uuids(self, request: Any) -> Any:
-        """Busca candidatos habilitados por lista de UUIDs.
+        """Busca por uuids.
 
         Args:
-            request: Requisição HTTP com lista de UUIDs no corpo.
+            request: Requisição HTTP recebida.
 
         Returns:
-            Resposta HTTP com candidatos encontrados em results.
+            Resposta HTTP com os dados solicitados.
         """
         logger.info(
             "Buscar candidatos por UUIDs",
@@ -575,13 +568,13 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["post"], url_path="buscar-por-cpfs")
     def buscar_por_cpfs(self, request: Any) -> Any:
-        """Busca candidatos habilitados por CPFs e processo_uuid.
+        """Busca por cpfs.
 
         Args:
-            request: Requisição HTTP com CPFs e processo_uuid no corpo.
+            request: Requisição HTTP recebida.
 
         Returns:
-            Resposta HTTP com UUID e CPF de cada candidato encontrado.
+            Resposta HTTP com os dados solicitados.
         """
         logger.info(
             "Buscar candidatos por CPFs",
@@ -622,10 +615,10 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         """Calcula sequência de convocação conforme parametrização.
 
         Args:
-            request: Requisição HTTP com parâmetros de cálculo.
+            request: Requisição HTTP recebida.
 
         Returns:
-            Resposta HTTP com sequência calculada e percentuais NNA/PCD.
+            Resposta HTTP com os dados solicitados.
         """
         logger.info(
             "Buscar candidatos calculados",
@@ -693,10 +686,10 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         """Retorna valores distintos de numero_lote para um concurso.
 
         Args:
-            request: Requisição HTTP com concurso_uuid e cargo opcional.
+            request: Requisição HTTP recebida.
 
         Returns:
-            Resposta HTTP com lista de números de lote distintos.
+            Resposta HTTP com os dados solicitados.
         """
         concurso_uuid = request.query_params.get("concurso_uuid")
         if not concurso_uuid:
@@ -731,10 +724,10 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         """Retorna cargos distintos para exportação SIGPEC.
 
         Args:
-            request: Requisição HTTP com concurso_uuid.
+            request: Requisição HTTP recebida.
 
         Returns:
-            Resposta HTTP com códigos e descrições de cargos distintos.
+            Resposta HTTP com os dados solicitados.
         """
         concurso_uuid = request.query_params.get("concurso_uuid")
         if not concurso_uuid:
@@ -761,13 +754,13 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["post"], url_path="salvar-lotes")
     def salvar_lotes(self, request: Any) -> Any:
-        """Importa dados de lote de classificação para o concurso.
+        """Salva lotes.
 
         Args:
-            request: Requisição HTTP com concurso_uuid e lista de lotes.
+            request: Requisição HTTP recebida.
 
         Returns:
-            Resposta HTTP com total atualizado (201) ou erro de validação.
+            Resposta HTTP com os dados solicitados.
         """
         serializer = SalvarLotesSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

@@ -268,7 +268,7 @@ def test_buscar_por_registro_funcional_retorna_candidatos(
 def test_buscar_agrupa_concursos_por_candidato(
     api_client: Any, buscar_url: Any
 ) -> None:
-    """Candidato com mais de um ConcursoCandidato deve retornar um único item."""
+    """Verifica buscar agrupa concursos por candidato."""
     concurso_uuid = uuid4()
     lote1 = ConcursoCandidatosLote.objects.create(
         concurso_uuid=concurso_uuid, concurso_nome="Lote 1"
@@ -314,7 +314,7 @@ def test_buscar_retorna_lista_vazia_quando_nao_encontra(
 
 
 def test_buscar_nome_icontains(api_client: Any, buscar_url: Any) -> None:
-    """Busca por nome usa icontains (parte do nome)."""
+    """Verifica buscar nome icontains."""
     lote = ConcursoCandidatosLote.objects.create(
         concurso_uuid=uuid4(), concurso_nome="Concurso X"
     )
@@ -344,7 +344,7 @@ def test_buscar_nome_icontains(api_client: Any, buscar_url: Any) -> None:
 def test_buscar_com_multiplos_parametros(
     api_client: Any, buscar_url: Any
 ) -> None:
-    """Vários parâmetros são combinados com AND (todos devem bater)."""
+    """Verifica buscar com multiplos parametros."""
     lote = ConcursoCandidatosLote.objects.create(
         concurso_uuid=uuid4(), concurso_nome="Concurso X"
     )

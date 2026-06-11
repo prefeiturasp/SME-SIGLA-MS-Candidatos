@@ -18,6 +18,6 @@ class BaseModel(models.Model):
     esta_ativo = models.BooleanField(default=True, verbose_name="Está Ativo?")
 
     class Meta:
-        """Define Meta."""
+        """Representa Meta."""
 
         abstract = True

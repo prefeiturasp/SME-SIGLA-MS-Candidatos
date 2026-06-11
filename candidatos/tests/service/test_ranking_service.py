@@ -78,7 +78,7 @@ def test_atualizar_ranking_atribui_ranking_e_persiste(dois_cc: Any) -> None:
 
 
 def test_atualizar_ranking_excecao_nao_propaga() -> None:
-    """Em caso de erro no bulk_update, o except faz pass (linhas 10-12)."""
+    """Verifica atualizar ranking excecao nao propaga."""
     itens = [MagicMock(spec=ConcursoCandidato)]
     with patch(
         "candidatos.service.ranking_service.ConcursoCandidato.objects.bulk_update",
@@ -96,7 +96,7 @@ def test_atualizar_ranking_escolha_lista_vazia_nao_quebra() -> None:
 def test_atualizar_ranking_escolha_ordena_pcd_primeiro_e_persiste(
     lote: Any,
 ) -> None:
-    """PCD primeiro por classificacao, depois demais; atribui ranking_escolha."""
+    """Verifica atualizar ranking escolha ordena pcd primeiro e persiste."""
     c_geral = ConcursoCandidato.objects.create(
         candidato=_candidato(),
         lote=lote,
@@ -122,7 +122,7 @@ def test_atualizar_ranking_escolha_ordena_pcd_primeiro_e_persiste(
 
 
 def test_atualizar_ranking_escolha_excecao_nao_propaga() -> None:
-    """Em caso de erro, o except faz pass (linhas 39-41)."""
+    """Verifica atualizar ranking escolha excecao nao propaga."""
     itens = [MagicMock(spec=ConcursoCandidato)]
     itens[0].classificacao_pcd = None
     itens[0].classificacao = 1
