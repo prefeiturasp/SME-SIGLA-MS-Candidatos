@@ -108,7 +108,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["post"], url_path="extracao-dados")
     def extracao_dados(self, request):
-        """Indicadores de habilitados e convocações para extração de dados."""
+        """Action de habilitados e convocações para extração de dados."""
         serializer = ExtracaoDadosSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         dados = serializer.validated_data

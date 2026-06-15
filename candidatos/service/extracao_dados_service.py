@@ -14,20 +14,16 @@ def montar_extracao_dados(
     concurso_uuid: UUID | str | None = None,
     filtros: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """
-    Monta o dicionário de indicadores de habilitados e convocações.
+    """Monta o dicionário de indicadores de habilitados e convocações.
 
-    - ``habilitados``: total de candidatos importados no concurso (todos os
-      lotes) e a distribuição por ``categoria_efetiva`` (geral/pcd/nna). Sem
-      ``concurso_uuid``, agrega os habilitados de todos os concursos.
-    - Com ``filtros``: uma chave por ``ano`` (vinda de ``filtros``) com:
-      - ``convocados``: ``foi_convocado=True`` nos ``processo_uuids`` do ano.
-      - ``nao-convocados``: habilitados importados que ainda não foram
-        convocados naquele ano = total de habilitados − convocados do ano.
-    - Sem ``filtros`` (None ou lista vazia): o agregado vem direto na raiz
-      (sem a chave ``total``), com:
-      - ``convocados``: todos os ``foi_convocado=True`` do concurso.
-      - ``nao-convocados``: total de habilitados − convocados do concurso.
+    Args:
+        concurso_uuid: Concurso a restringir; ausente → todos os concursos.
+        filtros: Lista de ``{ano, processo_uuids}``; ausente (ou vazia) →
+            agregado direto na raiz, sem quebra por ano.
+
+    Returns:
+        Dicionário com ``habilitados`` e, por ano (ou na raiz), os
+        ``convocados`` e ``nao-convocados`` do escopo.
     """
     habilitados = _contar_habilitados(concurso_uuid)
     resultado = {"habilitados": habilitados}
