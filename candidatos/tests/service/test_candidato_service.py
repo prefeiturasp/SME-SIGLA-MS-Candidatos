@@ -1,3 +1,7 @@
+"""Módulo tests/service/test_candidato_service."""
+
+from __future__ import annotations
+
 import pytest
 
 from candidatos.models import Candidato, ConcursoCandidato
@@ -9,27 +13,25 @@ from candidatos.service.candidato_service import (
 pytestmark = pytest.mark.django_db
 
 
-# --- remover_mascara_cpf (linhas 6-17) ---
-
-
-def test_remover_mascara_cpf_vazio_retorna_vazio():
+def test_remover_mascara_cpf_vazio_retorna_vazio() -> None:
+    """Verifica remover mascara cpf vazio retorna vazio."""
     assert remover_mascara_cpf("") == ""
-    assert remover_mascara_cpf(None) == ""
+    assert remover_mascara_cpf(None) == ""  # type: ignore[arg-type]
 
 
-def test_remover_mascara_cpf_remove_pontos_e_traco():
+def test_remover_mascara_cpf_remove_pontos_e_traco() -> None:
+    """Verifica remover mascara cpf remove pontos e traco."""
     assert remover_mascara_cpf("123.456.789-00") == "12345678900"
     assert remover_mascara_cpf("12345678900") == "12345678900"
 
 
-def test_remover_mascara_cpf_aceita_nao_string():
-    assert remover_mascara_cpf(12345678900) == "12345678900"
+def test_remover_mascara_cpf_aceita_nao_string() -> None:
+    """Verifica remover mascara cpf aceita nao string."""
+    assert remover_mascara_cpf(12345678900) == "12345678900"  # type: ignore[arg-type]
 
 
-# --- upsert_candidato_e_concurso ---
-
-
-def test_upsert_cria_candidato_e_concurso_quando_novo():
+def test_upsert_cria_candidato_e_concurso_quando_novo() -> None:
+    """Verifica upsert cria candidato e concurso quando novo."""
     data = {
         "nome": "Fulano",
         "cpf": "000.000.000-00",
@@ -40,15 +42,14 @@ def test_upsert_cria_candidato_e_concurso_quando_novo():
         "pontos": 0,
     }
     candidato, concurso = upsert_candidato_e_concurso(data)
-
     assert Candidato.objects.count() == 1
     assert ConcursoCandidato.objects.count() == 1
     assert candidato.nome == "Fulano"
     assert concurso.codigo_inscricao == "123"
 
 
-def test_upsert_cria_novos_candidatos_para_mesmo_cpf():
-    # cria inicialmente
+def test_upsert_cria_novos_candidatos_para_mesmo_cpf() -> None:
+    """Verifica upsert cria novos candidatos para mesmo cpf."""
     primeiro, _ = upsert_candidato_e_concurso(
         {
             "nome": "A",
@@ -60,7 +61,6 @@ def test_upsert_cria_novos_candidatos_para_mesmo_cpf():
             "pontos": 0,
         }
     )
-    # chama de novo com mesmo CPF e novos dados
     candidato2, _c2 = upsert_candidato_e_concurso(
         {
             "nome": "B",
@@ -73,7 +73,6 @@ def test_upsert_cria_novos_candidatos_para_mesmo_cpf():
         }
     )
     candidato2.refresh_from_db()
-
     assert candidato2.id != primeiro.id
     assert candidato2.nome == "B"
     assert candidato2.telefone == "9999"
@@ -81,7 +80,8 @@ def test_upsert_cria_novos_candidatos_para_mesmo_cpf():
     assert ConcursoCandidato.objects.count() == 2
 
 
-def test_upsert_data_nascimento_formato_invalido_nao_quebra():
+def test_upsert_data_nascimento_formato_invalido_nao_quebra() -> None:
+    """Verifica upsert data nascimento formato invalido nao quebra."""
     candidato, concurso = upsert_candidato_e_concurso(
         {
             "cpf": "222.222.222-22",
@@ -91,13 +91,11 @@ def test_upsert_data_nascimento_formato_invalido_nao_quebra():
             "pontos": 0,
         }
     )
-    # CPF é armazenado sem máscara pelo serviço
     assert Candidato.objects.filter(cpf="22222222222").exists()
 
 
-def test_upsert_cria_novos_candidatos_para_mesmo_email_sem_cpf():
-    # Quando não há CPF, antes existia deduplicacao por email.
-    # Agora, cada chamada deve criar um novo candidato (1:1).
+def test_upsert_cria_novos_candidatos_para_mesmo_email_sem_cpf() -> None:
+    """Verifica upsert cria novos candidatos para mesmo email sem cpf."""
     candidato1, _c1 = upsert_candidato_e_concurso(
         {
             "nome": "X",
@@ -123,7 +121,10 @@ def test_upsert_cria_novos_candidatos_para_mesmo_email_sem_cpf():
     assert ConcursoCandidato.objects.count() == 2
 
 
-def test_upsert_cria_novos_candidatos_com_diferentes_datas_de_nascimento():
+def test_upsert_cria_novos_candidatos_com_diferentes_datas_de_nascimento() -> (
+    None
+):
+    """Verifica upsert cria novos candidatos com diferentes datas de."""
     primeiro, _ = upsert_candidato_e_concurso(
         {
             "nome": "A",
@@ -156,9 +157,8 @@ def test_upsert_cria_novos_candidatos_com_diferentes_datas_de_nascimento():
     assert ConcursoCandidato.objects.count() == 2
 
 
-def test_upsert_categoria_efetiva_pcd():
-    """classificacao_deficiente preenchido define categoria_efetiva PCD (linhas
-    91-92)."""
+def test_upsert_categoria_efetiva_pcd() -> None:
+    """Verifica upsert categoria efetiva pcd."""
     _, concurso = upsert_candidato_e_concurso(
         {
             "cpf": "444.444.444-44",
@@ -172,9 +172,8 @@ def test_upsert_categoria_efetiva_pcd():
     assert concurso.classificacao_pcd == 1
 
 
-def test_upsert_categoria_efetiva_nna():
-    """classificacao_nna preenchido define categoria_efetiva NNA (linhas
-    93-94)."""
+def test_upsert_categoria_efetiva_nna() -> None:
+    """Verifica upsert categoria efetiva nna."""
     _, concurso = upsert_candidato_e_concurso(
         {
             "cpf": "555.555.555-55",
@@ -188,9 +187,8 @@ def test_upsert_categoria_efetiva_nna():
     assert concurso.classificacao_nna == 2
 
 
-def test_upsert_none_if_empty_string_retorna_none():
-    """classificacao_nna/classificacao_deficiente vazios resultam em None
-    (linhas 84-86)."""
+def test_upsert_none_if_empty_string_retorna_none() -> None:
+    """Verifica upsert none if empty string retorna none."""
     _, concurso = upsert_candidato_e_concurso(
         {
             "cpf": "666.666.666-66",

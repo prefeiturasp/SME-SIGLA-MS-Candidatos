@@ -1,3 +1,5 @@
+"""Módulo serializer/__init__."""
+
 from .candidato import (
     CandidatoConcursoCreateSerializer,
     CandidatoSerializer,
@@ -11,6 +13,7 @@ from .concurso_candidato import (
     ConcursoCandidatoReclassificadoSerializer,
     ConcursoCandidatoSerializer,
     EliminarSerializer,
+    ExtracaoDadosSerializer,
     HabilitadosCalculadosParamsSerializer,
     LoteItemSerializer,
     ReclassificarSerializer,
@@ -26,6 +29,7 @@ __all__ = [
     "HabilitadosCalculadosParamsSerializer",
     "ReclassificarSerializer",
     "EliminarSerializer",
+    "ExtracaoDadosSerializer",
     "ConcursoCandidatoReclassificadoSerializer",
     "ConcursoCandidatoEliminadoSerializer",
     "LoteItemSerializer",

@@ -1,17 +1,21 @@
+"""Módulo models/concurso_candidato."""
+
+from __future__ import annotations
+
+from typing import Any
+
 from django.db import models
 
 from .base import BaseModel
 from .candidato import Candidato
 from .lote import ConcursoCandidatosLote
 
-CATEGORIA_CHOICES = (
-    ("GERAL", "GERAL"),
-    ("NNA", "NNA"),
-    ("PCD", "PCD"),
-)
+CATEGORIA_CHOICES = (("GERAL", "GERAL"), ("NNA", "NNA"), ("PCD", "PCD"))
 
 
 class ConcursoCandidato(BaseModel):
+    """Representa ConcursoCandidato."""
+
     lote = models.ForeignKey(
         ConcursoCandidatosLote,
         on_delete=models.CASCADE,
@@ -65,7 +69,6 @@ class ConcursoCandidato(BaseModel):
     ranking_escolha = models.IntegerField(
         default=0, verbose_name="Ranking da Escolha"
     )
-    # Sinalização de categoria efetiva e promoções
     categoria_efetiva = models.CharField(
         max_length=10,
         choices=CATEGORIA_CHOICES,
@@ -86,7 +89,6 @@ class ConcursoCandidato(BaseModel):
     promovido_em = models.DateTimeField(
         blank=True, null=True, verbose_name="Promovido em"
     )
-    # Eliminação (estado de negócio)
     eliminado = models.BooleanField(
         default=False, db_index=True, verbose_name="Eliminado?"
     )
@@ -99,7 +101,6 @@ class ConcursoCandidato(BaseModel):
     eliminado_por = models.CharField(
         max_length=150, blank=True, default="", verbose_name="Eliminado por"
     )
-    # Campos de lote (importação SIGPEC)
     numero_lote = models.IntegerField(
         null=True, blank=True, verbose_name="Número do Lote"
     )
@@ -114,11 +115,14 @@ class ConcursoCandidato(BaseModel):
     )
 
     class Meta:
+        """Representa Meta."""
+
         verbose_name = "Concurso do Candidato"
         verbose_name_plural = "Concursos dos Candidatos"
         ordering = ["-criado_em"]
 
-    def __str__(self):
+    def __str__(self) -> Any:
+        """Retorna representação textual do registro."""
         return (
             f"{self.candidato.nome} - {self.uuid} - "
             f"{self.classificacao} - {self.classificacao_pcd} - "

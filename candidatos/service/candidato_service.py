@@ -1,3 +1,7 @@
+"""Módulo service/candidato_service."""
+
+from __future__ import annotations
+
 from datetime import datetime
 from typing import Any
 
@@ -5,14 +9,13 @@ from candidatos.models import Candidato, ConcursoCandidato
 
 
 def remover_mascara_cpf(cpf: str) -> str:
-    """
-    Remove máscara do CPF, retornando apenas os dígitos.
+    """Remove máscara do CPF, retornando apenas os dígitos.
 
     Args:
-        cpf: CPF com ou sem máscara (ex: "123.456.789-00" ou "12345678900")
+        cpf: CPF com ou sem máscara (ex: "123.456.789-00" ou "12345678900").
 
     Returns:
-        CPF sem máscara (apenas dígitos)
+        Conteúdo textual gerado.
     """
     if not cpf:
         return ""
@@ -22,6 +25,14 @@ def remover_mascara_cpf(cpf: str) -> str:
 def upsert_candidato_e_concurso(
     data: dict[str, Any],
 ) -> tuple[Candidato, ConcursoCandidato]:
+    """Cria candidato e registro de concurso a partir dos dados recebidos.
+
+    Args:
+        data: Data.
+
+    Returns:
+        Tupla com os objetos criados ou atualizados.
+    """
     uf = data.get("uf") or ""
     genero_map = {"1": "M", "2": "F"}
     genero = genero_map.get(data.get("sexo", ""), "")
@@ -33,7 +44,6 @@ def upsert_candidato_e_concurso(
             ).date()
         except Exception:
             data_nasc = None
-
     candidato = Candidato.objects.create(
         nome=data.get("nome", ""),
         cpf=remover_mascara_cpf(data.get("cpf", "")),
@@ -54,7 +64,8 @@ def upsert_candidato_e_concurso(
         cep=data.get("cep", ""),
     )
 
-    def _none_if_empty(value):
+    def _none_if_empty(value: Any) -> Any:
+        """Converte strings vazias em None para campos opcionais."""
         if value is None:
             return None
         try:
@@ -62,7 +73,6 @@ def upsert_candidato_e_concurso(
         except Exception:
             return value
 
-    # Determinar categoria_efetiva:
     classificacao_pcd_val = _none_if_empty(
         data.get("classificacao_deficiente")
     )
@@ -73,7 +83,6 @@ def upsert_candidato_e_concurso(
         categoria_efetiva_val = "NNA"
     else:
         categoria_efetiva_val = "GERAL"
-
     concurso = ConcursoCandidato.objects.create(
         candidato=candidato,
         codigo_inscricao=data.get("codigo_inscricao", ""),
@@ -90,5 +99,4 @@ def upsert_candidato_e_concurso(
         observacao=data.get("observacao", ""),
         categoria_efetiva=categoria_efetiva_val,
     )
-
-    return candidato, concurso
+    return (candidato, concurso)

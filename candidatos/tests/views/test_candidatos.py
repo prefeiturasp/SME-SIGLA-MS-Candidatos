@@ -1,3 +1,8 @@
+"""Módulo tests/views/test_candidatos."""
+
+from __future__ import annotations
+
+from typing import Any
 from uuid import uuid4
 
 import pytest
@@ -14,22 +19,30 @@ pytestmark = pytest.mark.django_db
 
 
 @pytest.fixture
-def candidato_url():
+def candidato_url() -> Any:
+    """URL do endpoint de candidatos."""
     return reverse("candidato-list")
 
 
 @pytest.fixture
-def buscar_url():
+def buscar_url() -> Any:
+    """URL do endpoint de busca de candidatos."""
     return reverse("candidato-buscar")
 
 
-def test_list_candidatos(api_client, candidatos_criados, candidato_url):
+def test_list_candidatos(
+    api_client: Any, candidatos_criados: Any, candidato_url: Any
+) -> None:
+    """Verifica list candidatos."""
     response = api_client.get(candidato_url)
     assert response.status_code == status.HTTP_200_OK
     assert len(response.data["results"]) == 3
 
 
-def test_create_candidatos_em_lote(api_client, candidato_url):
+def test_create_candidatos_em_lote(
+    api_client: Any, candidato_url: Any
+) -> None:
+    """Verifica create candidatos em lote."""
     payload = {
         "concurso_uuid": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
         "concurso_nome": "Concurso X",
@@ -53,7 +66,6 @@ def test_create_candidatos_em_lote(api_client, candidato_url):
             }
         ],
     }
-
     response = api_client.post(candidato_url, payload, format="json")
     assert response.status_code == status.HTTP_201_CREATED
     assert response.data["total_itens"] == 1
@@ -63,7 +75,8 @@ def test_create_candidatos_em_lote(api_client, candidato_url):
     assert Candidato.objects.filter(cpf="55566677788").exists()
 
 
-def test_retrieve_candidato(api_client, candidatos_criados):
+def test_retrieve_candidato(api_client: Any, candidatos_criados: Any) -> None:
+    """Verifica retrieve candidato."""
     candidato1 = candidatos_criados["candidato1"]
     url = reverse("candidato-detail", kwargs={"uuid": candidato1.uuid})
     response = api_client.get(url)
@@ -71,7 +84,8 @@ def test_retrieve_candidato(api_client, candidatos_criados):
     assert response.data["nome"] == "João Silva"
 
 
-def test_update_candidato(api_client, candidatos_criados):
+def test_update_candidato(api_client: Any, candidatos_criados: Any) -> None:
+    """Verifica update candidato."""
     candidato1 = candidatos_criados["candidato1"]
     url = reverse("candidato-detail", kwargs={"uuid": candidato1.uuid})
     dados_atualizados = {
@@ -92,7 +106,10 @@ def test_update_candidato(api_client, candidatos_criados):
     assert response.status_code == status.HTTP_200_OK
 
 
-def test_partial_update_candidato(api_client, candidatos_criados):
+def test_partial_update_candidato(
+    api_client: Any, candidatos_criados: Any
+) -> None:
+    """Verifica partial update candidato."""
     candidato1 = candidatos_criados["candidato1"]
     url = reverse("candidato-detail", kwargs={"uuid": candidato1.uuid})
     response = api_client.patch(
@@ -103,19 +120,18 @@ def test_partial_update_candidato(api_client, candidatos_criados):
     assert response.status_code == status.HTTP_200_OK
 
 
-def test_delete_candidato(api_client, candidatos_criados):
+def test_delete_candidato(api_client: Any, candidatos_criados: Any) -> None:
+    """Verifica delete candidato."""
     candidato1 = candidatos_criados["candidato1"]
     url = reverse("candidato-detail", kwargs={"uuid": candidato1.uuid})
     response = api_client.delete(url)
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
 
-# ---------------------------------------------------------------------------
-# Action buscar (GET /candidatos/buscar/)
-# ---------------------------------------------------------------------------
-
-
-def test_buscar_sem_parametros_retorna_400(api_client, buscar_url):
+def test_buscar_sem_parametros_retorna_400(
+    api_client: Any, buscar_url: Any
+) -> None:
+    """Verifica buscar sem parametros retorna 400."""
     response = api_client.get(buscar_url)
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert "detail" in response.data
@@ -125,7 +141,10 @@ def test_buscar_sem_parametros_retorna_400(api_client, buscar_url):
     )
 
 
-def test_buscar_por_nome_retorna_candidatos(api_client, buscar_url):
+def test_buscar_por_nome_retorna_candidatos(
+    api_client: Any, buscar_url: Any
+) -> None:
+    """Verifica buscar por nome retorna candidatos."""
     lote = ConcursoCandidatosLote.objects.create(
         concurso_uuid=uuid4(), concurso_nome="Concurso X"
     )
@@ -154,7 +173,10 @@ def test_buscar_por_nome_retorna_candidatos(api_client, buscar_url):
     assert len(response.data[0]["concursos"]) == 1
 
 
-def test_buscar_por_cpf_retorna_candidatos(api_client, buscar_url):
+def test_buscar_por_cpf_retorna_candidatos(
+    api_client: Any, buscar_url: Any
+) -> None:
+    """Verifica buscar por cpf retorna candidatos."""
     lote = ConcursoCandidatosLote.objects.create(
         concurso_uuid=uuid4(), concurso_nome="Concurso X"
     )
@@ -181,7 +203,10 @@ def test_buscar_por_cpf_retorna_candidatos(api_client, buscar_url):
     assert response.data[0]["cpf"] == "55566677788"
 
 
-def test_buscar_por_rg_retorna_candidatos(api_client, buscar_url):
+def test_buscar_por_rg_retorna_candidatos(
+    api_client: Any, buscar_url: Any
+) -> None:
+    """Verifica buscar por rg retorna candidatos."""
     lote = ConcursoCandidatosLote.objects.create(
         concurso_uuid=uuid4(), concurso_nome="Concurso X"
     )
@@ -210,8 +235,9 @@ def test_buscar_por_rg_retorna_candidatos(api_client, buscar_url):
 
 
 def test_buscar_por_registro_funcional_retorna_candidatos(
-    api_client, buscar_url
-):
+    api_client: Any, buscar_url: Any
+) -> None:
+    """Verifica buscar por registro funcional retorna candidatos."""
     lote = ConcursoCandidatosLote.objects.create(
         concurso_uuid=uuid4(), concurso_nome="Concurso X"
     )
@@ -239,9 +265,10 @@ def test_buscar_por_registro_funcional_retorna_candidatos(
     assert response.data[0]["nome"] == "Registro"
 
 
-def test_buscar_agrupa_concursos_por_candidato(api_client, buscar_url):
-    """Candidato com mais de um ConcursoCandidato deve retornar um único item
-    com lista de concursos."""
+def test_buscar_agrupa_concursos_por_candidato(
+    api_client: Any, buscar_url: Any
+) -> None:
+    """Verifica buscar agrupa concursos por candidato."""
     concurso_uuid = uuid4()
     lote1 = ConcursoCandidatosLote.objects.create(
         concurso_uuid=concurso_uuid, concurso_nome="Lote 1"
@@ -276,8 +303,9 @@ def test_buscar_agrupa_concursos_por_candidato(api_client, buscar_url):
 
 
 def test_buscar_retorna_lista_vazia_quando_nao_encontra(
-    api_client, buscar_url
-):
+    api_client: Any, buscar_url: Any
+) -> None:
+    """Verifica buscar retorna lista vazia quando nao encontra."""
     response = api_client.get(
         buscar_url, {"nome": "NomeQueNaoExisteEmNenhumCandidato"}
     )
@@ -285,8 +313,8 @@ def test_buscar_retorna_lista_vazia_quando_nao_encontra(
     assert response.data == []
 
 
-def test_buscar_nome_icontains(api_client, buscar_url):
-    """Busca por nome usa icontains (parte do nome)."""
+def test_buscar_nome_icontains(api_client: Any, buscar_url: Any) -> None:
+    """Verifica buscar nome icontains."""
     lote = ConcursoCandidatosLote.objects.create(
         concurso_uuid=uuid4(), concurso_nome="Concurso X"
     )
@@ -313,8 +341,10 @@ def test_buscar_nome_icontains(api_client, buscar_url):
     assert "Fernanda" in response.data[0]["nome"]
 
 
-def test_buscar_com_multiplos_parametros(api_client, buscar_url):
-    """Vários parâmetros são combinados com AND (todos devem bater)."""
+def test_buscar_com_multiplos_parametros(
+    api_client: Any, buscar_url: Any
+) -> None:
+    """Verifica buscar com multiplos parametros."""
     lote = ConcursoCandidatosLote.objects.create(
         concurso_uuid=uuid4(), concurso_nome="Concurso X"
     )

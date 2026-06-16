@@ -1,3 +1,5 @@
+"""Módulo service/candidato_lote_service."""
+
 from typing import Any
 
 from rest_framework import status
@@ -10,13 +12,13 @@ from .candidato_service import upsert_candidato_e_concurso
 def processar_criacao_candidatos_lote(
     data: dict[str, Any],
 ) -> tuple[dict[str, Any], int]:
-    """
-    Espera payload:
-    {
-        "concurso_uuid": "uuid",
-        "concurso_nome": "nome",
-        "candidatos": [ {dados do candidato + campos de concurso}, ... ]
-    }
+    """Processa criacao candidatos lote.
+
+    Args:
+        data: Data.
+
+    Returns:
+        Tupla com os objetos criados ou atualizados.
     """
     concurso_uuid = data.get("concurso_uuid")
     if not concurso_uuid:

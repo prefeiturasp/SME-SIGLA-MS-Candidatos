@@ -1,3 +1,5 @@
+"""Módulo service/escolhas_service."""
+
 import logging
 from typing import Any
 
@@ -11,38 +13,40 @@ logger = logging.getLogger(__name__)
 
 
 class EscolhasService:
-    """
-    Service para comunicação com o microserviço de Escolhas.
-    """
+    """Service para comunicação com o microserviço de Escolhas."""
 
     DEFAULT_TIMEOUT = 10
 
     @classmethod
     def _get_base_url(cls) -> str:
-        """
-        Obtém a URL base do microserviço de Escolhas a partir das
-        configurações.
+        """Obtém base url.
+
+        Returns:
+            Conteúdo textual gerado.
+
+        Raises:
+            ValueError: Se ``ESCOLHAS_API_URL`` não estiver configurada.
         """
         base_url = getattr(settings, "ESCOLHAS_API_URL", None)
         if not base_url:
             raise ValueError("ESCOLHAS_API_URL não configurada no settings")
-        return base_url.rstrip("/")
+        return base_url.rstrip("/")  # type: ignore[no-any-return]
 
     @classmethod
     def buscar_reconvocacoes(
         cls, path: str = "/api/v1/escolhas/reconvocacao/"
     ) -> list[dict[str, Any]]:
-        """
-        Busca escolhas com situação de reconvocação.
-        Args:
-            path: Caminho do endpoint (padrão: /api/v1/escolhas/reconvocacao)
-        Returns:
-            Lista de dicionários com 'uuid' e 'candidato_uuid'
-        Raises:
-            requests.RequestException: Em caso de erro na requisição
-            ValueError: Se a URL não estiver configurada
-        """
+        """Busca reconvocacoes.
 
+        Args:
+            path: Path.
+
+        Returns:
+            Lista com os registros obtidos.
+
+        Raises:
+            RequestException: Se a chamada HTTP falhar.
+        """
         base_url = cls._get_base_url()
         url = f"{base_url}{path}"
         logger.info(
@@ -81,7 +85,7 @@ class EscolhasService:
                 return data
             # Se for um dicionário com 'results', retorna os results
             if isinstance(data, dict) and "results" in data:
-                return data["results"]
+                return data["results"]  # type: ignore[no-any-return]
             # Se for um dicionário direto, retorna como lista
             if isinstance(data, dict):
                 return [data]
@@ -99,17 +103,17 @@ class EscolhasService:
         concurso_uuid: str,
         path: str = "/api/v1/escolhas/?situacao__in=escolha,reconvocacao",
     ) -> list[dict[str, Any]]:
-        """
-        Busca escolhas com situação de escolha ou reconvocação.
+        """Busca escolhas.
+
         Args:
-            concurso_uuid: UUID do concurso
-            path: Caminho do endpoint (padrão:
-            /api/v1/escolhas/?situacao=escolha,reconvocacao)
+            concurso_uuid: UUID do concurso relacionado.
+            path: Path.
+
         Returns:
-            Lista de dicionários com 'uuid' e 'candidato_uuid'
+            Lista com os registros obtidos.
+
         Raises:
-            requests.RequestException: Em caso de erro na requisição
-            ValueError: Se a URL não estiver configurada
+            RequestException: Se a chamada HTTP falhar.
         """
         base_url = cls._get_base_url()
         url = f"{base_url}{path}&concurso_uuid={concurso_uuid}&page_size=10000"
@@ -137,7 +141,7 @@ class EscolhasService:
                 return data
             # Se for um dicionário com 'results', retorna os results
             if isinstance(data, dict) and "results" in data:
-                return data["results"]
+                return data["results"]  # type: ignore[no-any-return]
             # Se for um dicionário direto, retorna como lista
             if isinstance(data, dict):
                 return [data]

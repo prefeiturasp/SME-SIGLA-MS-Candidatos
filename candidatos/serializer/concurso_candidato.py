@@ -1,17 +1,22 @@
+"""Módulo serializer/concurso_candidato."""
+
+from __future__ import annotations
+
+from typing import Any
+
 from rest_framework import serializers
 
 from candidatos.models import ConcursoCandidato
 
 
 class DynamicFieldsSerializer(serializers.ModelSerializer):
-    def __init__(self, *args, **kwargs):
-        # Pega os campos do contexto do request
+    """Serializer do modelo DynamicFields."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Inicializa a instância com os parâmetros informados."""
         fields = kwargs.pop("fields", None)
-
         super().__init__(*args, **kwargs)
-
         if fields is not None:
-            # Dropa os campos que não foram solicitados
             allowed = set(fields)
             existing = set(self.fields)
             for field_name in existing - allowed:
@@ -19,6 +24,8 @@ class DynamicFieldsSerializer(serializers.ModelSerializer):
 
 
 class ConcursoCandidatoSerializer(DynamicFieldsSerializer):
+    """Serializer do modelo ConcursoCandidato."""
+
     candidato = serializers.SerializerMethodField(read_only=True)
     reclassificacoes = serializers.SerializerMethodField(read_only=True)
     concurso_uuid = serializers.SerializerMethodField(read_only=True)
@@ -26,17 +33,18 @@ class ConcursoCandidatoSerializer(DynamicFieldsSerializer):
     concurso_candidato_uuid = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
+        """Representa Meta."""
+
         model = ConcursoCandidato
         fields = "__all__"
         read_only_fields = ["criado_em", "atualizado_em", "esta_ativo"]
 
-    def get_concurso_candidato_uuid(self, obj):
-        """UUID da linha na tabela candidatos_concursocandidato
-        (ConcursoCandidato)."""
+    def get_concurso_candidato_uuid(self, obj: Any) -> Any:
+        """Retorna concurso candidato uuid."""
         return str(obj.uuid) if getattr(obj, "uuid", None) else None
 
-    def get_concurso_uuid(self, obj):
-        """Retorna o UUID do concurso (campo do modelo ou do lote)."""
+    def get_concurso_uuid(self, obj: Any) -> Any:
+        """Retorna concurso uuid."""
         if getattr(obj, "concurso_uuid", None):
             return str(obj.concurso_uuid)
         lote = getattr(obj, "lote", None)
@@ -44,14 +52,15 @@ class ConcursoCandidatoSerializer(DynamicFieldsSerializer):
             return str(lote.concurso_uuid)
         return None
 
-    def get_concurso_nome(self, obj):
-        """Retorna o nome do concurso (do lote, quando existir)."""
+    def get_concurso_nome(self, obj: Any) -> Any:
+        """Retorna concurso nome."""
         lote = getattr(obj, "lote", None)
         if lote and getattr(lote, "concurso_nome", None):
             return lote.concurso_nome
         return None
 
-    def get_candidato(self, obj):
+    def get_candidato(self, obj: Any) -> Any:
+        """Retorna candidato."""
         c = obj.candidato
         if not c:
             return None
@@ -77,11 +86,8 @@ class ConcursoCandidatoSerializer(DynamicFieldsSerializer):
             "cep": c.cep,
         }
 
-    def get_reclassificacoes(self, obj):
-        """
-        Retorna histórico de reclassificações (desclassificações de NNA/PCD),
-        se houver, com dados essenciais.
-        """
+    def get_reclassificacoes(self, obj: Any) -> Any:
+        """Retorna reclassificacoes."""
         try:
             historicos = getattr(obj, "historicos_reclassificacao", None)
             if historicos is None:
@@ -110,10 +116,7 @@ class ConcursoCandidatoSerializer(DynamicFieldsSerializer):
 
 
 class BuscarPorUuidsSerializer(serializers.Serializer):
-    """
-    Serializer para validação do payload da action buscar_por_uuids.
-    Valida que uuids é uma lista não vazia de UUIDs válidos.
-    """
+    """Serializer para validação do payload da action buscar_por_uuids."""
 
     uuids = serializers.ListField(
         child=serializers.UUIDField(),
@@ -128,10 +131,7 @@ class BuscarPorUuidsSerializer(serializers.Serializer):
 
 
 class BuscarPorCpfsSerializer(serializers.Serializer):
-    """
-    Serializer para validação do payload da action buscar_por_cpfs.
-    Valida que cpfs é uma lista não vazia de CPFs válidos e processo_uuid.
-    """
+    """Serializer para validação do payload da action buscar_por_cpfs."""
 
     cpfs = serializers.ListField(
         child=serializers.CharField(max_length=14),
@@ -153,29 +153,25 @@ class BuscarPorCpfsSerializer(serializers.Serializer):
 
 
 class ConcursoCandidatoCpfUuidSerializer(serializers.ModelSerializer):
-    """
-    Serializer simplificado que retorna apenas o CPF do candidato e o UUID do
-    ConcursoCandidato.
-    """
+    """Serializer simplificado que retorna apenas o CPF do candidato e o."""
 
     cpf = serializers.SerializerMethodField()
 
     class Meta:
+        """Representa Meta."""
+
         model = ConcursoCandidato
         fields = ["uuid", "cpf"]
 
-    def get_cpf(self, obj):
-        """Retorna o CPF do candidato relacionado."""
+    def get_cpf(self, obj: Any) -> Any:
+        """Retorna cpf."""
         if obj.candidato:
             return obj.candidato.cpf
         return None
 
 
 class HabilitadosCalculadosParamsSerializer(serializers.Serializer):
-    """
-    Valida parâmetros de consulta contendo 'quantidade' e 'concurso_uuid'.
-    Útil para endpoints que recebem esses dois parâmetros via querystring.
-    """
+    """Valida parâmetros de consulta contendo 'quantidade' e."""
 
     quantidade = serializers.IntegerField(
         min_value=1,
@@ -210,14 +206,7 @@ class HabilitadosCalculadosParamsSerializer(serializers.Serializer):
 
 
 class ReclassificarSerializer(serializers.Serializer):
-    """
-    Payload para reclassificação explícita:
-    {
-        "candidato_uuid": "<uuid>",
-        "desclassificar_de": "NNA" | "PCD",
-        "motivo": "opcional"
-    }
-    """
+    """Payload para reclassificação explícita:."""
 
     candidato_uuid = serializers.UUIDField(required=True)
     desclassificar_de = serializers.ChoiceField(
@@ -231,18 +220,13 @@ class ReclassificarSerializer(serializers.Serializer):
         required=False, allow_blank=True, default=""
     )
 
-    def validate(self, attrs):
+    def validate(self, attrs: Any) -> Any:
+        """Valida payload de reclassificação sem alterações adicionais."""
         return attrs
 
 
 class EliminarSerializer(serializers.Serializer):
-    """
-    Payload para eliminação explícita:
-    {
-        "concurso_candidato_uuid": "<uuid>",
-        "motivo": "opcional"
-    }
-    """
+    """Payload para eliminação explícita:."""
 
     candidato_uuid = serializers.UUIDField(required=True)
     motivo = serializers.CharField(
@@ -251,22 +235,19 @@ class EliminarSerializer(serializers.Serializer):
 
 
 class ConcursoCandidatoReclassificadoSerializer(serializers.ModelSerializer):
-    """
-    Serializer compacto para saída de reclassificados.
-    Campos do candidato: nome, cpf, rg, registro_funcional
-    Campos do concurso_candidato: uuid, codigo_cargo, classificacao,
-    classificacao_pcd,
-    classificacao_nna, categoria_efetiva, criado_em
-    """
+    """Serializer compacto para saída de reclassificados."""
 
     candidato = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
+        """Representa Meta."""
+
         model = ConcursoCandidato
         fields = "__all__"
         read_only_fields = ["criado_em", "atualizado_em", "esta_ativo"]
 
-    def get_candidato(self, obj):
+    def get_candidato(self, obj: Any) -> Any:
+        """Retorna candidato."""
         c = obj.candidato
         if not c:
             return None
@@ -300,21 +281,19 @@ class SalvarLotesSerializer(serializers.Serializer):
 
 
 class ConcursoCandidatoEliminadoSerializer(serializers.ModelSerializer):
-    """
-    Serializer compacto para saída de eliminados.
-    Inclui dados essenciais do candidato e do registro de ConcursoCandidato,
-    preservando campos de eliminação (eliminado_em, eliminado_motivo,
-    eliminado_por).
-    """
+    """Serializer compacto para saída de eliminados."""
 
     candidato = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
+        """Representa Meta."""
+
         model = ConcursoCandidato
         fields = "__all__"
         read_only_fields = ["criado_em", "atualizado_em", "esta_ativo"]
 
-    def get_candidato(self, obj):
+    def get_candidato(self, obj: Any) -> Any:
+        """Retorna candidato."""
         c = obj.candidato
         if not c:
             return None
@@ -326,3 +305,22 @@ class ConcursoCandidatoEliminadoSerializer(serializers.ModelSerializer):
             "rg": getattr(c, "rg", ""),
             "registro_funcional": getattr(c, "registro_funcional", ""),
         }
+
+
+class ExtracaoDadosFiltroSerializer(serializers.Serializer):
+    """Serializer de filtro por ano para extração de dados de habilitados."""
+
+    ano = serializers.IntegerField()
+    processo_uuids = serializers.ListField(
+        child=serializers.UUIDField(),
+        allow_empty=True,
+    )
+
+
+class ExtracaoDadosSerializer(serializers.Serializer):
+    """Serializer de habilitados e convocações para extração de dados."""
+
+    concurso_uuid = serializers.UUIDField(required=False, allow_null=True)
+    filtros = ExtracaoDadosFiltroSerializer(
+        many=True, required=False, default=list
+    )

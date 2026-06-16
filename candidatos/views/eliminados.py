@@ -1,4 +1,9 @@
+"""Módulo views/eliminados."""
+
+from __future__ import annotations
+
 import logging
+from typing import Any
 
 from rest_framework import status, viewsets
 from rest_framework.response import Response
@@ -10,20 +15,10 @@ logger = logging.getLogger(__name__)
 
 
 class EliminadosViewSet(viewsets.ViewSet):
-    """
-    Endpoint para listar candidatos eliminados por concurso_uuid e
-    processo_uuid,
-    no mesmo padrão do endpoint de reclassificados.
-    GET /eliminados/?concurso_uuid=<uuid>&processo_uuid=<uuid>
-    Retorna um dicionário separado por tipo de classificação:
-    {
-      "geral": [...],
-      "nna": [...],
-      "pcd": [...]
-    }
-    """
+    """Endpoint para listar candidatos eliminados por concurso_uuid e."""
 
-    def list(self, request):
+    def list(self, request: Any) -> Any:
+        """Lista candidatos eliminados por concurso e classificação."""
         concurso_uuid = request.query_params.get("concurso_uuid")
         processo_uuid = request.query_params.get("processo_uuid")
         classificacao_max = request.query_params.get("classificacao_max")
@@ -31,8 +26,8 @@ class EliminadosViewSet(viewsets.ViewSet):
         if (
             not concurso_uuid
             or not processo_uuid
-            or not classificacao_max
-            or not classificacao_min
+            or (not classificacao_max)
+            or (not classificacao_min)
         ):
             return Response(
                 {
@@ -40,8 +35,6 @@ class EliminadosViewSet(viewsets.ViewSet):
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-        # Usa o último lote do concurso
         lote = (
             ConcursoCandidatosLote.objects.filter(concurso_uuid=concurso_uuid)
             .order_by("-criado_em")
@@ -49,8 +42,6 @@ class EliminadosViewSet(viewsets.ViewSet):
         )
         if not lote:
             return Response({"geral": [], "nna": [], "pcd": []})
-
-        # Base: candidatos eliminados deste lote, vinculados a histórico de eliminação do processo informado  # noqa: E501
         base = (
             ConcursoCandidato.objects.select_related("candidato", "lote")
             .filter(lote=lote, eliminado=True)
@@ -59,9 +50,8 @@ class EliminadosViewSet(viewsets.ViewSet):
                 classificacao__gte=classificacao_min,
             )
             .filter(historicos_eliminacao__processo_uuid=processo_uuid)
-        ).distinct()
-
-        # Separar por tipo de classificação
+            .distinct()
+        )
         qs_nna = base.filter(classificacao_nna__isnull=False).distinct()
         qs_pcd = base.filter(classificacao_pcd__isnull=False).distinct()
         ids_excluir = list(qs_nna.values_list("id", flat=True)) + list(
@@ -72,7 +62,6 @@ class EliminadosViewSet(viewsets.ViewSet):
             .filter(classificacao__isnull=False)
             .distinct()
         )
-
         data = {
             "geral": ConcursoCandidatoEliminadoSerializer(
                 qs_geral, many=True

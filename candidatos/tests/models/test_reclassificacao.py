@@ -1,7 +1,8 @@
-"""
-Testes unitários para o modelo ConcursoCandidatoReclassificacao.
-"""
+"""Testes unitários para o modelo ConcursoCandidatoReclassificacao."""
 
+from __future__ import annotations
+
+from typing import Any
 from uuid import uuid4
 
 import pytest
@@ -16,7 +17,8 @@ from candidatos.models import (
 pytestmark = pytest.mark.django_db
 
 
-def _criar_candidato(nome, cpf):
+def _criar_candidato(nome: Any, cpf: Any) -> Any:
+    """Cria candidato de exemplo no banco."""
     return Candidato.objects.create(
         nome=nome,
         cpf=cpf,
@@ -34,15 +36,16 @@ def _criar_candidato(nome, cpf):
 
 
 @pytest.fixture
-def lote():
+def lote() -> Any:
+    """Lote de concurso usado nos testes."""
     return ConcursoCandidatosLote.objects.create(
-        concurso_uuid=uuid4(),
-        concurso_nome="Concurso Teste",
+        concurso_uuid=uuid4(), concurso_nome="Concurso Teste"
     )
 
 
 @pytest.fixture
-def concurso_candidato(lote):
+def concurso_candidato(lote: Any) -> Any:
+    """ConcursoCandidato de exemplo para os testes."""
     c = _criar_candidato("Teste", "111.111.111-11")
     return ConcursoCandidato.objects.create(
         candidato=c,
@@ -57,7 +60,8 @@ def concurso_candidato(lote):
 class TestConcursoCandidatoReclassificacao:
     """Testes do modelo ConcursoCandidatoReclassificacao."""
 
-    def test_cria_reclassificacao_nna(self, concurso_candidato):
+    def test_cria_reclassificacao_nna(self, concurso_candidato: Any) -> None:
+        """Verifica cria reclassificacao nna."""
         rec = ConcursoCandidatoReclassificacao.objects.create(
             concurso_candidato=concurso_candidato,
             desclassificado_de="NNA",
@@ -70,7 +74,8 @@ class TestConcursoCandidatoReclassificacao:
         assert rec.uuid is not None
         assert rec.criado_em is not None
 
-    def test_cria_reclassificacao_pcd(self, concurso_candidato):
+    def test_cria_reclassificacao_pcd(self, concurso_candidato: Any) -> None:
+        """Verifica cria reclassificacao pcd."""
         rec = ConcursoCandidatoReclassificacao.objects.create(
             concurso_candidato=concurso_candidato,
             desclassificado_de="PCD",
@@ -80,33 +85,36 @@ class TestConcursoCandidatoReclassificacao:
         assert rec.processo_uuid is not None
 
     def test_str_retorna_concurso_candidato_id_e_cota(
-        self, concurso_candidato
-    ):
+        self, concurso_candidato: Any
+    ) -> None:
+        """Verifica str retorna concurso candidato id e cota."""
         rec = ConcursoCandidatoReclassificacao.objects.create(
-            concurso_candidato=concurso_candidato,
-            desclassificado_de="NNA",
+            concurso_candidato=concurso_candidato, desclassificado_de="NNA"
         )
         expected = f"{concurso_candidato.id} - NNA"
         assert str(rec) == expected
 
-    def test_meta_ordering_por_criado_em_decrescente(self, concurso_candidato):
+    def test_meta_ordering_por_criado_em_decrescente(
+        self, concurso_candidato: Any
+    ) -> None:
+        """Verifica meta ordering por criado em decrescente."""
         ConcursoCandidatoReclassificacao.objects.create(
-            concurso_candidato=concurso_candidato,
-            desclassificado_de="NNA",
+            concurso_candidato=concurso_candidato, desclassificado_de="NNA"
         )
         ConcursoCandidatoReclassificacao.objects.create(
-            concurso_candidato=concurso_candidato,
-            desclassificado_de="PCD",
+            concurso_candidato=concurso_candidato, desclassificado_de="PCD"
         )
         qs = ConcursoCandidatoReclassificacao.objects.filter(
             concurso_candidato=concurso_candidato
         )
-        assert list(qs)[0].desclassificado_de == "PCD"  # mais recente primeiro
+        assert list(qs)[0].desclassificado_de == "PCD"
 
-    def test_related_name_historicos_reclassificacao(self, concurso_candidato):
+    def test_related_name_historicos_reclassificacao(
+        self, concurso_candidato: Any
+    ) -> None:
+        """Verifica related name historicos reclassificacao."""
         ConcursoCandidatoReclassificacao.objects.create(
-            concurso_candidato=concurso_candidato,
-            desclassificado_de="NNA",
+            concurso_candidato=concurso_candidato, desclassificado_de="NNA"
         )
         assert concurso_candidato.historicos_reclassificacao.count() == 1
         assert (
@@ -114,7 +122,8 @@ class TestConcursoCandidatoReclassificacao:
             == "NNA"
         )
 
-    def test_classificacao_choices(self):
+    def test_classificacao_choices(self) -> None:
+        """Verifica classificacao choices."""
         assert ConcursoCandidatoReclassificacao.CLASSIFICACAO_CHOICES == (
             ("GERAL", "GERAL"),
             ("NNA", "NNA"),

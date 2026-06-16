@@ -1,3 +1,9 @@
+"""Módulo admin."""
+
+from __future__ import annotations
+
+from typing import Any
+
 from django.contrib import admin, messages
 
 from .models import (
@@ -10,7 +16,7 @@ from .models import (
 
 @admin.register(Candidato)
 class CandidatoAdmin(admin.ModelAdmin):
-    """Admin configuration for Candidato model"""
+    """Admin configuration for Candidato model."""
 
     list_display = [
         "nome",
@@ -35,7 +41,6 @@ class CandidatoAdmin(admin.ModelAdmin):
     date_hierarchy = "criado_em"
     list_per_page = 26
     list_editable = ["status"]
-
     fieldsets = (
         (
             "Informações Pessoais",
@@ -64,6 +69,8 @@ class CandidatoAdmin(admin.ModelAdmin):
 
 @admin.register(ConcursoCandidato)
 class ConcursoCandidatoAdmin(admin.ModelAdmin):
+    """Configuração do admin para ConcursoCandidato."""
+
     list_display = [
         "candidato",
         "candidato__nome",
@@ -101,10 +108,8 @@ class ConcursoCandidatoAdmin(admin.ModelAdmin):
     list_per_page = 25
     actions = ["marcar_nao_convocados"]
 
-    def marcar_nao_convocados(self, request, queryset):
-        """
-        Ação de admin para marcar registros como não convocados em lote.
-        """
+    def marcar_nao_convocados(self, request: Any, queryset: Any) -> None:
+        """Ação de admin para marcar registros como não convocados em lote."""
         qtd = queryset.update(
             foi_convocado=False,
             data_convocacao=None,
@@ -119,12 +124,14 @@ class ConcursoCandidatoAdmin(admin.ModelAdmin):
         )
 
     marcar_nao_convocados.short_description = (
-        "Marcar como NÃO convocados (foi_convocado=False)"
+        "Marcar como NÃO convocados (foi_convocado=False)"  # type: ignore[attr-defined]
     )
 
 
 @admin.register(ConcursoCandidatosLote)
 class ConcursoCandidatosLoteAdmin(admin.ModelAdmin):
+    """Configuração do admin para ConcursoCandidatosLote."""
+
     list_display = ["concurso_nome", "concurso_uuid", "criado_em"]
     list_filter = ["criado_em"]
     search_fields = ["concurso_nome"]
@@ -135,7 +142,7 @@ class ConcursoCandidatosLoteAdmin(admin.ModelAdmin):
 
 @admin.register(Parametrizacao)
 class ParametrizacaoAdmin(admin.ModelAdmin):
-    """Admin configuration for Parametrizacao model"""
+    """Admin configuration for Parametrizacao model."""
 
     list_display = [
         "uuid",
@@ -148,7 +155,6 @@ class ParametrizacaoAdmin(admin.ModelAdmin):
     readonly_fields = ["uuid", "criado_em", "atualizado_em", "esta_ativo"]
     date_hierarchy = "criado_em"
     list_per_page = 25
-
     fieldsets = (
         (
             "Parâmetros de Cálculo",

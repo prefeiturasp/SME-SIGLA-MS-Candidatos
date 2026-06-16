@@ -1,28 +1,40 @@
+"""Módulo service/ranking_service."""
+
+from __future__ import annotations
+
+from typing import Any
+
 from candidatos.models import ConcursoCandidato
 
 
-def atualizar_ranking(itens):
+def atualizar_ranking(itens: Any) -> None:
+    """Atualiza ranking.
+
+    Args:
+        itens: Lista de ConcursoCandidato na ordem desejada.
+
+    Returns:
+        Nenhum valor; persiste alterações no banco.
+    """
     try:
         for idx, it in enumerate(itens, start=1):
             it.ranking = idx
         if itens:
             ConcursoCandidato.objects.bulk_update(itens, ["ranking"])
     except Exception:
-        # Em caso de erro de persistência, segue retornando os itens
         pass
 
 
-def atualizar_ranking_escolha(itens):
-    """
-    Define ranking_escolha conforme regra:
-    - Pegue todos os itens com classificacao_pcd preenchida e ordene-os por
-    classificacao.
-    - Os demais itens devem ser ordenados por classificacao (nulos por último).
-    - Concatene: [pcd_ordenados_por_classificacao] + [demais_na_ordem_atual]
-    - Atribua ranking_escolha = posição (1-based) nessa lista resultante.
+def atualizar_ranking_escolha(itens: Any) -> None:
+    """Atualiza ranking escolha.
+
+    Args:
+        itens: Lista de ConcursoCandidato a reordenar.
+
+    Returns:
+        Nenhum valor; persiste alterações no banco.
     """
     try:
-        # Itens com PCD (classificacao_pcd não nulo), ordenados por
         "classificacao"
         itens_pcd = [
             it
@@ -35,8 +47,6 @@ def atualizar_ranking_escolha(itens):
                 getattr(it, "classificacao", 0),
             )
         )
-
-        # Demais itens ordenados por 'classificacao' (nulos por último)
         itens_restantes = [
             it
             for it in itens
@@ -48,16 +58,12 @@ def atualizar_ranking_escolha(itens):
                 getattr(it, "classificacao", float("inf")),
             )
         )
-
         nova_ordem = itens_pcd + itens_restantes
-
         for idx, it in enumerate(nova_ordem, start=1):
             it.ranking_escolha = idx
-
         if nova_ordem:
             ConcursoCandidato.objects.bulk_update(
                 nova_ordem, ["ranking_escolha"]
             )
     except Exception:
-        # Em caso de erro de persistência, segue retornando os itens
         pass

@@ -1,4 +1,9 @@
+"""Módulo service/eliminacao_service."""
+
+from __future__ import annotations
+
 import logging
+from typing import Any
 
 from django.db import transaction
 from django.utils import timezone
@@ -11,8 +16,21 @@ logger = logging.getLogger(__name__)
 
 @transaction.atomic
 def aplicar_eliminacao(
-    *, candidato_uuid, motivo: str = "", executado_por: str = ""
+    *, candidato_uuid: Any, motivo: str = "", executado_por: str = ""
 ) -> tuple[ConcursoCandidato, ConcursoCandidatoEliminacao]:
+    """Aplica eliminacao.
+
+    Args:
+        candidato_uuid: UUID do ConcursoCandidato a eliminar.
+        motivo: Motivo.
+        executado_por: Executado por.
+
+    Returns:
+        Tupla com os objetos criados ou atualizados.
+
+    Raises:
+        ValueError: Se o candidato já estiver eliminado.
+    """
     logger.info(
         "Aplicando eliminação",
         extra={
@@ -43,4 +61,4 @@ def aplicar_eliminacao(
         motivo=motivo or "",
         executado_por=executado_por or "",
     )
-    return cc, hist
+    return (cc, hist)

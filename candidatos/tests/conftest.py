@@ -1,3 +1,9 @@
+"""Módulo tests/conftest."""
+
+from __future__ import annotations
+
+from typing import Any
+
 import pytest
 from django.urls import reverse
 from rest_framework.test import APIClient
@@ -6,17 +12,20 @@ from candidatos.models import Candidato
 
 
 @pytest.fixture
-def api_client():
+def api_client() -> Any:
+    """Cliente HTTP para requisições de teste."""
     return APIClient()
 
 
 @pytest.fixture
-def candidato_url():
+def candidato_url() -> Any:
+    """URL do endpoint de candidatos."""
     return reverse("candidato-list")
 
 
 @pytest.fixture
-def candidato_data():
+def candidato_data() -> Any:
+    """Dados de candidato para criação no teste."""
     return {
         "nome": "João Silva",
         "cpf": "123.456.789-00",
@@ -34,7 +43,8 @@ def candidato_data():
 
 
 @pytest.fixture
-def candidato_data_2():
+def candidato_data_2() -> Any:
+    """Segundo conjunto de dados de candidato."""
     return {
         "nome": "Maria Santos",
         "cpf": "987.654.321-00",
@@ -52,7 +62,8 @@ def candidato_data_2():
 
 
 @pytest.fixture
-def candidato_data_3():
+def candidato_data_3() -> Any:
+    """Terceiro conjunto de dados de candidato."""
     return {
         "nome": "Pedro Oliveira",
         "cpf": "111.222.333-44",
@@ -70,7 +81,10 @@ def candidato_data_3():
 
 
 @pytest.fixture
-def candidatos_criados(candidato_data, candidato_data_2, candidato_data_3):
+def candidatos_criados(
+    candidato_data: Any, candidato_data_2: Any, candidato_data_3: Any
+) -> Any:
+    """Candidatos persistidos no banco para o teste."""
     candidato1 = Candidato.objects.create(**candidato_data)
     candidato2 = Candidato.objects.create(**candidato_data_2)
     candidato3 = Candidato.objects.create(**candidato_data_3)
