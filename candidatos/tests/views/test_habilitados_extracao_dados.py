@@ -98,8 +98,16 @@ def test_extracao_dados_agrega_habilitados_e_convocados_por_ano(api_client):
     }
     # por ano: convocados (foi_convocado=True nos processos do ano) e
     # nao-convocados = total de habilitados - convocados do ano
-    assert data["2026"] == {"convocados": 1, "nao-convocados": 4}
-    assert data["2025"] == {"convocados": 1, "nao-convocados": 4}
+    assert data["2026"] == {
+        "habilitados": {"total": 1, "geral": 1, "pcd": 0, "nna": 0},
+        "convocados": 1,
+        "nao-convocados": 4,
+    }
+    assert data["2025"] == {
+        "habilitados": {"total": 1, "geral": 1, "pcd": 0, "nna": 0},
+        "convocados": 1,
+        "nao-convocados": 4,
+    }
 
 
 def test_extracao_dados_sem_filtros_retorna_total(api_client):

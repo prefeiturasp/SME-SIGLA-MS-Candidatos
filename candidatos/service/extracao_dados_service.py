@@ -31,10 +31,15 @@ def montar_extracao_dados(
     if filtros:
         for filtro in filtros:
             ano = str(filtro["ano"])
+            processo_uuids = filtro["processo_uuids"]
+            habilitados_ano = _contar_habilitados_por_processos(
+                concurso_uuid, processo_uuids
+            )
             convocados = _contar_convocados(
-                concurso_uuid, filtro["processo_uuids"]
+                concurso_uuid, processo_uuids
             )
             resultado[ano] = {
+                "habilitados": habilitados_ano,
                 "convocados": convocados,
                 "nao-convocados": habilitados["total"] - convocados,
             }
@@ -65,6 +70,30 @@ def _contar_habilitados(
     qs = ConcursoCandidato.objects.all()
     if concurso_uuid:
         qs = qs.filter(lote__concurso_uuid=concurso_uuid)
+    contagens = qs.values("categoria_efetiva").annotate(total=Count("uuid"))
+    por_categoria = {
+        item["categoria_efetiva"]: item["total"] for item in contagens
+    }
+    return {
+        "total": sum(por_categoria.values()),
+        "geral": por_categoria.get("GERAL", 0),
+        "pcd": por_categoria.get("PCD", 0),
+        "nna": por_categoria.get("NNA", 0),
+    }
+
+
+def _contar_habilitados_por_processos(
+    concurso_uuid: UUID | str | None = None,
+    processo_uuids: list[UUID | str] | None = None,
+) -> dict[str, int]:
+    """Conta habilitados por categoria no escopo dos processos informados."""
+    if not processo_uuids:
+        return {"total": 0, "geral": 0, "pcd": 0, "nna": 0}
+
+    qs = ConcursoCandidato.objects.filter(processo_uuid__in=processo_uuids)
+    if concurso_uuid:
+        qs = qs.filter(lote__concurso_uuid=concurso_uuid)
+
     contagens = qs.values("categoria_efetiva").annotate(total=Count("uuid"))
     por_categoria = {
         item["categoria_efetiva"]: item["total"] for item in contagens
