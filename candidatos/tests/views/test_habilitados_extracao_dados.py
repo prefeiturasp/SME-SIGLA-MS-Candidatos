@@ -53,22 +53,25 @@ def test_extracao_dados_agrega_habilitados_e_convocados_por_ano(api_client):
     processo_2026 = uuid4()
     processo_2025 = uuid4()
 
-    # Dois lotes do mesmo concurso -> habilitados soma os dois
-    lote1 = ConcursoCandidatosLote.objects.create(
-        concurso_uuid=concurso_uuid, concurso_nome="Lote 1"
+    # Dois lotes do mesmo concurso -> conta apenas o ultimo (lote2)
+    lote_antigo = ConcursoCandidatosLote.objects.create(
+        concurso_uuid=concurso_uuid, concurso_nome="Lote antigo"
     )
-    lote2 = ConcursoCandidatosLote.objects.create(
-        concurso_uuid=concurso_uuid, concurso_nome="Lote 2"
+    lote = ConcursoCandidatosLote.objects.create(
+        concurso_uuid=concurso_uuid, concurso_nome="Lote vigente"
     )
 
-    # lote1: 2 GERAL (1 convocado 2026, 1 nao-convocado), 1 PCD nao-convocado
-    criar_concurso_candidato(lote1, "GERAL", True, processo_2026)
-    criar_concurso_candidato(lote1, "GERAL", False, None)
-    criar_concurso_candidato(lote1, "PCD", False, None)
+    # lote_antigo: candidatos de lote substituido -> NAO devem contar
+    criar_concurso_candidato(lote_antigo, "GERAL", True, processo_2026)
+    criar_concurso_candidato(lote_antigo, "PCD", True, processo_2025)
 
-    # lote2: 1 GERAL convocado 2025, 1 NNA nao-convocado
-    criar_concurso_candidato(lote2, "GERAL", True, processo_2025)
-    criar_concurso_candidato(lote2, "NNA", False, None)
+    # lote (vigente): 3 GERAL (1 conv 2026, 1 conv 2025, 1 nao-conv),
+    # 1 PCD nao-convocado, 1 NNA nao-convocado
+    criar_concurso_candidato(lote, "GERAL", True, processo_2026)
+    criar_concurso_candidato(lote, "GERAL", True, processo_2025)
+    criar_concurso_candidato(lote, "GERAL", False, None)
+    criar_concurso_candidato(lote, "PCD", False, None)
+    criar_concurso_candidato(lote, "NNA", False, None)
 
     # Candidato de outro concurso nao deve contar
     outro_lote = ConcursoCandidatosLote.objects.create(
@@ -89,7 +92,7 @@ def test_extracao_dados_agrega_habilitados_e_convocados_por_ano(api_client):
     assert resp.status_code == 200, resp.content
     data = resp.json()
 
-    # habilitados = todos os importados do concurso (5)
+    # habilitados = apenas os importados no ultimo lote do concurso (5)
     assert data["habilitados"] == {
         "total": 5,
         "geral": 3,
@@ -98,8 +101,16 @@ def test_extracao_dados_agrega_habilitados_e_convocados_por_ano(api_client):
     }
     # por ano: convocados (foi_convocado=True nos processos do ano) e
     # nao-convocados = total de habilitados - convocados do ano
-    assert data["2026"] == {"convocados": 1, "nao-convocados": 4}
-    assert data["2025"] == {"convocados": 1, "nao-convocados": 4}
+    assert data["2026"] == {
+        "habilitados": {"total": 1, "geral": 1, "pcd": 0, "nna": 0},
+        "convocados": 1,
+        "nao-convocados": 4,
+    }
+    assert data["2025"] == {
+        "habilitados": {"total": 1, "geral": 1, "pcd": 0, "nna": 0},
+        "convocados": 1,
+        "nao-convocados": 4,
+    }
 
 
 def test_extracao_dados_sem_filtros_retorna_total(api_client):
@@ -139,6 +150,7 @@ def test_extracao_dados_sem_filtros_retorna_total(api_client):
     # O agregado vem direto na raiz, sem a chave "total".
     assert data["convocados"] == 2
     assert data["nao-convocados"] == 2
+    # sem escolhas registradas -> os 2 convocados sao pendentes
     # nenhuma chave de ano presente
     assert set(data.keys()) == {"habilitados", "convocados", "nao-convocados"}
 
@@ -193,4 +205,49 @@ def test_extracao_dados_sem_concurso_agrega_todos(api_client):
     # convocados de todos os concursos (2)
     assert data["convocados"] == 2
     assert data["nao-convocados"] == 1
+    assert set(data.keys()) == {"habilitados", "convocados", "nao-convocados"}
+
+
+def test_extracao_dados_sem_concurso_usa_ultimo_lote_de_cada(api_client):
+    url = reverse("habilitados-extracao-dados")
+
+    # Concurso A: lote antigo (deve ser ignorado) + lote vigente
+    concurso_a = uuid4()
+    a_antigo = ConcursoCandidatosLote.objects.create(
+        concurso_uuid=concurso_a, concurso_nome="A antigo"
+    )
+    a_vigente = ConcursoCandidatosLote.objects.create(
+        concurso_uuid=concurso_a, concurso_nome="A vigente"
+    )
+    criar_concurso_candidato(a_antigo, "GERAL", True, uuid4())
+    criar_concurso_candidato(a_antigo, "PCD", True, uuid4())
+    criar_concurso_candidato(a_vigente, "GERAL", True, uuid4())
+    criar_concurso_candidato(a_vigente, "NNA", False, None)
+
+    # Concurso B: lote antigo (ignorado) + lote vigente
+    concurso_b = uuid4()
+    b_antigo = ConcursoCandidatosLote.objects.create(
+        concurso_uuid=concurso_b, concurso_nome="B antigo"
+    )
+    b_vigente = ConcursoCandidatosLote.objects.create(
+        concurso_uuid=concurso_b, concurso_nome="B vigente"
+    )
+    criar_concurso_candidato(b_antigo, "GERAL", True, uuid4())
+    criar_concurso_candidato(b_vigente, "PCD", True, uuid4())
+    criar_concurso_candidato(b_vigente, "GERAL", False, None)
+
+    resp = api_client.post(url, {}, format="json")
+
+    assert resp.status_code == 200, resp.content
+    data = resp.json()
+    # apenas os ultimos lotes de A e B: A=GERAL+NNA, B=PCD+GERAL
+    assert data["habilitados"] == {
+        "total": 4,
+        "geral": 2,
+        "pcd": 1,
+        "nna": 1,
+    }
+    # convocados nos ultimos lotes: A(GERAL) + B(PCD) = 2
+    assert data["convocados"] == 2
+    assert data["nao-convocados"] == 2
     assert set(data.keys()) == {"habilitados", "convocados", "nao-convocados"}
