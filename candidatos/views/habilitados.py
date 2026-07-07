@@ -29,6 +29,7 @@ from candidatos.service.calculo_habilitados_service import (
     gerar_sequencia_convocados,
 )
 from candidatos.service.eliminacao_service import aplicar_eliminacao
+from candidatos.service.agendas_api_service import AgendasApiService
 from candidatos.service.escolhas_service import EscolhasService
 from candidatos.service.exceptions import SalvarLotesException
 from candidatos.service.extracao_dados_service import montar_extracao_dados
@@ -530,6 +531,22 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         qs.update(
             foi_convocado=False, data_convocacao=None, processo_uuid=None
         )
+        if codigo_cargo:
+            try:
+                AgendasApiService.remover_agendas_por_processo_uuid_e_cargo(
+                    processo_uuid=str(processo_uuid),
+                    codigo_cargo=str(codigo_cargo),
+                )
+            except Exception as exc:
+                logger.error(
+                    "Erro ao remover agendas no MS-Agendas: %s",
+                    exc,
+                    extra={
+                        "correlation_id": get_correlation_id(),
+                        "processo_uuid": processo_uuid,
+                        "codigo_cargo": codigo_cargo,
+                    },
+                )
         return Response(
             {
                 "desconvocados": [str(u) for u in atualizados],
