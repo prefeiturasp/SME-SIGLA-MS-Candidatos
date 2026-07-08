@@ -234,3 +234,4 @@ SIMPLE_JWT = {
 }
 
 ESCOLHAS_API_URL = os.environ.get("ESCOLHAS_API_URL", "http://localhost:8004")
+AGENDAS_API_URL = os.environ.get("AGENDAS_API_URL", "http://localhost:8005")

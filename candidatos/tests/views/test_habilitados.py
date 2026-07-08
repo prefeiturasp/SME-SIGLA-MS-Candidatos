@@ -296,6 +296,105 @@ def test_habilitados_desconvocar_sem_processo_uuid_retorna_400(
     assert "processo_uuid" in resp.data["detail"]
 
 
+@patch(
+    "candidatos.views.habilitados.AgendasApiService"
+    ".remover_agendas_por_processo_uuid_e_cargo"
+)
+def test_habilitados_desconvocar_com_codigo_cargo_chama_agendas_api_service(
+    mock_remover_agendas: MagicMock,
+    api_client: Any,
+    lote: Any,
+) -> None:
+    """Verifica desconvocar com cargo chama remoção de agendas no MS-Agendas."""
+    mock_remover_agendas.return_value = {"excluidas": 1}
+    processo_uuid = uuid4()
+    candidato = criar_candidato("C1", "555.555.555-55")
+    cc = ConcursoCandidato.objects.create(
+        candidato=candidato,
+        lote=lote,
+        codigo_inscricao="1",
+        foi_convocado=True,
+        processo_uuid=processo_uuid,
+        codigo_cargo="1008",
+    )
+    url = reverse("habilitados-desconvocar")
+    resp = api_client.patch(
+        url,
+        {"processo_uuid": str(processo_uuid), "codigo_cargo": "1008"},
+        format="json",
+    )
+    assert resp.status_code == 200
+    assert resp.data["total"] == 1
+    mock_remover_agendas.assert_called_once_with(
+        processo_uuid=str(processo_uuid),
+        codigo_cargo="1008",
+    )
+    cc.refresh_from_db()
+    assert cc.foi_convocado is False
+
+
+@patch(
+    "candidatos.views.habilitados.AgendasApiService"
+    ".remover_agendas_por_processo_uuid_e_cargo"
+)
+def test_habilitados_desconvocar_sem_codigo_cargo_nao_chama_agendas_api_service(
+    mock_remover_agendas: MagicMock,
+    api_client: Any,
+    lote: Any,
+) -> None:
+    """Verifica desconvocar sem cargo não chama remoção de agendas."""
+    processo_uuid = uuid4()
+    candidato = criar_candidato("C1", "666.666.666-66")
+    ConcursoCandidato.objects.create(
+        candidato=candidato,
+        lote=lote,
+        codigo_inscricao="1",
+        foi_convocado=True,
+        processo_uuid=processo_uuid,
+        codigo_cargo="1008",
+    )
+    url = reverse("habilitados-desconvocar")
+    resp = api_client.patch(
+        url, {"processo_uuid": str(processo_uuid)}, format="json"
+    )
+    assert resp.status_code == 200
+    mock_remover_agendas.assert_not_called()
+
+
+@patch(
+    "candidatos.views.habilitados.AgendasApiService"
+    ".remover_agendas_por_processo_uuid_e_cargo"
+)
+def test_habilitados_desconvocar_erro_agendas_api_mantem_resposta_200(
+    mock_remover_agendas: MagicMock,
+    api_client: Any,
+    lote: Any,
+) -> None:
+    """Verifica falha no MS-Agendas não impede desconvocação dos candidatos."""
+    mock_remover_agendas.side_effect = Exception("falha no MS-Agendas")
+    processo_uuid = uuid4()
+    candidato = criar_candidato("C1", "777.777.777-77")
+    cc = ConcursoCandidato.objects.create(
+        candidato=candidato,
+        lote=lote,
+        codigo_inscricao="1",
+        foi_convocado=True,
+        processo_uuid=processo_uuid,
+        codigo_cargo="1008",
+    )
+    url = reverse("habilitados-desconvocar")
+    resp = api_client.patch(
+        url,
+        {"processo_uuid": str(processo_uuid), "codigo_cargo": "1008"},
+        format="json",
+    )
+    assert resp.status_code == 200
+    assert resp.data["total"] == 1
+    assert resp.data["desconvocados"] == [str(cc.uuid)]
+    cc.refresh_from_db()
+    assert cc.foi_convocado is False
+
+
 def test_habilitados_buscar_por_cpfs_retorna_dados_do_processo(
     api_client: Any, lote: Any
 ) -> None:
