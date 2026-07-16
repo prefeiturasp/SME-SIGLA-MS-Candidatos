@@ -3,6 +3,7 @@ Django settings for candidatos project.
 """
 
 import os
+import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -14,6 +15,8 @@ DJANGO_ENVIRONMENT = os.environ.get("DJANGO_ENVIRONMENT", "local")
 MS_PATH = os.environ.get("MS_PATH", "/ms-candidatos")
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+# Adiciona a pasta 'apps' ao sys.path do Python
+sys.path.insert(0, os.path.join(BASE_DIR, "apps"))
 SECRET_KEY = os.environ.get(
     "SECRET_KEY", "django-insecure-your-secret-key-here"
 )
@@ -43,6 +46,7 @@ INSTALLED_APPS = [
     "auditlog",
     "drf_spectacular",
     "candidatos",
+    "parametrizacao",
 ]
 
 MIDDLEWARE = [
@@ -152,8 +156,10 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.SessionAuthentication",
         "rest_framework.authentication.BasicAuthentication",
         "rest_framework_simplejwt.authentication.JWTAuthentication",
+        # "sigla_sdk.autenticacao.authentication.ApiKeyAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
+        # 'rest_framework.permissions.IsAuthenticated',
         "rest_framework.permissions.AllowAny",
     ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
@@ -216,6 +222,16 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "API para o sistema de candidatos de sigla",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": True,
+    # "APPEND_COMPONENTS": {
+    #     "securitySchemes": {
+    #         "ApiKeyAuth": {
+    #             "type": "apiKey",
+    #             "in": "header",
+    #             "name": "X-API-Key",
+    #         }
+    #     }
+    # },
+    # "SECURITY": [{"ApiKeyAuth": []}],
 }
 
 from datetime import timedelta
@@ -233,5 +249,10 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
+API_KEY = os.environ.get("API_KEY", "api-key-processos-convocacao")
+API_KEY_HEADER = os.environ.get("API_KEY_HEADER", "X-API-Key")
+
 ESCOLHAS_API_URL = os.environ.get("ESCOLHAS_API_URL", "http://localhost:8004")
+ESCOLHAS_API_KEY = os.environ.get("ESCOLHAS_API_KEY", "api-key-escolhas")
 AGENDAS_API_URL = os.environ.get("AGENDAS_API_URL", "http://localhost:8005")
+AGENDAS_API_KEY = os.environ.get("AGENDA_API_KEY", "api-key-agenda")
