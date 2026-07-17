@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 
-class SalvarLotesException(Exception):
+class SalvarLotesError(Exception):
     """Erro de negócio ao persistir dados de lote de classificação."""
 
     def __init__(self, mensagem: str, detalhes: str | None = None) -> None:

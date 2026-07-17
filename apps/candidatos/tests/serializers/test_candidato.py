@@ -3,7 +3,6 @@
 from uuid import uuid4
 
 import pytest
-
 from candidatos.serializer.candidato import (
     CandidatoConcursoCreateSerializer,
     CandidatoSerializer,

@@ -6,9 +6,8 @@ import random
 from datetime import date, timedelta
 from typing import Any
 
-from django.core.management.base import BaseCommand
-
 from candidatos.models import Candidato
+from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):
@@ -66,10 +65,19 @@ class Command(BaseCommand):
         status_choices = ["ativo", "inativo", "suspenso"]
         genero_choices = ["M", "F", "O", "N"]
         candidatos_criados = []
+
+        def _gerar_cpf():
+            return (
+                f"{random.randint(100, 999)}."
+                f"{random.randint(100, 999)}."
+                f"{random.randint(100, 999)}-"
+                f"{random.randint(10, 99)}"
+            )
+
         for i in range(count):
-            cpf = f"{random.randint(100, 999)}.{random.randint(100, 999)}.{random.randint(100, 999)}-{random.randint(10, 99)}"
+            cpf = _gerar_cpf()
             while Candidato.objects.filter(cpf=cpf).exists():
-                cpf = f"{random.randint(100, 999)}.{random.randint(100, 999)}.{random.randint(100, 999)}-{random.randint(10, 99)}"
+                cpf = _gerar_cpf()
             nome_base = nomes[i % len(nomes)].lower().replace(" ", ".")
             email = f"{nome_base}{i + 1}@email.com"
             while Candidato.objects.filter(email=email).exists():
@@ -80,27 +88,41 @@ class Command(BaseCommand):
             anos_aleatorios = random.randint(idade_min, idade_max)
             data_nascimento = hoje - timedelta(days=anos_aleatorios * 365)
             cidade, estado = random.choice(cidades_estados)
+            rua = random.choice(
+                ["das Flores", "Augusta", "Paulista", "Copacabana"]
+            )
+            telefone = (
+                f"({random.randint(11, 99)}) "
+                f"{random.randint(90000, 99999)}-"
+                f"{random.randint(1000, 9999)}"
+            )
+            cep = (
+                f"{random.randint(10000, 99999)}-"
+                f"{random.randint(100, 999)}"
+            )
             candidato = Candidato.objects.create(
                 nome=nomes[i % len(nomes)],
                 cpf=cpf,
                 email=email,
-                telefone=f"({random.randint(11, 99)}) {random.randint(90000, 99999)}-{random.randint(1000, 9999)}",
+                telefone=telefone,
                 data_nascimento=data_nascimento,
                 genero=random.choice(genero_choices),
-                endereco=f'Rua {random.choice(['das Flores', 'Augusta', 'Paulista', 'Copacabana'])}, {random.randint(100, 999)}',
+                endereco=f"Rua {rua}, {random.randint(100, 999)}",
                 cidade=cidade,
                 estado=estado,
-                cep=f"{random.randint(10000, 99999)}-{random.randint(100, 999)}",
+                cep=cep,
                 status=random.choice(status_choices),
                 observacoes=f"Candidato de exemplo {i + 1}",
             )
             self.stdout.write(
-                f"  ✓ Criado candidato: {candidato.nome} ({candidato.cidade}/{candidato.estado})"
+                f"  ✓ Criado candidato: {candidato.nome} "
+                f"({candidato.cidade}/{candidato.estado})"
             )
             candidatos_criados.append(candidato)
         self.stdout.write(
             self.style.SUCCESS(
-                f"\n✅ {len(candidatos_criados)} candidatos criados com sucesso!"
+                f"\n✅ {len(candidatos_criados)} candidatos "
+                f"criados com sucesso!"
             )
         )
         ativos = Candidato.objects.filter(status="ativo").count()
@@ -108,6 +130,7 @@ class Command(BaseCommand):
         suspensos = Candidato.objects.filter(status="suspenso").count()
         self.stdout.write(
             self.style.SUCCESS(
-                f"📊 Estatísticas: {ativos} ativos, {inativos} inativos, {suspensos} suspensos"
+                f"📊 Estatísticas: {ativos} ativos, "
+                f"{inativos} inativos, {suspensos} suspensos"
             )
         )

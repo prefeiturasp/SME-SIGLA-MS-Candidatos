@@ -5,12 +5,11 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
-from django.db.models import QuerySet
-
 from candidatos.models import (
     ConcursoCandidato,
     ConcursoCandidatoReclassificacao,
 )
+from django.db.models import QuerySet
 
 
 class ConcursoCandidatoReclassificacaoRepository:
@@ -20,11 +19,13 @@ class ConcursoCandidatoReclassificacaoRepository:
     def serializar(
         historico: ConcursoCandidatoReclassificacao,
     ) -> dict[str, Any]:
-        """Converte um histórico de reclassificação em dicionário."""
+        """Converta um histórico de reclassificação em dicionário."""
         return {
-            "uuid": str(getattr(historico, "uuid", ""))
-            if getattr(historico, "uuid", None)
-            else None,
+            "uuid": (
+                str(getattr(historico, "uuid", ""))
+                if getattr(historico, "uuid", None)
+                else None
+            ),
             "desclassificado_de": getattr(
                 historico, "desclassificado_de", None
             ),
@@ -39,10 +40,12 @@ class ConcursoCandidatoReclassificacaoRepository:
     @classmethod
     def serializar_lista(
         cls,
-        historicos: list[ConcursoCandidatoReclassificacao]
-        | QuerySet[ConcursoCandidatoReclassificacao],
+        historicos: (
+            list[ConcursoCandidatoReclassificacao]
+            | QuerySet[ConcursoCandidatoReclassificacao]
+        ),
     ) -> list[dict[str, Any]]:
-        """Converte lista/queryset de históricos em dicionários."""
+        """Converta lista/queryset de históricos em dicionários."""
         return [cls.serializar(item) for item in historicos]
 
     @classmethod
@@ -57,7 +60,7 @@ class ConcursoCandidatoReclassificacaoRepository:
         *,
         campos_atualizacao: list[str] | None = None,
     ) -> None:
-        """Persiste alterações em um histórico de reclassificação."""
+        """Persista alterações em um histórico de reclassificação."""
         if campos_atualizacao:
             historico.save(update_fields=campos_atualizacao)
         else:

@@ -6,10 +6,9 @@ from typing import Any
 
 import pytest
 from django.urls import reverse
+from parametrizacao.models import Parametrizacao
 from rest_framework import status
 from rest_framework.test import APIClient
-
-from parametrizacao.models import Parametrizacao
 
 pytestmark = pytest.mark.django_db
 

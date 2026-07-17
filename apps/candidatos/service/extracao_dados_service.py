@@ -9,13 +9,12 @@ lote vigente, garantindo regra única entre habilitados e convocados.
 from typing import Any
 from uuid import UUID
 
-from django.db.models.query import QuerySet
-
 from candidatos.models import ConcursoCandidato
 from candidatos.repository import (
     ConcursoCandidatoRepository,
     ConcursoCandidatosLoteRepository,
 )
+from django.db.models.query import QuerySet
 
 CATEGORIAS = ("GERAL", "PCD", "NNA")
 
@@ -36,7 +35,7 @@ def montar_extracao_dados(
         ``convocados`` e ``nao-convocados`` do escopo.
     """
     habilitados = _contar_habilitados(concurso_uuid)
-    resultado = {"habilitados": habilitados}
+    resultado: dict[str, Any] = {"habilitados": habilitados}
 
     if filtros:
         for filtro in filtros:

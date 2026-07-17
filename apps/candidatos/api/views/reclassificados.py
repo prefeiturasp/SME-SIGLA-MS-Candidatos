@@ -5,13 +5,12 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from rest_framework import status, viewsets
-from rest_framework.response import Response
-
 from candidatos.repository import (
     ConcursoCandidatoRepository,
     ConcursoCandidatosLoteRepository,
 )
+from rest_framework import status, viewsets
+from rest_framework.response import Response
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +19,7 @@ class ReclassificadosViewSet(viewsets.ViewSet):
     """Endpoint para listar candidatos reclassificados (de NNA/PCD ->."""
 
     def list(self, request: Any) -> Any:
-        """Lista candidatos reclassificados de NNA/PCD para ampla concorrência."""
+        """Lista reclassificados de NNA/PCD para ampla concorrência."""
         concurso_uuid = request.query_params.get("concurso_uuid")
         processo_uuid = request.query_params.get("processo_uuid")
         if not concurso_uuid or not processo_uuid:

@@ -6,14 +6,15 @@ from django.db import migrations, models
 
 def criar_parametrizacao_inicial(apps, schema_editor):
     """Cria um registro inicial de parametrização com valores padrão."""
-    Parametrizacao = apps.get_model('candidatos', 'Parametrizacao')
+    Parametrizacao = apps.get_model("candidatos", "Parametrizacao")
     Parametrizacao.objects.create()
 
 
 def reverter_parametrizacao_inicial(apps, schema_editor):
     """Remove o registro inicial de parametrização."""
-    Parametrizacao = apps.get_model('candidatos', 'Parametrizacao')
+    Parametrizacao = apps.get_model("candidatos", "Parametrizacao")
     Parametrizacao.objects.all().delete()
+
 
 class Migration(migrations.Migration):
     dependencies = [
@@ -35,7 +36,9 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "uuid",
-                    models.UUIDField(default=uuid.uuid4, editable=False, unique=True),
+                    models.UUIDField(
+                        default=uuid.uuid4, editable=False, unique=True
+                    ),
                 ),
                 (
                     "criado_em",
@@ -51,7 +54,9 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "esta_ativo",
-                    models.BooleanField(default=True, verbose_name="Está Ativo?"),
+                    models.BooleanField(
+                        default=True, verbose_name="Está Ativo?"
+                    ),
                 ),
                 (
                     "porcentagem_pcd",
@@ -77,7 +82,6 @@ class Migration(migrations.Migration):
             },
         ),
         migrations.RunPython(
-            criar_parametrizacao_inicial,
-            reverter_parametrizacao_inicial
+            criar_parametrizacao_inicial, reverter_parametrizacao_inicial
         ),
     ]

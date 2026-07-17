@@ -69,7 +69,7 @@ def upsert_candidato_e_concurso(
     )
 
     def _none_if_empty(value: Any) -> Any:
-        """Converte strings vazias em None para campos opcionais."""
+        """Converta strings vazias em None para campos opcionais."""
         if value is None:
             return None
         try:

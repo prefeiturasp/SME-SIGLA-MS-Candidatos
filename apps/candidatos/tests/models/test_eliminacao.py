@@ -4,7 +4,6 @@ from time import sleep
 from uuid import uuid4
 
 import pytest
-
 from candidatos.models import ConcursoCandidatoEliminacao
 
 pytestmark = pytest.mark.django_db

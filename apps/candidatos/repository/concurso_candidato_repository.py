@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 from uuid import UUID
-
-from django.db.models import Count, Q, QuerySet
 
 from candidatos.models import ConcursoCandidato, ConcursoCandidatosLote
 from candidatos.serializer.concurso_candidato import (
@@ -14,6 +13,7 @@ from candidatos.serializer.concurso_candidato import (
     ConcursoCandidatoReclassificadoSerializer,
     ConcursoCandidatoSerializer,
 )
+from django.db.models import Count, Q, QuerySet
 
 
 class ConcursoCandidatoRepository:
@@ -25,7 +25,7 @@ class ConcursoCandidatoRepository:
         *,
         fields: list[str] | None = None,
     ) -> dict[str, Any]:
-        """Converte um concurso candidato em dicionário."""
+        """Converta um concurso candidato em dicionário."""
         kwargs: dict[str, Any] = {}
         if fields is not None:
             kwargs["fields"] = fields
@@ -38,7 +38,7 @@ class ConcursoCandidatoRepository:
         *,
         fields: list[str] | None = None,
     ) -> list[dict[str, Any]]:
-        """Converte lista/queryset de concurso candidato em dicionários."""
+        """Converta lista/queryset de concurso candidato em dicionários."""
         kwargs: dict[str, Any] = {}
         if fields is not None:
             kwargs["fields"] = fields
@@ -64,7 +64,6 @@ class ConcursoCandidatoRepository:
     ) -> list[dict[str, Any]]:
         """Serializa candidatos eliminados."""
         return ConcursoCandidatoEliminadoSerializer(itens, many=True).data
-
 
     @classmethod
     def queryset_vazio(cls) -> QuerySet[ConcursoCandidato]:
@@ -92,7 +91,7 @@ class ConcursoCandidatoRepository:
         *,
         campos_atualizacao: list[str] | None = None,
     ) -> None:
-        """Persiste alterações em um concurso candidato."""
+        """Persista alterações em um concurso candidato."""
         if campos_atualizacao:
             concurso_candidato.save(update_fields=campos_atualizacao)
         else:
@@ -130,9 +129,7 @@ class ConcursoCandidatoRepository:
         cls, itens: Iterable[ConcursoCandidato]
     ) -> None:
         """Atualiza em lote o campo ranking_escolha."""
-        ConcursoCandidato.objects.bulk_update(
-            list(itens), ["ranking_escolha"]
-        )
+        ConcursoCandidato.objects.bulk_update(list(itens), ["ranking_escolha"])
 
     @classmethod
     def bulk_atualizar_campos_lote(
@@ -268,7 +265,9 @@ class ConcursoCandidatoRepository:
         ).filter(filtro_q)
 
     @classmethod
-    def listar_ids(cls, queryset: QuerySet[ConcursoCandidato]) -> QuerySet[Any]:
+    def listar_ids(
+        cls, queryset: QuerySet[ConcursoCandidato]
+    ) -> QuerySet[Any]:
         """Retorna values_list de ids do queryset."""
         return queryset.values_list("id", flat=True)
 
@@ -305,7 +304,7 @@ class ConcursoCandidatoRepository:
         codigo_cargo: Any,
         limite: int,
     ) -> QuerySet[ConcursoCandidato]:
-        """Lista candidatos gerais não convocados ordenados por classificação."""
+        """Retorne gerais não convocados ordenados por classificação."""
         return (
             ConcursoCandidato.objects.filter(
                 lote=lote,

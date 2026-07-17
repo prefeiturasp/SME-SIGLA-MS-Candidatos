@@ -122,8 +122,8 @@ class ConcursoCandidatoAdmin(admin.ModelAdmin):
             level=messages.SUCCESS,
         )
 
-    marcar_nao_convocados.short_description = (
-        "Marcar como NÃO convocados (foi_convocado=False)"  # type: ignore[attr-defined]
+    marcar_nao_convocados.short_description = (  # type: ignore[attr-defined]
+        "Marcar como NÃO convocados (foi_convocado=False)"
     )
 
 

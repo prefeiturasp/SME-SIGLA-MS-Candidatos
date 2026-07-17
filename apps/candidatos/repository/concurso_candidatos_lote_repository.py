@@ -5,9 +5,8 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
-from django.db.models import QuerySet
-
 from candidatos.models import ConcursoCandidatosLote
+from django.db.models import QuerySet
 
 
 class ConcursoCandidatosLoteRepository:

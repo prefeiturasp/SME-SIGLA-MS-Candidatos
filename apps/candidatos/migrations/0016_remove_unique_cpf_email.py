@@ -3,7 +3,10 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("candidatos", "0015_concursocandidatoreclassificacao_nova_classificacao_and_more"),
+        (
+            "candidatos",
+            "0015_concursocandidatoreclassificacao_nova_classificacao_and_more",
+        ),
     ]
 
     operations = [
@@ -18,4 +21,3 @@ class Migration(migrations.Migration):
             field=models.EmailField(max_length=254, verbose_name="Email"),
         ),
     ]
-

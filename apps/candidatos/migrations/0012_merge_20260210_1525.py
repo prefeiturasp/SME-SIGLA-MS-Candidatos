@@ -6,9 +6,8 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('candidatos', '0009_remover_mascara_cpf_candidato'),
-        ('candidatos', '0011_alter_concursocandidatoeliminacao_id_and_more'),
+        ("candidatos", "0009_remover_mascara_cpf_candidato"),
+        ("candidatos", "0011_alter_concursocandidatoeliminacao_id_and_more"),
     ]
 
-    operations = [
-    ]
+    operations = []

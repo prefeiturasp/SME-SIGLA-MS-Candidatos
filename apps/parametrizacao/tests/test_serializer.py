@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from parametrizacao.models import Parametrizacao
 from parametrizacao.serializer import ParametrizacaoSerializer
 

@@ -1,16 +1,21 @@
+"""URL configuration for candidatos project."""
+
+from typing import Any
+
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.http import JsonResponse
+from django.http import HttpRequest, JsonResponse
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 
-def healthcheck(_request):
+def healthcheck(_request: HttpRequest) -> JsonResponse:
+    """Retorne status de saúde da aplicação."""
     return JsonResponse({"status": "ok"})
 
 
-_core_urlpatterns = [
+_core_urlpatterns: list[Any] = [
     path("admin/", admin.site.urls),
     path("api/v1/", include("candidatos.api.urls")),
     path("api/v1/", include("parametrizacao.api.urls")),
@@ -23,7 +28,7 @@ _core_urlpatterns = [
     path("", healthcheck, name="healthcheck"),
 ]
 
-_static_urlpatterns = static(
+_static_urlpatterns: list[Any] = static(
     settings.MEDIA_URL, document_root=settings.MEDIA_ROOT
 ) + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
@@ -31,7 +36,7 @@ _static_urlpatterns = static(
 # para bater com STATIC_URL e MEDIA_URL usados pelo admin e pelo collectstatic.
 if getattr(settings, "DJANGO_ENVIRONMENT", "local") != "local":
     _ms_prefix = getattr(settings, "MS_PATH", "/ms-candidatos").strip("/")
-    urlpatterns = [
+    urlpatterns: list[Any] = [
         path(f"{_ms_prefix}/", include(_core_urlpatterns)),
     ] + _static_urlpatterns
 else:

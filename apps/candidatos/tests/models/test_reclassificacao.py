@@ -3,7 +3,6 @@
 from uuid import uuid4
 
 import pytest
-
 from candidatos.models import ConcursoCandidatoReclassificacao
 
 pytestmark = pytest.mark.django_db
@@ -36,7 +35,9 @@ class TestConcursoCandidatoReclassificacao:
         assert rec.desclassificado_de == "PCD"
         assert rec.processo_uuid is not None
 
-    def test_str_retorna_concurso_candidato_id_e_cota(self, concurso_candidato):
+    def test_str_retorna_concurso_candidato_id_e_cota(
+        self, concurso_candidato
+    ):
         """Testa str retorna concurso candidato id e cota."""
         rec = ConcursoCandidatoReclassificacao.objects.create(
             concurso_candidato=concurso_candidato, desclassificado_de="NNA"

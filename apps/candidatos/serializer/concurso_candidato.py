@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from rest_framework import serializers
-
 from candidatos.models import ConcursoCandidato
+from rest_framework import serializers
 
 
 class DynamicFieldsSerializer(serializers.ModelSerializer):
@@ -92,7 +91,7 @@ class ConcursoCandidatoSerializer(DynamicFieldsSerializer):
             ConcursoCandidatoReclassificacaoRepository,
         )
 
-        return ConcursoCandidatoReclassificacaoRepository.listar_serializado_por_concurso_candidato(
+        return ConcursoCandidatoReclassificacaoRepository.listar_serializado_por_concurso_candidato(  # noqa: E501
             obj
         )
 

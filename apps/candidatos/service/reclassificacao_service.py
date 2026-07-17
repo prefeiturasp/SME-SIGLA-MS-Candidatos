@@ -5,9 +5,6 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from django.db import transaction
-from sigla_sdk.context import get_correlation_id
-
 from candidatos.models import (
     ConcursoCandidato,
     ConcursoCandidatoReclassificacao,
@@ -16,6 +13,8 @@ from candidatos.repository import (
     ConcursoCandidatoReclassificacaoRepository,
     ConcursoCandidatoRepository,
 )
+from django.db import transaction
+from sigla_sdk.context import get_correlation_id
 
 logger = logging.getLogger(__name__)
 

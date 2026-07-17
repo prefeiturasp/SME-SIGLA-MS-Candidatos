@@ -10,15 +10,14 @@ do arquivo de lote.
 import logging
 from typing import Any
 
-from django.db import transaction
-
 from candidatos.models import ConcursoCandidato
 from candidatos.models.candidato import Candidato
 from candidatos.repository import (
     CandidatoRepository,
     ConcursoCandidatoRepository,
 )
-from candidatos.service.exceptions import SalvarLotesException
+from candidatos.service.exceptions import SalvarLotesError
+from django.db import transaction
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +34,7 @@ def salvar_lotes(concurso_uuid: str, lotes: list[dict[str, Any]]) -> int:
         Quantidade de registros processados.
 
     Raises:
-        SalvarLotesException: Se houver erro ao persistir os lotes.
+        SalvarLotesError: Se houver erro ao persistir os lotes.
     """
     erros: list[str] = []
 
@@ -88,7 +87,7 @@ def salvar_lotes(concurso_uuid: str, lotes: list[dict[str, Any]]) -> int:
         total_atualizados += 1
 
     if erros:
-        raise SalvarLotesException(
+        raise SalvarLotesError(
             mensagem="Falha ao salvar lotes. Nenhuma alteracao foi persistida.",  # noqa: E501
             detalhes="\n".join(erros),
         )

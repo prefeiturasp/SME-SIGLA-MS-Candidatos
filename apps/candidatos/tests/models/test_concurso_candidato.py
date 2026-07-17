@@ -3,10 +3,9 @@
 from uuid import uuid4
 
 import pytest
-from django.utils import timezone
-
 from candidatos.models import ConcursoCandidato
 from candidatos.models.concurso_candidato import CATEGORIA_CHOICES
+from django.utils import timezone
 
 pytestmark = pytest.mark.django_db
 

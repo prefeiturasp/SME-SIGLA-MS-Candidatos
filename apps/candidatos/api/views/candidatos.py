@@ -4,12 +4,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from django.db.models import Q
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, status, viewsets
-from rest_framework.decorators import action
-from rest_framework.response import Response
-
 from candidatos.models import Candidato
 from candidatos.repository import (
     CandidatoRepository,
@@ -22,6 +16,11 @@ from candidatos.serializers import (
 from candidatos.service.candidato_lote_service import (
     processar_criacao_candidatos_lote,
 )
+from django.db.models import Q
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 
 class CandidatoViewSet(viewsets.ModelViewSet):

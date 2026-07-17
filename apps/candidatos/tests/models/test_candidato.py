@@ -4,7 +4,6 @@ from datetime import date
 from uuid import uuid4
 
 import pytest
-
 from candidatos.models import Candidato
 
 pytestmark = pytest.mark.django_db
@@ -48,21 +47,21 @@ def test_candidato_meta_opcoes():
 
 def test_candidato_status_choices():
     """Testa as choices de status do candidato."""
-    assert Candidato.STATUS_CHOICES == [
+    assert [
         ("ativo", "Ativo"),
         ("inativo", "Inativo"),
         ("suspenso", "Suspenso"),
-    ]
+    ] == Candidato.STATUS_CHOICES
 
 
 def test_candidato_genero_choices():
     """Testa as choices de gênero do candidato."""
-    assert Candidato.GENERO_CHOICES == [
+    assert [
         ("M", "Masculino"),
         ("F", "Feminino"),
         ("O", "Outro"),
         ("N", "Prefiro não informar"),
-    ]
+    ] == Candidato.GENERO_CHOICES
 
 
 def test_candidato_ordenacao_por_nome(criar_candidato):

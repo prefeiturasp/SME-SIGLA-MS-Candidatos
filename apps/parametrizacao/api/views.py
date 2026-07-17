@@ -4,12 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
+from parametrizacao.models import Parametrizacao
+from parametrizacao.serializer import ParametrizacaoSerializer
 from rest_framework import mixins, status, viewsets
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-
-from parametrizacao.models import Parametrizacao
-from parametrizacao.serializer import ParametrizacaoSerializer
 
 
 class ParametrizacaoViewSet(
