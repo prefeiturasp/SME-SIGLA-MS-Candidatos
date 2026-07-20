@@ -5,9 +5,8 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
-from django.db.models import QuerySet
-
 from candidatos.models import ConcursoCandidatoEliminacao
+from django.db.models import QuerySet
 
 
 class ConcursoCandidatoEliminacaoRepository:
@@ -17,7 +16,7 @@ class ConcursoCandidatoEliminacaoRepository:
     def serializar(
         historico: ConcursoCandidatoEliminacao,
     ) -> dict[str, Any]:
-        """Converte um histórico de eliminação em dicionário."""
+        """Converta um histórico de eliminação em dicionário."""
         return {
             "uuid": str(historico.uuid) if historico.uuid else None,
             "motivo": historico.motivo,
@@ -33,10 +32,12 @@ class ConcursoCandidatoEliminacaoRepository:
     @classmethod
     def serializar_lista(
         cls,
-        historicos: list[ConcursoCandidatoEliminacao]
-        | QuerySet[ConcursoCandidatoEliminacao],
+        historicos: (
+            list[ConcursoCandidatoEliminacao]
+            | QuerySet[ConcursoCandidatoEliminacao]
+        ),
     ) -> list[dict[str, Any]]:
-        """Converte lista/queryset de históricos em dicionários."""
+        """Converta lista/queryset de históricos em dicionários."""
         return [cls.serializar(item) for item in historicos]
 
     @classmethod

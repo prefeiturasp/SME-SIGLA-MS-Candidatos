@@ -1,8 +1,7 @@
 """Módulo serializer/candidato."""
 
-from rest_framework import serializers
-
 from candidatos.models import Candidato
+from rest_framework import serializers
 
 from .concurso_candidato import ConcursoCandidatoSerializer
 

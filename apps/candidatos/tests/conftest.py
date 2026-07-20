@@ -3,14 +3,13 @@
 from uuid import uuid4
 
 import pytest
-from django.urls import reverse
-from rest_framework.test import APIClient
-
 from candidatos.models import (
     Candidato,
     ConcursoCandidato,
     ConcursoCandidatosLote,
 )
+from django.urls import reverse
+from rest_framework.test import APIClient
 
 
 @pytest.fixture
@@ -97,7 +96,7 @@ def candidatos_criados(candidato_data, candidato_data_2, candidato_data_3):
 
 @pytest.fixture
 def criar_candidato():
-    """Factory para criar candidatos de exemplo no banco."""
+    """Crie candidatos de exemplo no banco."""
 
     def _criar(**overrides):
         dados = {
@@ -128,7 +127,7 @@ def candidato(criar_candidato):
 
 @pytest.fixture
 def criar_lote():
-    """Factory para criar lotes de exemplo no banco."""
+    """Crie lotes de exemplo no banco."""
 
     def _criar(**overrides):
         dados = {

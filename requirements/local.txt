@@ -4,15 +4,25 @@
 django-debug-toolbar==4.3.0
 django-extensions==3.2.3
 ipython==8.18.1
+pre-commit>=3.8,<4
 
 # Testing
-pytest==7.4.3
-pytest-django==4.7.0
-pytest-cov==4.1.0
+coverage>=7.6,<8
 factory-boy==3.3.0
+pytest==7.4.3
+pytest-cov==4.1.0
+pytest-django==4.7.0
+
+# Linting / formatting
+black>=24.8,<25
 ruff==0.6.9
 
-mypy==1.14.1
+# Type checking
 django-stubs==5.1.1
 djangorestframework-stubs==3.15.1
+mypy==1.14.1
 types-requests==2.32.0.20241016
+
+# Docs
+myst-parser>=4.0,<5
+sphinx>=8.1,<9

@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Any, Iterable
-
-from django.db.models import QuerySet
+from collections.abc import Iterable
+from typing import Any
 
 from candidatos.models import Candidato
 from candidatos.serializer.candidato import CandidatoSerializer
+from django.db.models import QuerySet
 
 
 class CandidatoRepository:
@@ -15,14 +15,14 @@ class CandidatoRepository:
 
     @staticmethod
     def serializar(candidato: Candidato) -> dict[str, Any]:
-        """Converte um candidato em dicionário."""
+        """Converta um candidato em dicionário."""
         return CandidatoSerializer(candidato).data
 
     @classmethod
     def serializar_lista(
         cls, candidatos: list[Candidato] | QuerySet[Candidato]
     ) -> list[dict[str, Any]]:
-        """Converte uma lista ou queryset de candidatos em dicionários."""
+        """Converta uma lista ou queryset de candidatos em dicionários."""
         return CandidatoSerializer(candidatos, many=True).data
 
     @classmethod

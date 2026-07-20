@@ -5,15 +5,14 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from django.db import transaction
-from django.utils import timezone
-from sigla_sdk.context import get_correlation_id
-
 from candidatos.models import ConcursoCandidato, ConcursoCandidatoEliminacao
 from candidatos.repository import (
     ConcursoCandidatoEliminacaoRepository,
     ConcursoCandidatoRepository,
 )
+from django.db import transaction
+from django.utils import timezone
+from sigla_sdk.context import get_correlation_id
 
 logger = logging.getLogger(__name__)
 

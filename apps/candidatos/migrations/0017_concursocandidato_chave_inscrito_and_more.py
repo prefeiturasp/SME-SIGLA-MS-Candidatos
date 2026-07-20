@@ -13,7 +13,10 @@ class Migration(migrations.Migration):
             model_name="concursocandidato",
             name="chave_inscrito",
             field=models.CharField(
-                blank=True, max_length=50, null=True, verbose_name="Chave do Inscrito"
+                blank=True,
+                max_length=50,
+                null=True,
+                verbose_name="Chave do Inscrito",
             ),
         ),
         migrations.AddField(

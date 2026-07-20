@@ -1,8 +1,7 @@
 """Módulo serializer/parametrizacao."""
 
-from rest_framework import serializers
-
 from parametrizacao.models import Parametrizacao
+from rest_framework import serializers
 
 
 class ParametrizacaoSerializer(serializers.ModelSerializer):

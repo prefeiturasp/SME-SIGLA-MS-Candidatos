@@ -5,13 +5,12 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from rest_framework import status, viewsets
-from rest_framework.response import Response
-
 from candidatos.repository import (
     ConcursoCandidatoRepository,
     ConcursoCandidatosLoteRepository,
 )
+from rest_framework import status, viewsets
+from rest_framework.response import Response
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +41,7 @@ class EliminadosViewSet(viewsets.ViewSet):
         )
         if not lote:
             return Response({"geral": [], "nna": [], "pcd": []})
-        base = ConcursoCandidatoRepository.filtrar_eliminados_por_processo_e_classificacao(
+        base = ConcursoCandidatoRepository.filtrar_eliminados_por_processo_e_classificacao(  # noqa: E501
             lote=lote,
             processo_uuid=processo_uuid,
             classificacao_min=classificacao_min,

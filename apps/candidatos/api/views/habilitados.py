@@ -5,14 +5,6 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from django.core.exceptions import FieldError
-from django.db import models
-from django.utils import timezone
-from rest_framework import status, viewsets
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from sigla_sdk.context import get_correlation_id
-
 from candidatos.models import ConcursoCandidato
 from candidatos.repository import (
     ConcursoCandidatoRepository,
@@ -28,13 +20,13 @@ from candidatos.serializers import (
     ReclassificarSerializer,
     SalvarLotesSerializer,
 )
+from candidatos.service.agendas_api_service import AgendasApiService
 from candidatos.service.calculo_habilitados_service import (
     gerar_sequencia_convocados,
 )
 from candidatos.service.eliminacao_service import aplicar_eliminacao
-from candidatos.service.agendas_api_service import AgendasApiService
 from candidatos.service.escolhas_service import EscolhasService
-from candidatos.service.exceptions import SalvarLotesException
+from candidatos.service.exceptions import SalvarLotesError
 from candidatos.service.extracao_dados_service import montar_extracao_dados
 from candidatos.service.lotes_service import (
     salvar_lotes as salvar_lotes_service,
@@ -44,6 +36,13 @@ from candidatos.service.ranking_service import (
     atualizar_ranking_escolha,
 )
 from candidatos.service.reclassificacao_service import aplicar_reclassificacao
+from django.core.exceptions import FieldError
+from django.db import models
+from django.utils import timezone
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from sigla_sdk.context import get_correlation_id
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +51,8 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
     """ViewSet baseado em ConcursoCandidato."""
 
     queryset = ConcursoCandidato.objects.select_related(
-        "candidato", "lote").all()
+        "candidato", "lote"
+    ).all()
     serializer_class = ConcursoCandidatoSerializer
     pagination_class = None
     filterset_fields = {
@@ -107,8 +107,8 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         return serializer_class(*args, **kwargs)
 
     @action(detail=False, methods=["post"], url_path="extracao-dados")
-    def extracao_dados(self, request):
-        """Action de habilitados e convocações para extração de dados."""
+    def extracao_dados(self, request: Any) -> Any:
+        """Extraia dados de habilitados e convocações."""
         serializer = ExtracaoDadosSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         dados = serializer.validated_data
@@ -386,7 +386,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
 
         def to_int(value: Any) -> Any:
-            """Converte valor de query string em inteiro."""
+            """Converta valor de query string em inteiro."""
             try:
                 return int(str(value))
             except Exception:
@@ -770,7 +770,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             total = salvar_lotes_service(
                 concurso_uuid=concurso_uuid, lotes=lotes
             )
-        except SalvarLotesException as exc:
+        except SalvarLotesError as exc:
             logger.warning("Erro de negocio ao salvar lotes: %s", exc)
             return Response(
                 {"mensagem": exc.mensagem, "detail": exc.detalhes},

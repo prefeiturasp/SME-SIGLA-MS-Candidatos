@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from parametrizacao.models import Parametrizacao
 
 pytestmark = pytest.mark.django_db

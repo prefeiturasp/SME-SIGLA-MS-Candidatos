@@ -6,14 +6,13 @@ import contextlib
 import math
 from typing import Any
 
-from django.db.models import Q
-from django.utils import timezone
-
 from candidatos.repository import (
     ConcursoCandidatoEliminacaoRepository,
     ConcursoCandidatoReclassificacaoRepository,
     ConcursoCandidatoRepository,
 )
+from django.db.models import Q
+from django.utils import timezone
 from parametrizacao.models import Parametrizacao
 
 from .ranking_service import atualizar_ranking, atualizar_ranking_escolha
@@ -260,15 +259,11 @@ def gerar_sequencia_convocados(
         )
     )
     convocados_total = ConcursoCandidatoRepository.contar(convocados_qs)
-    convocados_nna = (
-        ConcursoCandidatoRepository.contar_por_categoria_efetiva(
-            convocados_qs, "NNA"
-        )
+    convocados_nna = ConcursoCandidatoRepository.contar_por_categoria_efetiva(
+        convocados_qs, "NNA"
     )
-    convocados_pcd = (
-        ConcursoCandidatoRepository.contar_por_categoria_efetiva(
-            convocados_qs, "PCD"
-        )
+    convocados_pcd = ConcursoCandidatoRepository.contar_por_categoria_efetiva(
+        convocados_qs, "PCD"
     )
     convocados_geral = (
         ConcursoCandidatoRepository.contar_por_categoria_efetiva(
@@ -381,8 +376,10 @@ def gerar_sequencia_convocados(
     for obj in geral_list:
         try:
             if getattr(obj, "classificacao_nna", None) is not None and (
-                not ConcursoCandidatoReclassificacaoRepository.existe_desclassificacao(
-                    obj, "NNA"
+                not (
+                    ConcursoCandidatoReclassificacaoRepository.existe_desclassificacao(
+                        obj, "NNA"
+                    )
                 )
             ):
                 obj.categoria_efetiva = "GERAL"
@@ -391,8 +388,10 @@ def gerar_sequencia_convocados(
                 obj.promovido_em = now
                 promovidos_to_update.append(obj)
             elif getattr(obj, "classificacao_pcd", None) is not None and (
-                not ConcursoCandidatoReclassificacaoRepository.existe_desclassificacao(
-                    obj, "PCD"
+                not (
+                    ConcursoCandidatoReclassificacaoRepository.existe_desclassificacao(
+                        obj, "PCD"
+                    )
                 )
             ):
                 obj.categoria_efetiva = "GERAL"

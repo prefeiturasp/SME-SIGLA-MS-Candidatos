@@ -6,13 +6,15 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('candidatos', '0004_concursocandidato_ranking'),
+        ("candidatos", "0004_concursocandidato_ranking"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='concursocandidato',
-            name='pontos',
-            field=models.FloatField(blank=True, null=True, verbose_name='Pontos'),
+            model_name="concursocandidato",
+            name="pontos",
+            field=models.FloatField(
+                blank=True, null=True, verbose_name="Pontos"
+            ),
         ),
     ]

@@ -2,12 +2,11 @@
 
 from typing import Any
 
-from rest_framework import status
-
 from candidatos.repository import (
     ConcursoCandidatoRepository,
     ConcursoCandidatosLoteRepository,
 )
+from rest_framework import status
 
 from .candidato_service import upsert_candidato_e_concurso
 

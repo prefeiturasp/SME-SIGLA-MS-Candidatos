@@ -25,7 +25,9 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "uuid",
-                    models.UUIDField(default=uuid.uuid4, editable=False, unique=True),
+                    models.UUIDField(
+                        default=uuid.uuid4, editable=False, unique=True
+                    ),
                 ),
                 (
                     "criado_em",
@@ -41,7 +43,9 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "esta_ativo",
-                    models.BooleanField(default=True, verbose_name="Está Ativo?"),
+                    models.BooleanField(
+                        default=True, verbose_name="Está Ativo?"
+                    ),
                 ),
                 ("nome", models.CharField(max_length=200)),
                 ("cpf", models.CharField(max_length=14, unique=True)),
@@ -49,7 +53,10 @@ class Migration(migrations.Migration):
                 ("telefone", models.CharField(blank=True, max_length=20)),
                 ("celular", models.CharField(blank=True, max_length=20)),
                 ("rg", models.CharField(blank=True, max_length=20)),
-                ("registro_funcional", models.CharField(blank=True, max_length=50)),
+                (
+                    "registro_funcional",
+                    models.CharField(blank=True, max_length=50),
+                ),
                 ("vinculo", models.CharField(blank=True, max_length=100)),
                 ("data_nascimento", models.DateField()),
                 (
@@ -106,7 +113,9 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "uuid",
-                    models.UUIDField(default=uuid.uuid4, editable=False, unique=True),
+                    models.UUIDField(
+                        default=uuid.uuid4, editable=False, unique=True
+                    ),
                 ),
                 (
                     "criado_em",
@@ -122,10 +131,15 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "esta_ativo",
-                    models.BooleanField(default=True, verbose_name="Está Ativo?"),
+                    models.BooleanField(
+                        default=True, verbose_name="Está Ativo?"
+                    ),
                 ),
                 ("concurso_uuid", models.UUIDField()),
-                ("concurso_nome", models.CharField(blank=True, max_length=255)),
+                (
+                    "concurso_nome",
+                    models.CharField(blank=True, max_length=255),
+                ),
             ],
             options={
                 "verbose_name": "Lote de Candidatos do Concurso",
@@ -147,7 +161,9 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "uuid",
-                    models.UUIDField(default=uuid.uuid4, editable=False, unique=True),
+                    models.UUIDField(
+                        default=uuid.uuid4, editable=False, unique=True
+                    ),
                 ),
                 (
                     "criado_em",
@@ -163,39 +179,58 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "esta_ativo",
-                    models.BooleanField(default=True, verbose_name="Está Ativo?"),
+                    models.BooleanField(
+                        default=True, verbose_name="Está Ativo?"
+                    ),
                 ),
                 (
                     "codigo_inscricao",
-                    models.CharField(max_length=30, verbose_name="Código de Inscrição"),
+                    models.CharField(
+                        max_length=30, verbose_name="Código de Inscrição"
+                    ),
                 ),
                 (
                     "pontos",
-                    models.CharField(blank=True, max_length=20, verbose_name="Pontos"),
+                    models.CharField(
+                        blank=True, max_length=20, verbose_name="Pontos"
+                    ),
                 ),
                 (
                     "opcao_concurso",
                     models.CharField(
-                        blank=True, max_length=50, verbose_name="Opção de Concurso"
+                        blank=True,
+                        max_length=50,
+                        verbose_name="Opção de Concurso",
                     ),
                 ),
                 (
                     "codigo_cargo",
                     models.CharField(
-                        blank=True, max_length=20, verbose_name="Código do Cargo"
+                        blank=True,
+                        max_length=20,
+                        verbose_name="Código do Cargo",
                     ),
                 ),
                 (
                     "cota",
-                    models.CharField(blank=True, max_length=50, verbose_name="Cota"),
+                    models.CharField(
+                        blank=True, max_length=50, verbose_name="Cota"
+                    ),
                 ),
                 (
                     "descricao_cargo",
                     models.CharField(
-                        blank=True, max_length=200, verbose_name="Descrição do Cargo"
+                        blank=True,
+                        max_length=200,
+                        verbose_name="Descrição do Cargo",
                     ),
                 ),
-                ("df", models.CharField(blank=True, max_length=50, verbose_name="DF")),
+                (
+                    "df",
+                    models.CharField(
+                        blank=True, max_length=50, verbose_name="DF"
+                    ),
+                ),
                 (
                     "classificacao",
                     models.IntegerField(
@@ -217,18 +252,27 @@ class Migration(migrations.Migration):
                 (
                     "ano_concurso",
                     models.CharField(
-                        blank=True, max_length=10, verbose_name="Ano do Concurso"
+                        blank=True,
+                        max_length=10,
+                        verbose_name="Ano do Concurso",
                     ),
                 ),
-                ("observacao", models.TextField(blank=True, verbose_name="Observação")),
+                (
+                    "observacao",
+                    models.TextField(blank=True, verbose_name="Observação"),
+                ),
                 (
                     "foi_convocado",
-                    models.BooleanField(default=False, verbose_name="Foi Convocado?"),
+                    models.BooleanField(
+                        default=False, verbose_name="Foi Convocado?"
+                    ),
                 ),
                 (
                     "data_convocacao",
                     models.DateTimeField(
-                        blank=True, null=True, verbose_name="Data de Convocação"
+                        blank=True,
+                        null=True,
+                        verbose_name="Data de Convocação",
                     ),
                 ),
                 (

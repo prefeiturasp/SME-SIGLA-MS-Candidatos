@@ -1,9 +1,9 @@
-"""
-Django settings for candidatos project.
-"""
+"""Django settings for candidatos project."""
 
 import os
 import sys
+import threading
+from datetime import timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -107,16 +107,16 @@ else:
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",  # noqa: E501
     },
     {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",  # noqa: E501
     },
     {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",  # noqa: E501
     },
     {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",  # noqa: E501
     },
 ]
 
@@ -145,7 +145,9 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # REST Framework settings
 REST_FRAMEWORK = {
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "DEFAULT_PAGINATION_CLASS": (
+        "rest_framework.pagination.PageNumberPagination"
+    ),
     "PAGE_SIZE": 20,
     "DEFAULT_FILTER_BACKENDS": [
         "django_filters.rest_framework.DjangoFilterBackend",
@@ -176,8 +178,6 @@ CORS_ALLOWED_ORIGINS = (
 # Audit Log settings
 AUDITLOG_INCLUDE_ALL_MODELS = True
 
-import threading
-
 _thread_locals = threading.local()
 
 LOGGING = {
@@ -186,7 +186,10 @@ LOGGING = {
     "formatters": {
         "json": {
             "()": "sigla_sdk.logging.json_formatter.CustomJsonFormatter",
-            "format": "%(levelname)s %(asctime)s %(module)s %(filename)s %(lineno)d %(funcName)s %(message)s",
+            "format": (  # noqa: E501
+                "%(levelname)s %(asctime)s %(module)s %(filename)s "
+                "%(lineno)d %(funcName)s %(message)s"
+            ),
         },
     },
     "handlers": {
@@ -211,7 +214,9 @@ LOGGING = {
         },
         "django.server": {
             "handlers": ["console"],
-            "level": "ERROR",  # Alterando para ERROR, ele para de mostrar os GET/POST/OPTIONS de rotina (INFO)
+            # Alterando para ERROR, ele para de mostrar os GET/POST/OPTIONS
+            # de rotina (INFO)
+            "level": "ERROR",
             "propagate": False,
         },
     },
@@ -233,8 +238,6 @@ SPECTACULAR_SETTINGS = {
     # },
     # "SECURITY": [{"ApiKeyAuth": []}],
 }
-
-from datetime import timedelta
 
 JWT_SIGNING_KEY = os.environ.get(
     "JWT_SIGNING_KEY",

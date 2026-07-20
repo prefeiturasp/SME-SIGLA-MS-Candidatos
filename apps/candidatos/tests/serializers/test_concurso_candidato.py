@@ -4,7 +4,6 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
-
 from candidatos.models import ConcursoCandidatoReclassificacao
 from candidatos.serializer.concurso_candidato import (
     BuscarPorCpfsSerializer,
@@ -66,12 +65,9 @@ def test_get_concurso_uuid_do_objeto_e_sem_lote():
     """Testa get_concurso_uuid via atributo direto e ausência de lote."""
     serializer = ConcursoCandidatoSerializer()
     concurso_uuid = uuid4()
-    assert (
-        serializer.get_concurso_uuid(
-            SimpleNamespace(concurso_uuid=concurso_uuid, lote=None)
-        )
-        == str(concurso_uuid)
-    )
+    assert serializer.get_concurso_uuid(
+        SimpleNamespace(concurso_uuid=concurso_uuid, lote=None)
+    ) == str(concurso_uuid)
     assert serializer.get_concurso_uuid(SimpleNamespace(lote=None)) is None
 
 

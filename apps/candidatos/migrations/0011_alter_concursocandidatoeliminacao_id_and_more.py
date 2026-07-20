@@ -7,28 +7,42 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('candidatos', '0010_remove_acao_from_eliminacao'),
+        ("candidatos", "0010_remove_acao_from_eliminacao"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='concursocandidatoeliminacao',
-            name='id',
-            field=models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
+            model_name="concursocandidatoeliminacao",
+            name="id",
+            field=models.BigAutoField(
+                auto_created=True,
+                primary_key=True,
+                serialize=False,
+                verbose_name="ID",
+            ),
         ),
         migrations.AlterField(
-            model_name='concursocandidatoeliminacao',
-            name='uuid',
-            field=models.UUIDField(default=uuid.uuid4, editable=False, unique=True),
+            model_name="concursocandidatoeliminacao",
+            name="uuid",
+            field=models.UUIDField(
+                default=uuid.uuid4, editable=False, unique=True
+            ),
         ),
         migrations.AlterField(
-            model_name='concursocandidatoreclassificacao',
-            name='id',
-            field=models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
+            model_name="concursocandidatoreclassificacao",
+            name="id",
+            field=models.BigAutoField(
+                auto_created=True,
+                primary_key=True,
+                serialize=False,
+                verbose_name="ID",
+            ),
         ),
         migrations.AlterField(
-            model_name='concursocandidatoreclassificacao',
-            name='uuid',
-            field=models.UUIDField(default=uuid.uuid4, editable=False, unique=True),
+            model_name="concursocandidatoreclassificacao",
+            name="uuid",
+            field=models.UUIDField(
+                default=uuid.uuid4, editable=False, unique=True
+            ),
         ),
     ]

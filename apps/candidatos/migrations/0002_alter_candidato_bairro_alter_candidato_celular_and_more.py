@@ -13,22 +13,30 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="candidato",
             name="bairro",
-            field=models.CharField(blank=True, max_length=120, verbose_name="Bairro"),
+            field=models.CharField(
+                blank=True, max_length=120, verbose_name="Bairro"
+            ),
         ),
         migrations.AlterField(
             model_name="candidato",
             name="celular",
-            field=models.CharField(blank=True, max_length=20, verbose_name="Celular"),
+            field=models.CharField(
+                blank=True, max_length=20, verbose_name="Celular"
+            ),
         ),
         migrations.AlterField(
             model_name="candidato",
             name="cep",
-            field=models.CharField(blank=True, max_length=9, verbose_name="CEP"),
+            field=models.CharField(
+                blank=True, max_length=9, verbose_name="CEP"
+            ),
         ),
         migrations.AlterField(
             model_name="candidato",
             name="cidade",
-            field=models.CharField(blank=True, max_length=100, verbose_name="Cidade"),
+            field=models.CharField(
+                blank=True, max_length=100, verbose_name="Cidade"
+            ),
         ),
         migrations.AlterField(
             model_name="candidato",
@@ -40,7 +48,9 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="candidato",
             name="cpf",
-            field=models.CharField(max_length=14, unique=True, verbose_name="CPF"),
+            field=models.CharField(
+                max_length=14, unique=True, verbose_name="CPF"
+            ),
         ),
         migrations.AlterField(
             model_name="candidato",
@@ -50,7 +60,9 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="candidato",
             name="email",
-            field=models.EmailField(max_length=254, unique=True, verbose_name="Email"),
+            field=models.EmailField(
+                max_length=254, unique=True, verbose_name="Email"
+            ),
         ),
         migrations.AlterField(
             model_name="candidato",
@@ -60,7 +72,9 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="candidato",
             name="estado",
-            field=models.CharField(blank=True, max_length=2, verbose_name="Estado"),
+            field=models.CharField(
+                blank=True, max_length=2, verbose_name="Estado"
+            ),
         ),
         migrations.AlterField(
             model_name="candidato",
@@ -85,7 +99,9 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="candidato",
             name="numero",
-            field=models.CharField(blank=True, max_length=20, verbose_name="Número"),
+            field=models.CharField(
+                blank=True, max_length=20, verbose_name="Número"
+            ),
         ),
         migrations.AlterField(
             model_name="candidato",
@@ -102,7 +118,9 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="candidato",
             name="rg",
-            field=models.CharField(blank=True, max_length=20, verbose_name="RG"),
+            field=models.CharField(
+                blank=True, max_length=20, verbose_name="RG"
+            ),
         ),
         migrations.AlterField(
             model_name="candidato",
@@ -121,11 +139,15 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="candidato",
             name="telefone",
-            field=models.CharField(blank=True, max_length=20, verbose_name="Telefone"),
+            field=models.CharField(
+                blank=True, max_length=20, verbose_name="Telefone"
+            ),
         ),
         migrations.AlterField(
             model_name="candidato",
             name="vinculo",
-            field=models.CharField(blank=True, max_length=100, verbose_name="Vínculo"),
+            field=models.CharField(
+                blank=True, max_length=100, verbose_name="Vínculo"
+            ),
         ),
     ]

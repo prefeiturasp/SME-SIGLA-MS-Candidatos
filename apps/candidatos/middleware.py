@@ -1,14 +1,26 @@
+"""Middleware de correlação e logging de requisições."""
+
+from __future__ import annotations
+
+import contextlib
 import json
 import logging
 import time
 import uuid
+from collections.abc import Callable
 
-from sigla_sdk.context import clear_request_context, set_auth_header, set_correlation_id
+from django.http import HttpRequest, HttpResponse
+from sigla_sdk.context import (
+    clear_request_context,
+    set_auth_header,
+    set_correlation_id,
+)
 
 logger = logging.getLogger("django.request_logger")
 
 
-def _get_request_header(request, name: str):
+def _get_request_header(request: HttpRequest, name: str) -> str | None:
+    """Obtenha um header da requisição."""
     headers = getattr(request, "headers", None)
     if headers is not None:
         return headers.get(name)
@@ -17,30 +29,37 @@ def _get_request_header(request, name: str):
 
 
 class CorrelationIdMiddleware:
-    def __init__(self, get_response):
+    """Propague correlation ID e registre metadados da requisição."""
+
+    def __init__(
+        self, get_response: Callable[[HttpRequest], HttpResponse]
+    ) -> None:
+        """Inicialize o middleware."""
         self.get_response = get_response
 
-    def __call__(self, request):
+    def __call__(self, request: HttpRequest) -> HttpResponse:
+        """Handle the request with a correlation ID."""
         start_time = time.perf_counter()
 
-        cid = _get_request_header(request, "X-Correlation-ID") or str(uuid.uuid4())
+        cid = _get_request_header(request, "X-Correlation-ID") or str(
+            uuid.uuid4()
+        )
         set_correlation_id(cid)
         set_auth_header(_get_request_header(request, "Authorization"))
 
-        payload = None
         if getattr(request, "method", None) in ["POST", "PUT", "PATCH"]:
             try:
                 content_type = getattr(request, "content_type", "") or ""
                 body = getattr(request, "body", b"") or b""
                 if content_type.startswith("application/json") and body:
-                    payload = json.loads(body)
+                    json.loads(body)
                 else:
                     post = getattr(request, "POST", None)
-                    payload = (post.dict() if post is not None else None) or body.decode(
+                    (post.dict() if post is not None else None) or body.decode(
                         "utf-8", errors="replace"
                     )
             except Exception:
-                payload = "<erro_ao_ler_payload>"
+                pass
 
         response = self.get_response(request)
 
@@ -51,16 +70,15 @@ class CorrelationIdMiddleware:
                 "path": getattr(request, "path", None),
                 "status_code": getattr(response, "status_code", None),
                 "duration_ms": round(duration_ms, 2),
-                # "payload": payload,
                 "user": str(getattr(request, "user", "Anonymous")),
             }
-            logger.info(f"{extra_data['method']} {extra_data['path']}", extra=extra_data)
+            logger.info(
+                f"{extra_data['method']} {extra_data['path']}",
+                extra=extra_data,
+            )
 
-        try:
+        with contextlib.suppress(Exception):
             response["X-Correlation-ID"] = cid
-        except Exception:
-            pass
 
         clear_request_context()
         return response
-
