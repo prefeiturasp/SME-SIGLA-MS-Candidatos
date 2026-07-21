@@ -452,7 +452,7 @@ def test_habilitados_calculados_sem_lote_retorna_404(api_client):
     )
 
 
-@patch("candidatos.api.views.habilitados.EscolhasService.buscar_escolhas")
+@patch("candidatos.api.views.habilitados.EscolhasApiService.buscar_escolhas")
 @patch("candidatos.api.views.habilitados.gerar_sequencia_convocados")
 def test_habilitados_calculados_sucesso_mockando_externos(
     mock_gerar_sequencia, mock_buscar_escolhas, api_client
@@ -500,7 +500,7 @@ def test_habilitados_calculados_sucesso_mockando_externos(
 
 
 @patch(
-    "candidatos.api.views.habilitados.EscolhasService.buscar_escolhas",
+    "candidatos.api.views.habilitados.EscolhasApiService.buscar_escolhas",
     side_effect=Exception("ms caiu"),
 )
 @patch("candidatos.api.views.habilitados.gerar_sequencia_convocados")
@@ -641,7 +641,7 @@ class TestReconvocacao:
     def test_erro_servico_retorna_503(self, api_client):
         """Verifica erro servico retorna 503."""
         with patch(
-            "candidatos.api.views.habilitados.EscolhasService.buscar_reconvocacoes",
+            "candidatos.api.views.habilitados.EscolhasApiService.buscar_reconvocacoes",
             side_effect=Exception("falha"),
         ):
             resp = api_client.get(
@@ -654,7 +654,7 @@ class TestReconvocacao:
     def test_sem_reconvocacoes_retorna_lista_vazia(self, api_client):
         """Verifica sem reconvocacoes retorna lista vazia."""
         with patch(
-            "candidatos.api.views.habilitados.EscolhasService.buscar_reconvocacoes",
+            "candidatos.api.views.habilitados.EscolhasApiService.buscar_reconvocacoes",
             return_value=[],
         ):
             resp = api_client.get(
@@ -667,7 +667,7 @@ class TestReconvocacao:
     def test_sem_concurso_uuid_retorna_lista_vazia(self, api_client):
         """Verifica sem concurso uuid retorna lista vazia."""
         with patch(
-            "candidatos.api.views.habilitados.EscolhasService.buscar_reconvocacoes",
+            "candidatos.api.views.habilitados.EscolhasApiService.buscar_reconvocacoes",
             return_value=[{"candidato_uuid": str(uuid4())}],
         ):
             resp = api_client.get(
@@ -679,7 +679,7 @@ class TestReconvocacao:
     def test_sem_quantidade_retorna_400(self, api_client):
         """Verifica sem quantidade retorna 400."""
         with patch(
-            "candidatos.api.views.habilitados.EscolhasService.buscar_reconvocacoes",
+            "candidatos.api.views.habilitados.EscolhasApiService.buscar_reconvocacoes",
             return_value=[{"candidato_uuid": str(uuid4())}],
         ):
             resp = api_client.get(
@@ -692,7 +692,7 @@ class TestReconvocacao:
     def test_quantidade_invalida_retorna_400(self, api_client):
         """Verifica quantidade invalida retorna 400."""
         with patch(
-            "candidatos.api.views.habilitados.EscolhasService.buscar_reconvocacoes",
+            "candidatos.api.views.habilitados.EscolhasApiService.buscar_reconvocacoes",
             return_value=[{"candidato_uuid": str(uuid4())}],
         ):
             resp = api_client.get(
@@ -704,7 +704,7 @@ class TestReconvocacao:
     def test_quantidade_zero_retorna_400(self, api_client):
         """Verifica quantidade zero retorna 400."""
         with patch(
-            "candidatos.api.views.habilitados.EscolhasService.buscar_reconvocacoes",
+            "candidatos.api.views.habilitados.EscolhasApiService.buscar_reconvocacoes",
             return_value=[{"candidato_uuid": str(uuid4())}],
         ):
             resp = api_client.get(
@@ -716,7 +716,7 @@ class TestReconvocacao:
     def test_sem_lote_retorna_lista_vazia(self, api_client):
         """Verifica sem lote retorna lista vazia."""
         with patch(
-            "candidatos.api.views.habilitados.EscolhasService.buscar_reconvocacoes",
+            "candidatos.api.views.habilitados.EscolhasApiService.buscar_reconvocacoes",
             return_value=[{"candidato_uuid": str(uuid4())}],
         ):
             resp = api_client.get(
@@ -734,7 +734,7 @@ class TestReconvocacao:
         )
         with (
             patch(
-                "candidatos.api.views.habilitados.EscolhasService.buscar_reconvocacoes",
+                "candidatos.api.views.habilitados.EscolhasApiService.buscar_reconvocacoes",
                 return_value=[{"candidato_uuid": str(cc.uuid)}],
             ),
             patch("candidatos.api.views.habilitados.atualizar_ranking"),
@@ -773,7 +773,7 @@ class TestReconvocacao:
         )
         with (
             patch(
-                "candidatos.api.views.habilitados.EscolhasService.buscar_reconvocacoes",
+                "candidatos.api.views.habilitados.EscolhasApiService.buscar_reconvocacoes",
                 return_value=[
                     {"candidato_uuid": str(cc1.uuid)},
                     {"candidato_uuid": str(cc2.uuid)},

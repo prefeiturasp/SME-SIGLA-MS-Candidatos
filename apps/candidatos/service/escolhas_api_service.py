@@ -1,4 +1,4 @@
-"""Módulo service/escolhas_service."""
+"""Módulo service/escolhas_api_service."""
 
 import logging
 from typing import Any
@@ -12,25 +12,10 @@ from sigla_sdk.http.api_client import http_client
 logger = logging.getLogger(__name__)
 
 
-class EscolhasService:
+class EscolhasApiService:
     """Service para comunicação com o microserviço de Escolhas."""
 
-    DEFAULT_TIMEOUT = 10
-
-    @classmethod
-    def _get_base_url(cls) -> str:
-        """Obtém base url.
-
-        Returns:
-            Conteúdo textual gerado.
-
-        Raises:
-            ValueError: Se ``ESCOLHAS_API_URL`` não estiver configurada.
-        """
-        base_url = getattr(settings, "ESCOLHAS_API_URL", None)
-        if not base_url:
-            raise ValueError("ESCOLHAS_API_URL não configurada no settings")
-        return base_url.rstrip("/")  # type: ignore[no-any-return]
+    DEFAULT_TIMEOUT = 60
 
     @classmethod
     def buscar_reconvocacoes(
@@ -47,7 +32,10 @@ class EscolhasService:
         Raises:
             RequestException: Se a chamada HTTP falhar.
         """
-        base_url = cls._get_base_url()
+        base_url = settings.ESCOLHAS_API_URL
+        headers = {
+            settings.API_KEY_HEADER: settings.ESCOLHAS_API_KEY,
+        }
         url = f"{base_url}{path}"
         logger.info(
             "Buscando reconvocações no microserviço de Escolhas",
@@ -59,14 +47,18 @@ class EscolhasService:
         )
         try:
             logger.info(f"Buscando reconvocações em: {url}")
-            response = http_client.get(url, timeout=cls.DEFAULT_TIMEOUT)
+            response = http_client.get(
+                url,
+                timeout=cls.DEFAULT_TIMEOUT,
+                headers=headers,
+            )
 
         except requests.RequestException as exc:
             logger.exception(
-                f"Erro ao conectar com o microserviço de Escolhas: {exc}"
+                f"Erro ao buscar reconvocações no microserviço de Escolhas: {exc}"  # noqa: E501
             )
             raise requests.RequestException(
-                f"Erro ao conectar com o microserviço de Escolhas: {exc}"
+                f"Erro ao buscar reconvocações no microserviço de Escolhas: {exc}"  # noqa: E501
             ) from exc
 
         if response.status_code == status.HTTP_200_OK:
@@ -115,8 +107,11 @@ class EscolhasService:
         Raises:
             RequestException: Se a chamada HTTP falhar.
         """
-        base_url = cls._get_base_url()
-        url = f"{base_url}{path}&concurso_uuid={concurso_uuid}&page_size=10000"
+        base_url = settings.ESCOLHAS_API_URL
+        headers = {
+            settings.API_KEY_HEADER: settings.ESCOLHAS_API_KEY,
+        }
+        url = f"{base_url}{path}&concurso_uuid={concurso_uuid}&page_size=10000"  # noqa: E501
         logger.info(
             "Buscando escolhas",
             extra={
@@ -127,11 +122,17 @@ class EscolhasService:
             },
         )
         try:
-            response = http_client.get(url, timeout=cls.DEFAULT_TIMEOUT)
+            response = http_client.get(
+                url,
+                timeout=cls.DEFAULT_TIMEOUT,
+                headers=headers,
+            )
         except requests.RequestException as exc:
-            logger.exception(f"Erro ao buscar escolhas: {exc}")
+            logger.exception(
+                f"Erro ao buscar escolhas no microserviço de Escolhas: {exc}"  # noqa: E501
+            )
             raise requests.RequestException(
-                f"Erro ao buscar escolhas: {exc}"
+                f"Erro ao buscar escolhas no microserviço de Escolhas: {exc}"  # noqa: E501
             ) from exc
 
         if response.status_code == status.HTTP_200_OK:

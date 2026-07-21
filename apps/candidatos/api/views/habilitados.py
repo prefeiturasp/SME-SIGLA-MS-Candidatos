@@ -25,7 +25,7 @@ from candidatos.service.calculo_habilitados_service import (
     gerar_sequencia_convocados,
 )
 from candidatos.service.eliminacao_service import aplicar_eliminacao
-from candidatos.service.escolhas_service import EscolhasService
+from candidatos.service.escolhas_api_service import EscolhasApiService
 from candidatos.service.exceptions import SalvarLotesError
 from candidatos.service.extracao_dados_service import montar_extracao_dados
 from candidatos.service.lotes_service import (
@@ -139,7 +139,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             },
         )
         try:
-            reconvocoes = EscolhasService.buscar_reconvocacoes()
+            reconvocoes = EscolhasApiService.buscar_reconvocacoes()
         except Exception as exc:
             logger.error(
                 f"Erro ao buscar reconvocações no microserviço de Escolhas: {exc}"  # noqa: E501
@@ -669,7 +669,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
         try:
-            escolhas = EscolhasService.buscar_escolhas(
+            escolhas = EscolhasApiService.buscar_escolhas(
                 concurso_uuid=concurso_uuid
             )
             escolhas_candidato_uuids = [

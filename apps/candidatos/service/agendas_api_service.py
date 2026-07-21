@@ -18,21 +18,6 @@ class AgendasApiService:
     DEFAULT_TIMEOUT = 10
 
     @classmethod
-    def _get_base_url(cls) -> str:
-        """Obtém a URL base do MS-Agendas.
-
-        Returns:
-            URL base configurada em ``AGENDAS_API_URL``.
-
-        Raises:
-            ValueError: Se ``AGENDAS_API_URL`` não estiver configurada.
-        """
-        base_url = getattr(settings, "AGENDAS_API_URL", None)
-        if not base_url:
-            raise ValueError("AGENDAS_API_URL não configurada no settings")
-        return base_url.rstrip("/")  # type: ignore[no-any-return]
-
-    @classmethod
     def remover_agendas_por_processo_uuid_e_cargo(
         cls,
         processo_uuid: str,
@@ -52,8 +37,11 @@ class AgendasApiService:
         Raises:
             RequestException: Se a chamada HTTP falhar.
         """
-        base_url = cls._get_base_url()
+        base_url = settings.AGENDAS_API_URL
         url = f"{base_url}{path}"
+        headers = {
+            settings.API_KEY_HEADER: settings.AGENDAS_API_KEY,
+        }
         parametros = {
             "processo_uuid": processo_uuid,
             "cargo": codigo_cargo,
@@ -72,6 +60,7 @@ class AgendasApiService:
         try:
             response = http_client.delete(
                 url,
+                headers=headers,
                 params=parametros,
                 timeout=cls.DEFAULT_TIMEOUT,
             )
