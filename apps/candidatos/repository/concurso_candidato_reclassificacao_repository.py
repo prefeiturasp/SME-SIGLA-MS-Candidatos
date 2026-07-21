@@ -34,6 +34,7 @@ class ConcursoCandidatoReclassificacaoRepository:
             ),
             "motivo": getattr(historico, "motivo", ""),
             "executado_por": getattr(historico, "executado_por", ""),
+            "mandado_judicial": getattr(historico, "mandado_judicial", False),
             "criado_em": getattr(historico, "criado_em", None),
         }
 
@@ -72,10 +73,42 @@ class ConcursoCandidatoReclassificacaoRepository:
         concurso_candidato: ConcursoCandidato,
         desclassificado_de: str,
     ) -> bool:
-        """Verifica se já existe desclassificação para a categoria."""
+        """Verifica se há desclassificação ativa para a categoria.
+
+        Registros revertidos por mandado judicial
+        (``mandado_judicial=True``) não são considerados ativos.
+
+        Args:
+            concurso_candidato: ConcursoCandidato avaliado.
+            desclassificado_de: Categoria de origem (``NNA`` ou ``PCD``).
+
+        Returns:
+            ``True`` se houver desclassificação ativa; senão ``False``.
+        """
         return concurso_candidato.historicos_reclassificacao.filter(
-            desclassificado_de=desclassificado_de
+            desclassificado_de=desclassificado_de,
+            mandado_judicial=False,
         ).exists()
+
+    @classmethod
+    def obter_ativa_por_categoria(
+        cls,
+        concurso_candidato: ConcursoCandidato,
+        desclassificado_de: str,
+    ) -> ConcursoCandidatoReclassificacao | None:
+        """Retorna a desclassificação ativa da categoria, se existir.
+
+        Args:
+            concurso_candidato: ConcursoCandidato avaliado.
+            desclassificado_de: Categoria de origem (``NNA`` ou ``PCD``).
+
+        Returns:
+            O registro ativo ou ``None`` quando não houver.
+        """
+        return concurso_candidato.historicos_reclassificacao.filter(
+            desclassificado_de=desclassificado_de,
+            mandado_judicial=False,
+        ).first()
 
     @classmethod
     def listar_por_concurso_candidato_ordenado(

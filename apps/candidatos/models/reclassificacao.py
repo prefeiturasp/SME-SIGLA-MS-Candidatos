@@ -46,6 +46,9 @@ class ConcursoCandidatoReclassificacao(BaseModel):
     executado_por = models.CharField(
         max_length=150, blank=True, default="", verbose_name="Executado por"
     )
+    mandado_judicial = models.BooleanField(
+        default=False, verbose_name="Mandado judicial"
+    )
 
     class Meta:
         """Representa Meta."""

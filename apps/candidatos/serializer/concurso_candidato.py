@@ -200,6 +200,9 @@ class ReclassificarSerializer(serializers.Serializer):
     motivo = serializers.CharField(
         required=False, allow_blank=True, default=""
     )
+    mandado_judicial = serializers.BooleanField(
+        required=False, default=False
+    )
 
     def validate(self, attrs: Any) -> Any:
         """Valida payload de reclassificação sem alterações adicionais."""
