@@ -200,13 +200,11 @@ LOGGING = {
         },
     },
     "loggers": {
-        # Logger do Django (Framework)
         "django": {
             "handlers": ["console"],
             "level": "INFO",
             "propagate": False,
         },
-        # Seu Logger de Aplicação (substitua pelo nome do seu app)
         "candidatos": {
             "handlers": ["console"],
             "level": "DEBUG",
@@ -214,8 +212,6 @@ LOGGING = {
         },
         "django.server": {
             "handlers": ["console"],
-            # Alterando para ERROR, ele para de mostrar os GET/POST/OPTIONS
-            # de rotina (INFO)
             "level": "ERROR",
             "propagate": False,
         },
@@ -237,6 +233,12 @@ SPECTACULAR_SETTINGS = {
     #     }
     # },
     # "SECURITY": [{"ApiKeyAuth": []}],
+    "SERVE_AUTHENTICATION": [
+        "rest_framework.authentication.SessionAuthentication",
+        "rest_framework.authentication.BasicAuthentication",
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
+    "SERVE_PERMISSIONS": ["rest_framework.permissions.AllowAny"],
 }
 
 JWT_SIGNING_KEY = os.environ.get(
@@ -252,7 +254,7 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
-API_KEY = os.environ.get("API_KEY", "api-key-processos-convocacao")
+API_KEY = os.environ.get("API_KEY", "api-key-candidatos")
 API_KEY_HEADER = os.environ.get("API_KEY_HEADER", "X-API-Key")
 
 ESCOLHAS_API_URL = os.environ.get("ESCOLHAS_API_URL", "http://localhost:8004")
