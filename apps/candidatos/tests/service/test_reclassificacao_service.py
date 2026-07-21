@@ -3,11 +3,15 @@
 from uuid import uuid4
 
 import pytest
+
 from candidatos.models import (
     Candidato,
     ConcursoCandidato,
     ConcursoCandidatoReclassificacao,
     ConcursoCandidatosLote,
+)
+from candidatos.repository import (
+    ConcursoCandidatoReclassificacaoRepository,
 )
 from candidatos.service.reclassificacao_service import (
     _categoria_efetiva_calculada,
@@ -524,3 +528,83 @@ def test_aplicar_reclassificacao_nao_salva_se_categoria_nao_muda():
         candidato_uuid=cc.uuid, desclassificar_de="NNA"
     )
     assert hist.desclassificado_de == "NNA"
+
+
+class TestMandadoJudicial:
+    """Testes para reversão de desclassificação por mandado judicial."""
+
+    def test_mandado_marca_registro_e_devolve_categoria(self):
+        """Reversão marca mandado_judicial e devolve o candidato ao NNA."""
+        cc = _make_cc(classificacao_nna=5, categoria_efetiva="NNA")
+        aplicar_reclassificacao(
+            candidato_uuid=cc.uuid, desclassificar_de="NNA"
+        )
+        cc.refresh_from_db()
+        assert cc.categoria_efetiva == "GERAL"
+
+        cc_ret, hist = aplicar_reclassificacao(
+            candidato_uuid=cc.uuid,
+            desclassificar_de="NNA",
+            motivo="Mandado 123",
+            executado_por="juiz",
+            mandado_judicial=True,
+        )
+        cc.refresh_from_db()
+        assert hist.mandado_judicial is True
+        assert hist.motivo == "Mandado 123"
+        assert hist.executado_por == "juiz"
+        assert cc.categoria_efetiva == "NNA"
+
+    def test_mandado_mantem_registro_como_historico(self):
+        """A reversão não deleta o registro; apenas o marca."""
+        cc = _make_cc(classificacao_nna=5, categoria_efetiva="NNA")
+        aplicar_reclassificacao(
+            candidato_uuid=cc.uuid, desclassificar_de="NNA"
+        )
+        aplicar_reclassificacao(
+            candidato_uuid=cc.uuid,
+            desclassificar_de="NNA",
+            mandado_judicial=True,
+        )
+        assert (
+            ConcursoCandidatoReclassificacao.objects.filter(
+                concurso_candidato=cc, desclassificado_de="NNA"
+            ).count()
+            == 1
+        )
+
+    def test_mandado_torna_desclassificacao_inativa(self):
+        """existe_desclassificacao ignora registros revertidos."""
+        cc = _make_cc(classificacao_nna=5, categoria_efetiva="NNA")
+        aplicar_reclassificacao(
+            candidato_uuid=cc.uuid, desclassificar_de="NNA"
+        )
+        assert (
+            ConcursoCandidatoReclassificacaoRepository.existe_desclassificacao(
+                cc, "NNA"
+            )
+            is True
+        )
+        aplicar_reclassificacao(
+            candidato_uuid=cc.uuid,
+            desclassificar_de="NNA",
+            mandado_judicial=True,
+        )
+        assert (
+            ConcursoCandidatoReclassificacaoRepository.existe_desclassificacao(
+                cc, "NNA"
+            )
+            is False
+        )
+
+    def test_mandado_sem_desclassificacao_levanta_value_error(self):
+        """Reverter sem desclassificação ativa levanta ValueError."""
+        cc = _make_cc(classificacao_nna=5, categoria_efetiva="NNA")
+        with pytest.raises(
+            ValueError, match="Não há desclassificação a reverter para NNA"
+        ):
+            aplicar_reclassificacao(
+                candidato_uuid=cc.uuid,
+                desclassificar_de="NNA",
+                mandado_judicial=True,
+            )

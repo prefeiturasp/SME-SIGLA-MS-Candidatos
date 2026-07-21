@@ -260,6 +260,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
                 desclassificar_de=str(data["desclassificar_de"]),
                 motivo=data.get("motivo") or "",
                 executado_por=username,
+                mandado_judicial=bool(data.get("mandado_judicial", False)),
             )
         except ValueError as ve:
             return Response(

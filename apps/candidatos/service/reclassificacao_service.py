@@ -50,6 +50,61 @@ def _categoria_efetiva_calculada(cc: ConcursoCandidato) -> str:
     return "GERAL"
 
 
+def _reverter_por_mandado(
+    *,
+    cc: ConcursoCandidato,
+    desclassificar_de: str,
+    motivo: str = "",
+    executado_por: str = "",
+) -> tuple[ConcursoCandidato, ConcursoCandidatoReclassificacao]:
+    """Reverte a desclassificação ativa de uma categoria por mandado.
+
+    Marca o registro existente com ``mandado_judicial=True`` (mantendo-o
+    como histórico) e recalcula a ``categoria_efetiva`` do candidato.
+
+    Args:
+        cc: ConcursoCandidato já bloqueado para atualização.
+        desclassificar_de: Categoria a reverter (``NNA`` ou ``PCD``).
+        motivo: Motivo/observação do mandado.
+        executado_por: Usuário que executou a reversão.
+
+    Returns:
+        Tupla com o ConcursoCandidato e o histórico revertido.
+
+    Raises:
+        ValueError: Se não houver desclassificação ativa a reverter.
+    """
+    hist = (
+        ConcursoCandidatoReclassificacaoRepository.obter_ativa_por_categoria(
+            cc, desclassificar_de
+        )
+    )
+    if hist is None:
+        raise ValueError(
+            f"Não há desclassificação a reverter para {desclassificar_de}."
+        )
+    hist.mandado_judicial = True
+    if motivo:
+        hist.motivo = motivo
+    if executado_por:
+        hist.executado_por = executado_por
+    ConcursoCandidatoReclassificacaoRepository.salvar(
+        hist,
+        campos_atualizacao=[
+            "mandado_judicial",
+            "motivo",
+            "executado_por",
+        ],
+    )
+    nova_categoria = _categoria_efetiva_calculada(cc)
+    if cc.categoria_efetiva != nova_categoria:
+        cc.categoria_efetiva = nova_categoria
+        ConcursoCandidatoRepository.salvar(
+            cc, campos_atualizacao=["categoria_efetiva", "atualizado_em"]
+        )
+    return (cc, hist)
+
+
 @transaction.atomic
 def aplicar_reclassificacao(
     *,
@@ -57,14 +112,23 @@ def aplicar_reclassificacao(
     desclassificar_de: str,
     motivo: str = "",
     executado_por: str = "",
+    mandado_judicial: bool = False,
 ) -> tuple[ConcursoCandidato, ConcursoCandidatoReclassificacao]:
     """Aplica reclassificacao.
+
+    Quando ``mandado_judicial`` é ``True``, reverte a desclassificação
+    ativa da categoria informada: o registro existente é mantido como
+    histórico, marcado com ``mandado_judicial=True``, e a
+    ``categoria_efetiva`` do candidato é recalculada, devolvendo-o à
+    categoria de origem.
 
     Args:
         candidato_uuid: UUID do ConcursoCandidato a reclassificar.
         desclassificar_de: Categoria de origem (``NNA`` ou ``PCD``).
         motivo: Motivo.
         executado_por: Executado por.
+        mandado_judicial: Se ``True``, reverte a desclassificação
+            existente por determinação judicial.
 
     Returns:
         Tupla com os objetos criados ou atualizados.
@@ -80,6 +144,7 @@ def aplicar_reclassificacao(
             "desclassificar_de": desclassificar_de,
             "motivo": motivo,
             "executado_por": executado_por,
+            "mandado_judicial": mandado_judicial,
         },
     )
     cc = ConcursoCandidatoRepository.obter_com_candidato_for_update(
@@ -88,6 +153,13 @@ def aplicar_reclassificacao(
     desclassificar_de = (desclassificar_de or "").upper()
     if desclassificar_de not in ("NNA", "PCD"):
         raise ValueError('desclassificar_de inválido. Use "NNA" ou "PCD".')
+    if mandado_judicial:
+        return _reverter_por_mandado(
+            cc=cc,
+            desclassificar_de=desclassificar_de,
+            motivo=motivo,
+            executado_por=executado_por,
+        )
     if desclassificar_de == "NNA" and cc.classificacao_nna is None:
         raise ValueError("Candidato não possui classificação NNA.")
     if desclassificar_de == "PCD" and cc.classificacao_pcd is None:
