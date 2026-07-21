@@ -4,12 +4,12 @@ from .agendas_api_service import AgendasApiService
 from .calculo_habilitados_service import gerar_sequencia_convocados
 from .candidato_lote_service import processar_criacao_candidatos_lote
 from .candidato_service import upsert_candidato_e_concurso
-from .escolhas_service import EscolhasService
+from .escolhas_api_service import EscolhasApiService
 from .ranking_service import atualizar_ranking, atualizar_ranking_escolha
 
 __all__ = [
     "gerar_sequencia_convocados",
-    "EscolhasService",
+    "EscolhasApiService",
     "AgendasApiService",
     "upsert_candidato_e_concurso",
     "processar_criacao_candidatos_lote",
