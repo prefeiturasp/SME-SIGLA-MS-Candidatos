@@ -10,6 +10,7 @@ from candidatos.models import (
     ConcursoCandidatoReclassificacao,
     ConcursoCandidatosLote,
 )
+from candidatos.repository import ConcursoCandidatoRepository
 from django.urls import reverse
 from rest_framework.test import APIClient
 
@@ -1035,6 +1036,29 @@ class TestMandadoJudicial:
 
         assert resp.status_code == 200
         assert len(resp.data) == 1
+
+    def test_respeita_limite_padrao_de_resultados(self, lote):
+        """Verifica que a busca trunca no limite padrão."""
+        for indice in range(5):
+            cc = self._criar_cc(
+                lote,
+                f"Candidato {indice:03d}",
+                f"11{indice}.111.111-1{indice}",
+            )
+            ConcursoCandidatoReclassificacao.objects.create(
+                concurso_candidato=cc,
+                desclassificado_de="NNA",
+                mandado_judicial=True,
+            )
+
+        qs = ConcursoCandidatoRepository.filtrar_mandado_judicial(
+            lote=lote, limite=3
+        )
+
+        assert len(qs) == 3
+        # Trunca respeitando a ordenação por nome
+        assert qs[0].candidato.nome == "Candidato 000"
+        assert qs[2].candidato.nome == "Candidato 002"
 
     def test_nao_faz_query_por_candidato(
         self, api_client, lote, django_assert_max_num_queries

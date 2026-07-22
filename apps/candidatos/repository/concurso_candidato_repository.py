@@ -396,6 +396,7 @@ class ConcursoCandidatoRepository:
         lote: ConcursoCandidatosLote,
         codigo_cargo: Any = None,
         nome: Any = None,
+        limite: int = 300,
     ) -> QuerySet[ConcursoCandidato]:
         """Filtra candidatos com reclassificação por mandado judicial.
 
@@ -407,6 +408,7 @@ class ConcursoCandidatoRepository:
             lote: Lote de candidatos do concurso.
             codigo_cargo: Código do cargo para restringir a busca.
             nome: Trecho do nome do candidato para busca parcial.
+            limite: Máximo de registros retornados.
 
         Returns:
             QuerySet de ConcursoCandidato ordenado por nome do candidato.
@@ -432,7 +434,7 @@ class ConcursoCandidatoRepository:
             queryset = queryset.filter(codigo_cargo=codigo_cargo)
         if nome not in (None, ""):
             queryset = queryset.filter(candidato__nome__icontains=nome)
-        return queryset.order_by("candidato__nome")
+        return queryset.order_by("candidato__nome")[:limite]
 
     @classmethod
     def filtrar_nao_convocados_por_lote(
