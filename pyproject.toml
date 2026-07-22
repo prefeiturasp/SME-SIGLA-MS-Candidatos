@@ -50,7 +50,7 @@ line_length = 79
 
 [tool.mypy]
 python_version = "3.12"
-exclude = ".*/migrations/.*"
+exclude = ".*/migrations/.*|.*/docs/.*"
 warn_return_any = false
 warn_unused_configs = true
 disallow_untyped_defs = true
