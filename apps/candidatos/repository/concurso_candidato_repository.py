@@ -6,14 +6,18 @@ from collections.abc import Iterable
 from typing import Any
 from uuid import UUID
 
-from candidatos.models import ConcursoCandidato, ConcursoCandidatosLote
+from candidatos.models import (
+    ConcursoCandidato,
+    ConcursoCandidatoReclassificacao,
+    ConcursoCandidatosLote,
+)
 from candidatos.serializer.concurso_candidato import (
     ConcursoCandidatoCpfUuidSerializer,
     ConcursoCandidatoEliminadoSerializer,
     ConcursoCandidatoReclassificadoSerializer,
     ConcursoCandidatoSerializer,
 )
-from django.db.models import Count, Q, QuerySet
+from django.db.models import Count, Prefetch, Q, QuerySet
 
 
 class ConcursoCandidatoRepository:
@@ -384,6 +388,51 @@ class ConcursoCandidatoRepository:
         if codigo_cargo not in (None, ""):
             queryset = queryset.filter(codigo_cargo=codigo_cargo)
         return queryset
+
+    @classmethod
+    def filtrar_mandado_judicial(
+        cls,
+        *,
+        lote: ConcursoCandidatosLote,
+        codigo_cargo: Any = None,
+        nome: Any = None,
+    ) -> QuerySet[ConcursoCandidato]:
+        """Filtra candidatos com reclassificação por mandado judicial.
+
+        Considera apenas candidatos do lote que possuam ao menos uma
+        reclassificação marcada com ``mandado_judicial=True``, ou seja,
+        cuja desclassificação foi revertida por determinação judicial.
+
+        Args:
+            lote: Lote de candidatos do concurso.
+            codigo_cargo: Código do cargo para restringir a busca.
+            nome: Trecho do nome do candidato para busca parcial.
+
+        Returns:
+            QuerySet de ConcursoCandidato ordenado por nome do candidato.
+        """
+        queryset = (
+            ConcursoCandidato.objects.select_related("candidato", "lote")
+            .prefetch_related(
+                Prefetch(
+                    "historicos_reclassificacao",
+                    queryset=ConcursoCandidatoReclassificacao.objects.filter(
+                        mandado_judicial=True
+                    ).order_by("-criado_em"),
+                    to_attr="reclassificacoes_judiciais",
+                )
+            )
+            .filter(
+                lote=lote,
+                historicos_reclassificacao__mandado_judicial=True,
+            )
+            .distinct()
+        )
+        if codigo_cargo not in (None, ""):
+            queryset = queryset.filter(codigo_cargo=codigo_cargo)
+        if nome not in (None, ""):
+            queryset = queryset.filter(candidato__nome__icontains=nome)
+        return queryset.order_by("candidato__nome")
 
     @classmethod
     def filtrar_nao_convocados_por_lote(

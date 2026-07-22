@@ -915,3 +915,202 @@ class TestBuscarPorUuids:
         )
         assert resp.status_code == 400
         assert "order_by" in resp.data.get("detail", "").lower()
+
+
+class TestMandadoJudicial:
+    """Testes da action de busca por mandado judicial."""
+
+    def _criar_cc(self, lote, nome, cpf, **kwargs):
+        """Cria ConcursoCandidato de exemplo vinculado ao lote."""
+        return ConcursoCandidato.objects.create(
+            candidato=criar_candidato(nome, cpf),
+            lote=lote,
+            codigo_inscricao=kwargs.pop("codigo_inscricao", cpf[-4:]),
+            **kwargs,
+        )
+
+    def test_retorna_apenas_com_reclassificacao_judicial(
+        self, api_client, lote
+    ):
+        """Verifica que só retorna quem tem mandado judicial ativo."""
+        com_mandado = self._criar_cc(
+            lote, "Ana Judicial", "111.111.111-11", classificacao_nna=1
+        )
+        ConcursoCandidatoReclassificacao.objects.create(
+            concurso_candidato=com_mandado,
+            desclassificado_de="NNA",
+            mandado_judicial=True,
+        )
+        sem_mandado = self._criar_cc(
+            lote, "Bruno Comum", "222.222.222-22", classificacao_nna=2
+        )
+        ConcursoCandidatoReclassificacao.objects.create(
+            concurso_candidato=sem_mandado,
+            desclassificado_de="NNA",
+            mandado_judicial=False,
+        )
+        self._criar_cc(lote, "Carla Sem Reclass", "333.333.333-33")
+
+        resp = api_client.get(
+            reverse("habilitados-mandado-judicial"),
+            {"concurso_uuid": str(lote.concurso_uuid)},
+        )
+
+        assert resp.status_code == 200
+        assert len(resp.data) == 1
+        assert resp.data[0]["candidato"]["nome"] == "Ana Judicial"
+
+    def test_filtra_por_nome_parcial_e_case_insensitive(
+        self, api_client, lote
+    ):
+        """Verifica filtro por nome parcial ignorando maiúsculas."""
+        for nome, cpf in (
+            ("Maria Silva", "111.111.111-11"),
+            ("Mario Souza", "222.222.222-22"),
+            ("Joana Lima", "333.333.333-33"),
+        ):
+            cc = self._criar_cc(lote, nome, cpf)
+            ConcursoCandidatoReclassificacao.objects.create(
+                concurso_candidato=cc,
+                desclassificado_de="PCD",
+                mandado_judicial=True,
+            )
+
+        resp = api_client.get(
+            reverse("habilitados-mandado-judicial"),
+            {"concurso_uuid": str(lote.concurso_uuid), "nome": "mari"},
+        )
+
+        assert resp.status_code == 200
+        nomes = sorted(item["candidato"]["nome"] for item in resp.data)
+        assert nomes == ["Maria Silva", "Mario Souza"]
+
+    def test_filtra_por_codigo_cargo(self, api_client, lote):
+        """Verifica filtro por codigo_cargo."""
+        for nome, cpf, cargo in (
+            ("Ana", "111.111.111-11", "1001"),
+            ("Bruno", "222.222.222-22", "2002"),
+        ):
+            cc = self._criar_cc(lote, nome, cpf, codigo_cargo=cargo)
+            ConcursoCandidatoReclassificacao.objects.create(
+                concurso_candidato=cc,
+                desclassificado_de="PCD",
+                mandado_judicial=True,
+            )
+
+        resp = api_client.get(
+            reverse("habilitados-mandado-judicial"),
+            {
+                "concurso_uuid": str(lote.concurso_uuid),
+                "codigo_cargo": "1001",
+            },
+        )
+
+        assert resp.status_code == 200
+        assert len(resp.data) == 1
+        assert resp.data[0]["candidato"]["nome"] == "Ana"
+
+    def test_candidato_com_duas_reclassificacoes_nao_duplica(
+        self, api_client, lote
+    ):
+        """Verifica que reclassificações NNA e PCD não duplicam a linha."""
+        cc = self._criar_cc(
+            lote,
+            "Duplo Mandado",
+            "111.111.111-11",
+            classificacao_nna=1,
+            classificacao_pcd=1,
+        )
+        for categoria in ("NNA", "PCD"):
+            ConcursoCandidatoReclassificacao.objects.create(
+                concurso_candidato=cc,
+                desclassificado_de=categoria,
+                mandado_judicial=True,
+            )
+
+        resp = api_client.get(
+            reverse("habilitados-mandado-judicial"),
+            {"concurso_uuid": str(lote.concurso_uuid)},
+        )
+
+        assert resp.status_code == 200
+        assert len(resp.data) == 1
+
+    def test_nao_faz_query_por_candidato(
+        self, api_client, lote, django_assert_max_num_queries
+    ):
+        """Verifica que a busca não dispara uma query por candidato."""
+        for indice in range(5):
+            cc = self._criar_cc(
+                lote, f"Candidato {indice}", f"11{indice}.111.111-1{indice}"
+            )
+            ConcursoCandidatoReclassificacao.objects.create(
+                concurso_candidato=cc,
+                desclassificado_de="NNA",
+                mandado_judicial=True,
+            )
+
+        # Sem prefetch seriam 5 queries extras (uma por candidato)
+        with django_assert_max_num_queries(4):
+            resp = api_client.get(
+                reverse("habilitados-mandado-judicial"),
+                {"concurso_uuid": str(lote.concurso_uuid)},
+            )
+
+        assert resp.status_code == 200
+        assert len(resp.data) == 5
+
+    def test_sem_concurso_uuid_retorna_400(self, api_client):
+        """Verifica que concurso_uuid é obrigatório."""
+        resp = api_client.get(reverse("habilitados-mandado-judicial"))
+
+        assert resp.status_code == 400
+        assert "concurso_uuid" in resp.data.get("detail", "")
+
+    def test_concurso_sem_lote_retorna_lista_vazia(self, api_client):
+        """Verifica retorno vazio quando não há lote para o concurso."""
+        resp = api_client.get(
+            reverse("habilitados-mandado-judicial"),
+            {"concurso_uuid": str(uuid4())},
+        )
+
+        assert resp.status_code == 200
+        assert resp.data == []
+
+    def test_serializer_expoe_campos_da_tabela(self, api_client, lote):
+        """Verifica os campos expostos pelo serializer enxuto."""
+        cc = self._criar_cc(
+            lote,
+            "Ana Judicial",
+            "111.111.111-11",
+            classificacao=10,
+            classificacao_nna=1,
+            codigo_cargo="1001",
+        )
+        ConcursoCandidatoReclassificacao.objects.create(
+            concurso_candidato=cc,
+            desclassificado_de="NNA",
+            motivo="Decisão judicial",
+            mandado_judicial=True,
+        )
+
+        resp = api_client.get(
+            reverse("habilitados-mandado-judicial"),
+            {"concurso_uuid": str(lote.concurso_uuid)},
+        )
+
+        assert resp.status_code == 200
+        item = resp.data[0]
+        assert set(item) == {
+            "uuid",
+            "candidato",
+            "categoria_efetiva",
+            "classificacao",
+            "classificacao_pcd",
+            "classificacao_nna",
+            "codigo_cargo",
+            "reclassificacao_judicial",
+        }
+        assert set(item["candidato"]) == {"uuid", "nome", "cpf"}
+        assert item["reclassificacao_judicial"]["desclassificado_de"] == "NNA"
+        assert item["reclassificacao_judicial"]["motivo"] == "Decisão judicial"
