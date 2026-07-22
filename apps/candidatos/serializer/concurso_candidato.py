@@ -293,8 +293,7 @@ class ConcursoCandidatoMandadoJudicialSerializer(
         Returns:
             Dicionário com dados do histórico judicial, ou ``None``.
         """
-        # Usa o cache do prefetch quando disponível (evita N+1); só recorre
-        # ao banco se o objeto vier de um queryset sem o prefetch aplicado.
+    
         prefetchados = getattr(obj, "reclassificacoes_judiciais", None)
         if prefetchados is not None:
             historico = prefetchados[0] if prefetchados else None
