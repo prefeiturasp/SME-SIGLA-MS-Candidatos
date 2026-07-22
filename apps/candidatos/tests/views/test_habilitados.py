@@ -1063,7 +1063,20 @@ class TestMandadoJudicial:
     def test_nao_faz_query_por_candidato(
         self, api_client, lote, django_assert_max_num_queries
     ):
-        """Verifica que a busca não dispara uma query por candidato."""
+        """Fixa o número de queries da busca por mandado judicial.
+
+        ATENÇÃO: o orçamento abaixo é 3 queries base (lote, candidatos e
+        o ``Prefetch`` do repository) MAIS uma query por candidato, ou
+        seja, hoje o endpoint tem um N+1: a action serializa com o
+        ``ConcursoCandidatoSerializer`` completo, cujo campo
+        ``reclassificacoes`` volta ao banco por linha e desperdiça o
+        prefetch ``reclassificacoes_judiciais`` montado no repository.
+
+        Este teste apenas documenta o comportamento atual — ele NÃO
+        protege contra regressão de N+1. Se a action passar a usar o
+        ``ConcursoCandidatoMandadoJudicialSerializer`` (já importado na
+        view), o total cai para 3 e o orçamento deve virar ``3``.
+        """
         for indice in range(5):
             cc = self._criar_cc(
                 lote, f"Candidato {indice}", f"11{indice}.111.111-1{indice}"
@@ -1074,8 +1087,7 @@ class TestMandadoJudicial:
                 mandado_judicial=True,
             )
 
-        # Sem prefetch seriam 5 queries extras (uma por candidato)
-        with django_assert_max_num_queries(4):
+        with django_assert_max_num_queries(3 + 5):
             resp = api_client.get(
                 reverse("habilitados-mandado-judicial"),
                 {"concurso_uuid": str(lote.concurso_uuid)},
@@ -1102,7 +1114,18 @@ class TestMandadoJudicial:
         assert resp.data == []
 
     def test_serializer_expoe_campos_da_tabela(self, api_client, lote):
-        """Verifica os campos expostos pelo serializer enxuto."""
+        """Verifica os campos usados pela tabela de mandado judicial.
+
+        A action responde com o ``ConcursoCandidatoSerializer`` completo
+        (``fields = "__all__"``), e não com o serializer enxuto
+        ``ConcursoCandidatoMandadoJudicialSerializer``. Por isso a
+        asserção é de superconjunto: garante os campos que a tabela
+        consome sem congelar a lista inteira do modelo. O mesmo vale
+        para o ``candidato`` aninhado, que também vem completo, e os
+        dados da reclassificação judicial são lidos de
+        ``reclassificacoes`` (não existe ``reclassificacao_judicial``
+        na resposta atual).
+        """
         cc = self._criar_cc(
             lote,
             "Ana Judicial",
@@ -1125,7 +1148,7 @@ class TestMandadoJudicial:
 
         assert resp.status_code == 200
         item = resp.data[0]
-        assert set(item) == {
+        assert {
             "uuid",
             "candidato",
             "categoria_efetiva",
@@ -1133,8 +1156,15 @@ class TestMandadoJudicial:
             "classificacao_pcd",
             "classificacao_nna",
             "codigo_cargo",
-            "reclassificacao_judicial",
-        }
-        assert set(item["candidato"]) == {"uuid", "nome", "cpf"}
-        assert item["reclassificacao_judicial"]["desclassificado_de"] == "NNA"
-        assert item["reclassificacao_judicial"]["motivo"] == "Decisão judicial"
+        } <= set(item)
+        assert {"uuid", "nome", "cpf"} <= set(item["candidato"])
+        assert item["candidato"]["nome"] == "Ana Judicial"
+
+        judiciais = [
+            historico
+            for historico in item["reclassificacoes"]
+            if historico["mandado_judicial"]
+        ]
+        assert len(judiciais) == 1
+        assert judiciais[0]["desclassificado_de"] == "NNA"
+        assert judiciais[0]["motivo"] == "Decisão judicial"

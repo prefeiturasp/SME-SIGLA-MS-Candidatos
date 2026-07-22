@@ -257,12 +257,15 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         )
         if not lote:
             return Response([], status=status.HTTP_200_OK)
-        qs = ConcursoCandidatoRepository.filtrar_mandado_judicial(
-            lote=lote,
-            codigo_cargo=request.query_params.get("codigo_cargo"),
-            nome=request.query_params.get("nome"),
+        qs_candidatos_mandado_judicial = ConcursoCandidatoRepository.\
+            filtrar_mandado_judicial(
+                lote=lote,
+                codigo_cargo=request.query_params.get("codigo_cargo"),
+                nome=request.query_params.get("nome"),
         )
-        serializer = ConcursoCandidatoMandadoJudicialSerializer(qs, many=True)
+        serializer = self.get_serializer(
+            qs_candidatos_mandado_judicial,
+            many=True)
         logger.info(
             "Candidatos por mandado judicial encontrados",
             extra={

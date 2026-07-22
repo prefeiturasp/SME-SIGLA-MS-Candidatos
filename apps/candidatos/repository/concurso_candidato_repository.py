@@ -427,6 +427,7 @@ class ConcursoCandidatoRepository:
             .filter(
                 lote=lote,
                 historicos_reclassificacao__mandado_judicial=True,
+                foi_convocado=False,
             )
             .distinct()
         )
