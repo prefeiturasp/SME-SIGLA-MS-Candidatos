@@ -13,7 +13,6 @@ from candidatos.repository import (
 from candidatos.serializers import (
     BuscarPorCpfsSerializer,
     BuscarPorUuidsSerializer,
-    ConcursoCandidatoMandadoJudicialSerializer,
     ConcursoCandidatoSerializer,
     EliminarSerializer,
     ExtracaoDadosSerializer,
