@@ -221,6 +221,59 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         )
         return Response(serializer.data)
 
+    @action(detail=False, methods=["get"], url_path="mandado-judicial")
+    def mandado_judicial(self, request: Any) -> Any:
+        """Busca candidatos com reclassificação por mandado judicial.
+
+        Retorna os candidatos do último lote do concurso que possuem ao
+        menos uma reclassificação revertida por determinação judicial,
+        opcionalmente filtrados por cargo e por trecho do nome.
+
+        Args:
+            request: Requisição HTTP recebida.
+
+        Returns:
+            Resposta HTTP com os dados solicitados.
+        """
+        logger.info(
+            "Buscar candidatos por mandado judicial",
+            extra={
+                "correlation_id": get_correlation_id(),
+                "method": request.method,
+                "path": request.path,
+                "params": request.query_params,
+                "user": request.user,
+            },
+        )
+        concurso_uuid = request.query_params.get("concurso_uuid")
+        if not concurso_uuid:
+            return Response(
+                {"detail": "concurso_uuid é obrigatório"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        lote = ConcursoCandidatosLoteRepository.obter_ultimo_por_concurso(
+            concurso_uuid
+        )
+        if not lote:
+            return Response([], status=status.HTTP_200_OK)
+        qs_candidatos_mandado_judicial = ConcursoCandidatoRepository.\
+            filtrar_mandado_judicial(
+                lote=lote,
+                codigo_cargo=request.query_params.get("codigo_cargo"),
+                nome=request.query_params.get("nome"),
+        )
+        serializer = self.get_serializer(
+            qs_candidatos_mandado_judicial,
+            many=True)
+        logger.info(
+            "Candidatos por mandado judicial encontrados",
+            extra={
+                "correlation_id": get_correlation_id(),
+                "quantidade": len(serializer.data),
+            },
+        )
+        return Response(serializer.data)
+
     @action(detail=False, methods=["post"], url_path="reclassificar")
     def reclassificar(self, request: Any) -> Any:
         """Reclassifica candidato desclassificando-o de NNA ou PCD.
@@ -260,7 +313,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
                 desclassificar_de=str(data["desclassificar_de"]),
                 motivo=data.get("motivo") or "",
                 executado_por=username,
-                mandado_judicial=bool(data.get("mandado_judicial", False)),
+                mandado_judicial=data["mandado_judicial"],
             )
         except ValueError as ve:
             return Response(
