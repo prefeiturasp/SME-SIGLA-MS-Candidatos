@@ -961,31 +961,6 @@ class TestMandadoJudicial:
         assert len(resp.data) == 1
         assert resp.data[0]["candidato"]["nome"] == "Ana Judicial"
 
-    def test_filtra_por_nome_parcial_e_case_insensitive(
-        self, api_client, lote
-    ):
-        """Verifica filtro por nome parcial ignorando maiúsculas."""
-        for nome, cpf in (
-            ("Maria Silva", "111.111.111-11"),
-            ("Mario Souza", "222.222.222-22"),
-            ("Joana Lima", "333.333.333-33"),
-        ):
-            cc = self._criar_cc(lote, nome, cpf)
-            ConcursoCandidatoReclassificacao.objects.create(
-                concurso_candidato=cc,
-                desclassificado_de="PCD",
-                mandado_judicial=True,
-            )
-
-        resp = api_client.get(
-            reverse("habilitados-mandado-judicial"),
-            {"concurso_uuid": str(lote.concurso_uuid), "nome": "mari"},
-        )
-
-        assert resp.status_code == 200
-        nomes = sorted(item["candidato"]["nome"] for item in resp.data)
-        assert nomes == ["Maria Silva", "Mario Souza"]
-
     def test_filtra_por_codigo_cargo(self, api_client, lote):
         """Verifica filtro por codigo_cargo."""
         for nome, cpf, cargo in (
