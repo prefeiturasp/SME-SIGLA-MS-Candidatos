@@ -227,7 +227,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
 
         Retorna os candidatos do último lote do concurso que possuem ao
         menos uma reclassificação revertida por determinação judicial,
-        opcionalmente filtrados por cargo e por trecho do nome.
+        opcionalmente filtrados por cargo.
 
         Args:
             request: Requisição HTTP recebida.
@@ -260,7 +260,6 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             filtrar_mandado_judicial(
                 lote=lote,
                 codigo_cargo=request.query_params.get("codigo_cargo"),
-                nome=request.query_params.get("nome"),
         )
         serializer = self.get_serializer(
             qs_candidatos_mandado_judicial,
