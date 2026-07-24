@@ -1,8 +1,9 @@
-"""
-Django settings for candidatos project.
-"""
+"""Django settings for candidatos project."""
 
 import os
+import sys
+import threading
+from datetime import timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -14,6 +15,8 @@ DJANGO_ENVIRONMENT = os.environ.get("DJANGO_ENVIRONMENT", "local")
 MS_PATH = os.environ.get("MS_PATH", "/ms-candidatos")
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+# Adiciona a pasta 'apps' ao sys.path do Python
+sys.path.insert(0, os.path.join(BASE_DIR, "apps"))
 SECRET_KEY = os.environ.get(
     "SECRET_KEY", "django-insecure-your-secret-key-here"
 )
@@ -43,6 +46,7 @@ INSTALLED_APPS = [
     "auditlog",
     "drf_spectacular",
     "candidatos",
+    "parametrizacao",
 ]
 
 MIDDLEWARE = [
@@ -103,16 +107,16 @@ else:
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",  # noqa: E501
     },
     {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",  # noqa: E501
     },
     {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",  # noqa: E501
     },
     {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",  # noqa: E501
     },
 ]
 
@@ -141,7 +145,9 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # REST Framework settings
 REST_FRAMEWORK = {
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "DEFAULT_PAGINATION_CLASS": (
+        "rest_framework.pagination.PageNumberPagination"
+    ),
     "PAGE_SIZE": 20,
     "DEFAULT_FILTER_BACKENDS": [
         "django_filters.rest_framework.DjangoFilterBackend",
@@ -152,8 +158,10 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.SessionAuthentication",
         "rest_framework.authentication.BasicAuthentication",
         "rest_framework_simplejwt.authentication.JWTAuthentication",
+        # "sigla_sdk.autenticacao.authentication.ApiKeyAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
+        # 'rest_framework.permissions.IsAuthenticated',
         "rest_framework.permissions.AllowAny",
     ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
@@ -170,8 +178,6 @@ CORS_ALLOWED_ORIGINS = (
 # Audit Log settings
 AUDITLOG_INCLUDE_ALL_MODELS = True
 
-import threading
-
 _thread_locals = threading.local()
 
 LOGGING = {
@@ -180,7 +186,10 @@ LOGGING = {
     "formatters": {
         "json": {
             "()": "sigla_sdk.logging.json_formatter.CustomJsonFormatter",
-            "format": "%(levelname)s %(asctime)s %(module)s %(filename)s %(lineno)d %(funcName)s %(message)s",
+            "format": (  # noqa: E501
+                "%(levelname)s %(asctime)s %(module)s %(filename)s "
+                "%(lineno)d %(funcName)s %(message)s"
+            ),
         },
     },
     "handlers": {
@@ -191,13 +200,11 @@ LOGGING = {
         },
     },
     "loggers": {
-        # Logger do Django (Framework)
         "django": {
             "handlers": ["console"],
             "level": "INFO",
             "propagate": False,
         },
-        # Seu Logger de Aplicação (substitua pelo nome do seu app)
         "candidatos": {
             "handlers": ["console"],
             "level": "DEBUG",
@@ -205,7 +212,7 @@ LOGGING = {
         },
         "django.server": {
             "handlers": ["console"],
-            "level": "ERROR",  # Alterando para ERROR, ele para de mostrar os GET/POST/OPTIONS de rotina (INFO)
+            "level": "ERROR",
             "propagate": False,
         },
     },
@@ -216,9 +223,23 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "API para o sistema de candidatos de sigla",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": True,
+    # "APPEND_COMPONENTS": {
+    #     "securitySchemes": {
+    #         "ApiKeyAuth": {
+    #             "type": "apiKey",
+    #             "in": "header",
+    #             "name": "X-API-Key",
+    #         }
+    #     }
+    # },
+    # "SECURITY": [{"ApiKeyAuth": []}],
+    "SERVE_AUTHENTICATION": [
+        "rest_framework.authentication.SessionAuthentication",
+        "rest_framework.authentication.BasicAuthentication",
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
+    "SERVE_PERMISSIONS": ["rest_framework.permissions.AllowAny"],
 }
-
-from datetime import timedelta
 
 JWT_SIGNING_KEY = os.environ.get(
     "JWT_SIGNING_KEY",
@@ -233,5 +254,10 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
+API_KEY = os.environ.get("API_KEY", "api-key-candidatos")
+API_KEY_HEADER = os.environ.get("API_KEY_HEADER", "X-API-Key")
+
 ESCOLHAS_API_URL = os.environ.get("ESCOLHAS_API_URL", "http://localhost:8004")
+ESCOLHAS_API_KEY = os.environ.get("ESCOLHAS_API_KEY", "api-key-escolhas")
 AGENDAS_API_URL = os.environ.get("AGENDAS_API_URL", "http://localhost:8005")
+AGENDAS_API_KEY = os.environ.get("AGENDA_API_KEY", "api-key-agenda")

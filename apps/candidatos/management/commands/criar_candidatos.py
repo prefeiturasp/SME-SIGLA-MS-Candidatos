@@ -1,0 +1,136 @@
+"""Django management command to create sample candidatos."""
+
+from __future__ import annotations
+
+import random
+from datetime import date, timedelta
+from typing import Any
+
+from candidatos.models import Candidato
+from django.core.management.base import BaseCommand
+
+
+class Command(BaseCommand):
+    """Representa Command."""
+
+    help = "Cria candidatos de exemplo para desenvolvimento"
+
+    def add_arguments(self, parser: Any) -> None:
+        """Registra os argumentos da linha de comando."""
+        parser.add_argument(
+            "--count",
+            type=int,
+            default=10,
+            help="Número de candidatos a serem criados (padrão: 10)",
+        )
+
+    def handle(self, *args: Any, **options: Any) -> None:
+        """Roda a lógica principal do comando."""
+        count = options["count"]
+        self.stdout.write(self.style.SUCCESS(f"Criando {count} candidatos..."))
+        nomes = [
+            "João Silva",
+            "Maria Santos",
+            "Pedro Oliveira",
+            "Ana Costa",
+            "Carlos Pereira",
+            "Lucia Ferreira",
+            "Roberto Alves",
+            "Fernanda Lima",
+            "Marcos Souza",
+            "Juliana Rocha",
+            "Rafael Mendes",
+            "Camila Dias",
+            "Diego Rodrigues",
+            "Patricia Nunes",
+            "Thiago Barbosa",
+            "Larissa Gomes",
+            "Felipe Castro",
+            "Beatriz Moreira",
+            "Gabriel Martins",
+            "Isabela Ramos",
+        ]
+        cidades_estados = [
+            ("São Paulo", "SP"),
+            ("Rio de Janeiro", "RJ"),
+            ("Belo Horizonte", "MG"),
+            ("Salvador", "BA"),
+            ("Brasília", "DF"),
+            ("Fortaleza", "CE"),
+            ("Manaus", "AM"),
+            ("Curitiba", "PR"),
+            ("Recife", "PE"),
+            ("Porto Alegre", "RS"),
+        ]
+        status_choices = ["ativo", "inativo", "suspenso"]
+        genero_choices = ["M", "F", "O", "N"]
+        candidatos_criados = []
+
+        def _gerar_cpf():
+            return (
+                f"{random.randint(100, 999)}."
+                f"{random.randint(100, 999)}."
+                f"{random.randint(100, 999)}-"
+                f"{random.randint(10, 99)}"
+            )
+
+        for i in range(count):
+            cpf = _gerar_cpf()
+            while Candidato.objects.filter(cpf=cpf).exists():
+                cpf = _gerar_cpf()
+            nome_base = nomes[i % len(nomes)].lower().replace(" ", ".")
+            email = f"{nome_base}{i + 1}@email.com"
+            while Candidato.objects.filter(email=email).exists():
+                email = f"{nome_base}{i + 1}{random.randint(1, 999)}@email.com"
+            hoje = date.today()
+            idade_min = 18
+            idade_max = 65
+            anos_aleatorios = random.randint(idade_min, idade_max)
+            data_nascimento = hoje - timedelta(days=anos_aleatorios * 365)
+            cidade, estado = random.choice(cidades_estados)
+            rua = random.choice(
+                ["das Flores", "Augusta", "Paulista", "Copacabana"]
+            )
+            telefone = (
+                f"({random.randint(11, 99)}) "
+                f"{random.randint(90000, 99999)}-"
+                f"{random.randint(1000, 9999)}"
+            )
+            cep = (
+                f"{random.randint(10000, 99999)}-"
+                f"{random.randint(100, 999)}"
+            )
+            candidato = Candidato.objects.create(
+                nome=nomes[i % len(nomes)],
+                cpf=cpf,
+                email=email,
+                telefone=telefone,
+                data_nascimento=data_nascimento,
+                genero=random.choice(genero_choices),
+                endereco=f"Rua {rua}, {random.randint(100, 999)}",
+                cidade=cidade,
+                estado=estado,
+                cep=cep,
+                status=random.choice(status_choices),
+                observacoes=f"Candidato de exemplo {i + 1}",
+            )
+            self.stdout.write(
+                f"  ✓ Criado candidato: {candidato.nome} "
+                f"({candidato.cidade}/{candidato.estado})"
+            )
+            candidatos_criados.append(candidato)
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"\n✅ {len(candidatos_criados)} candidatos "
+                f"criados com sucesso!"
+            )
+        )
+        ativos = Candidato.objects.filter(status="ativo").count()
+        inativos = Candidato.objects.filter(status="inativo").count()
+        suspensos = Candidato.objects.filter(status="suspenso").count()
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"📊 Estatísticas: {ativos} ativos, "
+                f"{inativos} inativos, {suspensos} suspensos"
+            )
+        )

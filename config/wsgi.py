@@ -1,6 +1,4 @@
-"""
-WSGI config for candidatos project.
-"""
+"""WSGI config for candidatos project."""
 
 import os
 

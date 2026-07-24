@@ -1,0 +1,155 @@
+"""Módulo service/escolhas_api_service."""
+
+import logging
+from typing import Any
+
+import requests
+from django.conf import settings
+from rest_framework import status
+from sigla_sdk.context import get_correlation_id
+from sigla_sdk.http.api_client import http_client
+
+logger = logging.getLogger(__name__)
+
+
+class EscolhasApiService:
+    """Service para comunicação com o microserviço de Escolhas."""
+
+    DEFAULT_TIMEOUT = 60
+
+    @classmethod
+    def buscar_reconvocacoes(
+        cls, path: str = "/api/v1/escolhas/reconvocacao/"
+    ) -> list[dict[str, Any]]:
+        """Busca reconvocacoes.
+
+        Args:
+            path: Path.
+
+        Returns:
+            Lista com os registros obtidos.
+
+        Raises:
+            RequestException: Se a chamada HTTP falhar.
+        """
+        base_url = settings.ESCOLHAS_API_URL
+        headers = {
+            settings.API_KEY_HEADER: settings.ESCOLHAS_API_KEY,
+        }
+        url = f"{base_url}{path}"
+        logger.info(
+            "Buscando reconvocações no microserviço de Escolhas",
+            extra={
+                "method": "GET",
+                "correlation_id": get_correlation_id(),
+                "url": url,
+            },
+        )
+        try:
+            logger.info(f"Buscando reconvocações em: {url}")
+            response = http_client.get(
+                url,
+                timeout=cls.DEFAULT_TIMEOUT,
+                headers=headers,
+            )
+
+        except requests.RequestException as exc:
+            logger.exception(
+                f"Erro ao buscar reconvocações no microserviço de Escolhas: {exc}"  # noqa: E501
+            )
+            raise requests.RequestException(
+                f"Erro ao buscar reconvocações no microserviço de Escolhas: {exc}"  # noqa: E501
+            ) from exc
+
+        if response.status_code == status.HTTP_200_OK:
+            logger.info(
+                "Reconvocações encontradas no microserviço de Escolhas",
+                extra={
+                    "method": "GET",
+                    "correlation_id": get_correlation_id(),
+                    "url": url,
+                    "status_code": response.status_code,
+                },
+            )
+            data = response.json()
+            # Garante que retorna uma lista
+            if isinstance(data, list):
+                return data
+            # Se for um dicionário com 'results', retorna os results
+            if isinstance(data, dict) and "results" in data:
+                return data["results"]  # type: ignore[no-any-return]
+            # Se for um dicionário direto, retorna como lista
+            if isinstance(data, dict):
+                return [data]
+            return []
+        else:
+            logger.error(
+                f"Erro ao buscar reconvocações: {response.status_code} - {response.text}"  # noqa: E501
+            )
+            response.raise_for_status()
+            return []
+
+    @classmethod
+    def buscar_escolhas(
+        cls,
+        concurso_uuid: str,
+        path: str = "/api/v1/escolhas/?situacao__in=escolha,reconvocacao",
+    ) -> list[dict[str, Any]]:
+        """Busca escolhas.
+
+        Args:
+            concurso_uuid: UUID do concurso relacionado.
+            path: Path.
+
+        Returns:
+            Lista com os registros obtidos.
+
+        Raises:
+            RequestException: Se a chamada HTTP falhar.
+        """
+        base_url = settings.ESCOLHAS_API_URL
+        headers = {
+            settings.API_KEY_HEADER: settings.ESCOLHAS_API_KEY,
+        }
+        url = f"{base_url}{path}&concurso_uuid={concurso_uuid}&page_size=10000"  # noqa: E501
+        logger.info(
+            "Buscando escolhas",
+            extra={
+                "correlation_id": get_correlation_id(),
+                "concurso_uuid": concurso_uuid,
+                "path": path,
+                "url": url,
+            },
+        )
+        try:
+            response = http_client.get(
+                url,
+                timeout=cls.DEFAULT_TIMEOUT,
+                headers=headers,
+            )
+        except requests.RequestException as exc:
+            logger.exception(
+                f"Erro ao buscar escolhas no microserviço de Escolhas: {exc}"  # noqa: E501
+            )
+            raise requests.RequestException(
+                f"Erro ao buscar escolhas no microserviço de Escolhas: {exc}"  # noqa: E501
+            ) from exc
+
+        if response.status_code == status.HTTP_200_OK:
+            data = response.json()
+            # Garante que retorna uma lista
+            if isinstance(data, list):
+                return data
+            # Se for um dicionário com 'results', retorna os results
+            if isinstance(data, dict) and "results" in data:
+                return data["results"]  # type: ignore[no-any-return]
+            # Se for um dicionário direto, retorna como lista
+            if isinstance(data, dict):
+                return [data]
+            return []
+        else:
+            logger.error(
+                f"Erro ao buscar escolhas: {response.status_code} - {response.text}"  # noqa: E501
+            )
+            response.raise_for_status()
+            return []
