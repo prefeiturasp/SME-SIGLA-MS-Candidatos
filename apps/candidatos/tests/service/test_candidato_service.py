@@ -45,8 +45,8 @@ def test_upsert_cria_candidato_e_concurso_quando_novo():
     assert concurso.codigo_inscricao == "123"
 
 
-def test_upsert_cria_novos_candidatos_para_mesmo_cpf():
-    """Verifica upsert cria novos candidatos para mesmo cpf."""
+def test_upsert_reusa_candidato_mesmo_cpf_e_cria_novo_concurso():
+    """Mesmo CPF sem concurso_uuid reutiliza Candidato e cria novo vínculo."""
     primeiro, _ = upsert_candidato_e_concurso(
         {
             "nome": "A",
@@ -70,11 +70,67 @@ def test_upsert_cria_novos_candidatos_para_mesmo_cpf():
         }
     )
     candidato2.refresh_from_db()
-    assert candidato2.id != primeiro.id
+    assert candidato2.id == primeiro.id
     assert candidato2.nome == "B"
     assert candidato2.telefone == "9999"
-    assert Candidato.objects.filter(cpf="11111111111").count() == 2
+    assert Candidato.objects.filter(cpf="11111111111").count() == 1
     assert ConcursoCandidato.objects.count() == 2
+
+
+def test_upsert_mesmo_cpf_cargos_diferentes_cria_dois_concurso_candidato():
+    """Mesmo CPF no mesmo concurso com cargos distintos gera 2 registros."""
+    concurso_uuid = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+    payload_base = {
+        "nome": "Fulano",
+        "cpf": "111.111.111-11",
+        "email": "f@example.com",
+        "data_nascimento": "01/01/1990",
+        "sexo": "1",
+        "codigo_inscricao": "123",
+        "pontos": 0,
+    }
+    _, cc1 = upsert_candidato_e_concurso(
+        {**payload_base, "codigo_cargo": "1008"},
+        concurso_uuid=concurso_uuid,
+    )
+    _, cc2 = upsert_candidato_e_concurso(
+        {**payload_base, "codigo_cargo": "2001", "codigo_inscricao": "456"},
+        concurso_uuid=concurso_uuid,
+    )
+    assert cc1.id != cc2.id
+    assert cc1.candidato_id == cc2.candidato_id
+    assert cc1.codigo_cargo == "1008"
+    assert cc2.codigo_cargo == "2001"
+    assert Candidato.objects.filter(cpf="11111111111").count() == 1
+    assert ConcursoCandidato.objects.count() == 2
+
+
+def test_upsert_mesmo_cpf_mesmo_cargo_atualiza_registro():
+    """Mesmo CPF + cargo + concurso atualiza o ConcursoCandidato existente."""
+    concurso_uuid = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+    payload = {
+        "nome": "Fulano",
+        "cpf": "222.222.222-22",
+        "email": "f@example.com",
+        "data_nascimento": "01/01/1990",
+        "codigo_inscricao": "123",
+        "codigo_cargo": "1008",
+        "pontos": 0,
+        "classificacao": 10,
+    }
+    _, cc1 = upsert_candidato_e_concurso(
+        payload, concurso_uuid=concurso_uuid, concurso_nome="C1"
+    )
+    _, cc2 = upsert_candidato_e_concurso(
+        {**payload, "classificacao": 15, "nome": "Fulano Atualizado"},
+        concurso_uuid=concurso_uuid,
+        concurso_nome="C1",
+    )
+    assert cc1.id == cc2.id
+    assert cc2.classificacao == 15
+    assert cc2.candidato.nome == "Fulano Atualizado"
+    assert ConcursoCandidato.objects.count() == 1
+    assert Candidato.objects.count() == 1
 
 
 def test_upsert_data_nascimento_formato_invalido_nao_quebra():
@@ -118,8 +174,8 @@ def test_upsert_cria_novos_candidatos_para_mesmo_email_sem_cpf():
     assert ConcursoCandidato.objects.count() == 2
 
 
-def test_upsert_cria_novos_candidatos_com_diferentes_datas_de_nascimento():
-    """Verifica upsert cria novos candidatos com diferentes datas de."""
+def test_upsert_atualiza_data_nascimento_do_mesmo_candidato():
+    """Mesmo CPF reutiliza candidato e atualiza a data de nascimento."""
     primeiro, _ = upsert_candidato_e_concurso(
         {
             "nome": "A",
@@ -142,13 +198,12 @@ def test_upsert_cria_novos_candidatos_com_diferentes_datas_de_nascimento():
             "pontos": 0,
         }
     )
-    assert primeiro.data_nascimento.year == 1985
+    assert primeiro.id == candidato2.id
     candidato2.refresh_from_db()
-    assert candidato2.id != primeiro.id
     assert candidato2.data_nascimento.year == 1990
     assert candidato2.data_nascimento.month == 6
     assert candidato2.data_nascimento.day == 15
-    assert Candidato.objects.filter(cpf="33333333333").count() == 2
+    assert Candidato.objects.filter(cpf="33333333333").count() == 1
     assert ConcursoCandidato.objects.count() == 2
 
 

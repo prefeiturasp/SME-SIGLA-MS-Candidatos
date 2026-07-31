@@ -45,6 +45,26 @@ class CandidatoRepository:
         )
 
     @classmethod
+    def obter_por_cpf(cls, cpf: str) -> Candidato | None:
+        """Retorna o candidato mais recente com o CPF informado."""
+        if not cpf:
+            return None
+        return Candidato.objects.filter(cpf=cpf).order_by("-id").first()
+
+    @classmethod
+    def salvar(
+        cls,
+        candidato: Candidato,
+        *,
+        campos_atualizacao: list[str] | None = None,
+    ) -> None:
+        """Persista alterações em um candidato."""
+        if campos_atualizacao:
+            candidato.save(update_fields=campos_atualizacao)
+        else:
+            candidato.save()
+
+    @classmethod
     def existe_por_cpf(cls, cpf: str) -> bool:
         """Verifica se já existe candidato com o CPF informado."""
         return Candidato.objects.filter(cpf=cpf).exists()

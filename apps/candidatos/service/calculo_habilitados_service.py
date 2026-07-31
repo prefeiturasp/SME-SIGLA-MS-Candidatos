@@ -131,7 +131,7 @@ def _atualizar_processo_uuid_para_reclassificados(
     categoria: str,
     classificacao_attr: str,
     processo_uuid: Any,
-    lote: Any,
+    concurso_uuid: Any,
     codigo_cargo: Any,
 ) -> None:
     """Atualiza processo uuid para reclassificados.
@@ -141,7 +141,7 @@ def _atualizar_processo_uuid_para_reclassificados(
         categoria: Categoria desclassificada (``NNA`` ou ``PCD``).
         classificacao_attr: Nome do atributo de classificação consultado.
         processo_uuid: UUID do processo de convocação.
-        lote: Lote.
+        concurso_uuid: UUID do concurso.
         codigo_cargo: Código numérico do cargo.
 
     Returns:
@@ -156,7 +156,7 @@ def _atualizar_processo_uuid_para_reclassificados(
         filtro_classificacao = {f"{classificacao_attr}__lt": limite}
         reclassificados_qs = (
             ConcursoCandidatoRepository.filtrar_reclassificados_por_categoria(
-                lote=lote,
+                concurso_uuid=concurso_uuid,
                 codigo_cargo=codigo_cargo,
                 categoria=categoria,
                 filtro_classificacao=filtro_classificacao,
@@ -173,14 +173,14 @@ def _atualizar_processo_uuid_para_reclassificados(
 
 
 def _atualizar_processo_uuid_para_eliminados(
-    final_itens: Any, processo_uuid: Any, lote: Any, codigo_cargo: Any
+    final_itens: Any, processo_uuid: Any, concurso_uuid: Any, codigo_cargo: Any
 ) -> None:
     """Atualiza processo uuid para eliminados.
 
     Args:
         final_itens: Itens finais da lista de classificação.
         processo_uuid: UUID do processo de convocação.
-        lote: Lote.
+        concurso_uuid: UUID do concurso.
         codigo_cargo: Código numérico do cargo.
 
     Returns:
@@ -208,7 +208,7 @@ def _atualizar_processo_uuid_para_eliminados(
             return
         eliminados_qs = (
             ConcursoCandidatoRepository.filtrar_eliminados_por_filtro_q(
-                lote=lote,
+                concurso_uuid=concurso_uuid,
                 codigo_cargo=codigo_cargo,
                 filtro_q=filtro_q,
             )
@@ -224,7 +224,7 @@ def _atualizar_processo_uuid_para_eliminados(
 
 def gerar_sequencia_convocados(
     total_convocados: Any,
-    lote: Any = None,
+    concurso_uuid: Any = None,
     escolhas_candidato_uuids: Any = None,
     codigo_cargo: Any = None,
     processo_uuid: Any = None,
@@ -233,7 +233,7 @@ def gerar_sequencia_convocados(
 
     Args:
         total_convocados: Total convocados.
-        lote: Lote.
+        concurso_uuid: UUID do concurso.
         escolhas_candidato_uuids: UUIDs de candidatos com escolha confirmada.
         codigo_cargo: Código numérico do cargo.
         processo_uuid: UUID do processo de convocação.
@@ -247,8 +247,8 @@ def gerar_sequencia_convocados(
     if total_convocados <= 0:
         return []
     convocados_qs = (
-        ConcursoCandidatoRepository.filtrar_convocados_ativos_por_lote(
-            lote=lote,
+        ConcursoCandidatoRepository.filtrar_convocados_ativos_por_concurso(
+            concurso_uuid=concurso_uuid,
             codigo_cargo=codigo_cargo,
             uuids=(
                 escolhas_candidato_uuids
@@ -284,11 +284,13 @@ def gerar_sequencia_convocados(
     def calcular_quantidades_por_tipo(geral: Any, nna: Any, pcd: Any) -> Any:
         """Calcula quantidades por tipo."""
         qs_geral = ConcursoCandidatoRepository.listar_nao_convocados_geral(
-            lote=lote, codigo_cargo=codigo_cargo, limite=geral
+            concurso_uuid=concurso_uuid,
+            codigo_cargo=codigo_cargo,
+            limite=geral,
         )
         uuids_qs_geral = ConcursoCandidatoRepository.listar_uuids(qs_geral)
         qs_nna = ConcursoCandidatoRepository.listar_nao_convocados_nna(
-            lote=lote,
+            concurso_uuid=concurso_uuid,
             codigo_cargo=codigo_cargo,
             excluir_uuids=uuids_qs_geral,
             limite=nna,
@@ -298,7 +300,7 @@ def gerar_sequencia_convocados(
             nna - ConcursoCandidatoRepository.contar(qs_nna),
         )
         qs_pcd = ConcursoCandidatoRepository.listar_nao_convocados_pcd(
-            lote=lote,
+            concurso_uuid=concurso_uuid,
             codigo_cargo=codigo_cargo,
             excluir_uuids=uuids_qs_geral,
             limite=pcd,
@@ -495,7 +497,7 @@ def gerar_sequencia_convocados(
         categoria="PCD",
         classificacao_attr="classificacao_pcd",
         processo_uuid=processo_uuid,
-        lote=lote,
+        concurso_uuid=concurso_uuid,
         codigo_cargo=codigo_cargo,
     )
     _atualizar_processo_uuid_para_reclassificados(
@@ -503,13 +505,13 @@ def gerar_sequencia_convocados(
         categoria="NNA",
         classificacao_attr="classificacao_nna",
         processo_uuid=processo_uuid,
-        lote=lote,
+        concurso_uuid=concurso_uuid,
         codigo_cargo=codigo_cargo,
     )
     _atualizar_processo_uuid_para_eliminados(
         final_itens=final_itens,
         processo_uuid=processo_uuid,
-        lote=lote,
+        concurso_uuid=concurso_uuid,
         codigo_cargo=codigo_cargo,
     )
     atualizar_ranking(final_itens)

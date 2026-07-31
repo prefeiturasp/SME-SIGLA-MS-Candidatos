@@ -10,7 +10,6 @@ from candidatos.models import (
     Candidato,
     ConcursoCandidato,
     ConcursoCandidatoReclassificacao,
-    ConcursoCandidatosLote,
 )
 from candidatos.service.reclassificacao_service import aplicar_reclassificacao
 from django.urls import reverse
@@ -46,11 +45,9 @@ def _criar_candidato(nome, cpf, email=None):
 
 
 @pytest.fixture
-def lote():
-    """Lote de concurso usado nos testes."""
-    return ConcursoCandidatosLote.objects.create(
-        concurso_uuid=uuid4(), concurso_nome="Concurso Teste"
-    )
+def concurso_uuid():
+    """UUID de concurso usado nos testes."""
+    return uuid4()
 
 
 class TestReclassificadosViewSetList:
@@ -76,8 +73,10 @@ class TestReclassificadosViewSetList:
         resp = api_client.get(url)
         assert resp.status_code == 400
 
-    def test_list_concurso_sem_lote_retorna_listas_vazias(self, api_client):
-        """Verifica list concurso sem lote retorna listas vazias."""
+    def test_list_concurso_sem_candidatos_retorna_listas_vazias(
+        self, api_client
+    ):
+        """Verifica list concurso sem candidatos retorna listas vazias."""
         url = reverse("reclassificados-list")
         resp = api_client.get(
             url, {"concurso_uuid": str(uuid4()), "processo_uuid": str(uuid4())}
@@ -87,14 +86,15 @@ class TestReclassificadosViewSetList:
         assert resp.data["pcd"] == []
 
     def test_list_com_reclassificados_nna_e_pcd_retorna_agrupados(
-        self, api_client, lote
+        self, api_client, concurso_uuid
     ):
         """Verifica list com reclassificados nna e pcd retorna agrupados."""
         processo_uuid = uuid4()
         c_nna = _criar_candidato("NNA Reclass", "111.111.111-11")
         cc_nna = ConcursoCandidato.objects.create(
             candidato=c_nna,
-            lote=lote,
+            concurso_uuid=concurso_uuid,
+            concurso_nome="Concurso Teste",
             codigo_inscricao="001",
             classificacao=5,
             classificacao_nna=1,
@@ -114,7 +114,8 @@ class TestReclassificadosViewSetList:
         c_pcd = _criar_candidato("PCD Reclass", "222.222.222-22")
         cc_pcd = ConcursoCandidato.objects.create(
             candidato=c_pcd,
-            lote=lote,
+            concurso_uuid=concurso_uuid,
+            concurso_nome="Concurso Teste",
             codigo_inscricao="002",
             classificacao=10,
             classificacao_nna=None,
@@ -135,7 +136,7 @@ class TestReclassificadosViewSetList:
         resp = api_client.get(
             url,
             {
-                "concurso_uuid": str(lote.concurso_uuid),
+                "concurso_uuid": str(concurso_uuid),
                 "processo_uuid": str(processo_uuid),
             },
         )
@@ -147,13 +148,14 @@ class TestReclassificadosViewSetList:
         assert resp.data["nna"][0]["candidato"]["nome"] == "NNA Reclass"
         assert resp.data["pcd"][0]["candidato"]["nome"] == "PCD Reclass"
 
-    def test_list_nao_retorna_eliminados(self, api_client, lote):
+    def test_list_nao_retorna_eliminados(self, api_client, concurso_uuid):
         """Verifica list nao retorna eliminados."""
         processo_uuid = uuid4()
         c = _criar_candidato("Eliminado", "333.333.333-33")
         cc = ConcursoCandidato.objects.create(
             candidato=c,
-            lote=lote,
+            concurso_uuid=concurso_uuid,
+            concurso_nome="Concurso Teste",
             codigo_inscricao="003",
             classificacao=1,
             classificacao_nna=1,
@@ -170,7 +172,7 @@ class TestReclassificadosViewSetList:
         resp = api_client.get(
             url,
             {
-                "concurso_uuid": str(lote.concurso_uuid),
+                "concurso_uuid": str(concurso_uuid),
                 "processo_uuid": str(processo_uuid),
             },
         )

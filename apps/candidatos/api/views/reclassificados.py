@@ -5,10 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from candidatos.repository import (
-    ConcursoCandidatoRepository,
-    ConcursoCandidatosLoteRepository,
-)
+from candidatos.repository import ConcursoCandidatoRepository
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 
@@ -27,21 +24,16 @@ class ReclassificadosViewSet(viewsets.ViewSet):
                 {"detail": "concurso_uuid e processo_uuid são obrigatórios"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        lote = ConcursoCandidatosLoteRepository.obter_ultimo_por_concurso(
-            concurso_uuid
-        )
-        if not lote:
-            return Response({"nna": [], "pcd": []})
         qs_nna = (
             ConcursoCandidatoRepository.filtrar_reclassificados_por_processo(
-                lote=lote,
+                concurso_uuid=concurso_uuid,
                 processo_uuid=processo_uuid,
                 desclassificado_de="NNA",
             )
         )
         qs_pcd = (
             ConcursoCandidatoRepository.filtrar_reclassificados_por_processo(
-                lote=lote,
+                concurso_uuid=concurso_uuid,
                 processo_uuid=processo_uuid,
                 desclassificado_de="PCD",
             )

@@ -10,7 +10,6 @@ from candidatos.models import (
     Candidato,
     ConcursoCandidato,
     ConcursoCandidatoEliminacao,
-    ConcursoCandidatosLote,
 )
 from candidatos.service.eliminacao_service import aplicar_eliminacao
 from django.utils import timezone
@@ -37,19 +36,18 @@ def _candidato(**kwargs):
 
 
 @pytest.fixture
-def lote():
-    """Lote de concurso usado nos testes."""
-    return ConcursoCandidatosLote.objects.create(
-        concurso_uuid=uuid4(), concurso_nome="Concurso Teste"
-    )
+def concurso_uuid():
+    """UUID de concurso usado nos testes."""
+    return uuid4()
 
 
 @pytest.fixture
-def cc_habilitado(lote):
+def cc_habilitado(concurso_uuid):
     """ConcursoCandidato habilitado para convocação."""
     return ConcursoCandidato.objects.create(
         candidato=_candidato(),
-        lote=lote,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
         codigo_inscricao="001",
         eliminado=False,
     )
@@ -90,11 +88,12 @@ def test_aplicar_eliminacao_motivo_e_executado_vazios(cc_habilitado):
     assert hist.executado_por == ""
 
 
-def test_aplicar_eliminacao_ja_eliminado_levanta_value_error(lote):
+def test_aplicar_eliminacao_ja_eliminado_levanta_value_error(concurso_uuid):
     """Verifica aplicar eliminacao ja eliminado levanta value error."""
     cc = ConcursoCandidato.objects.create(
         candidato=_candidato(),
-        lote=lote,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
         codigo_inscricao="002",
         eliminado=True,
     )

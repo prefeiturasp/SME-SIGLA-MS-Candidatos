@@ -9,7 +9,6 @@ from uuid import UUID
 from candidatos.models import (
     ConcursoCandidato,
     ConcursoCandidatoReclassificacao,
-    ConcursoCandidatosLote,
 )
 from candidatos.serializer.concurso_candidato import (
     ConcursoCandidatoCpfUuidSerializer,
@@ -75,13 +74,13 @@ class ConcursoCandidatoRepository:
         return ConcursoCandidato.objects.none()
 
     @classmethod
-    def filtrar_por_lote(
+    def filtrar_por_concurso_uuid(
         cls,
         queryset: QuerySet[ConcursoCandidato],
-        lote: ConcursoCandidatosLote,
+        concurso_uuid: UUID | str,
     ) -> QuerySet[ConcursoCandidato]:
-        """Filtra queryset pelo lote informado."""
-        return queryset.filter(lote=lote)
+        """Filtra queryset pelo concurso informado."""
+        return queryset.filter(concurso_uuid=concurso_uuid)
 
     @classmethod
     def criar(cls, **dados: Any) -> ConcursoCandidato:
@@ -167,7 +166,7 @@ class ConcursoCandidatoRepository:
         """Zera campos de lote dos registros com o mesmo numero_lote."""
         return (
             ConcursoCandidato.objects.filter(
-                lote__concurso_uuid=concurso_uuid,
+                concurso_uuid=concurso_uuid,
                 numero_lote=numero_lote,
             )
             .order_by("-criado_em")
@@ -186,7 +185,7 @@ class ConcursoCandidatoRepository:
         return (
             ConcursoCandidato.objects.select_related("candidato")
             .filter(
-                lote__concurso_uuid=concurso_uuid,
+                concurso_uuid=concurso_uuid,
                 codigo_inscricao=codigo_inscricao,
             )
             .order_by("-criado_em")
@@ -194,11 +193,38 @@ class ConcursoCandidatoRepository:
         )
 
     @classmethod
-    def filtrar_por_uuids_lotes(
-        cls, lote_uuids: list[Any]
+    def obter_por_cpf_cargo_no_concurso(
+        cls,
+        concurso_uuid: UUID | str,
+        cpf: str,
+        codigo_cargo: str,
+    ) -> ConcursoCandidato | None:
+        """Busca por CPF + código do cargo + concurso.
+
+        Permite o mesmo CPF no mesmo concurso em cargos diferentes
+        (registros distintos de ``ConcursoCandidato``).
+        """
+        return (
+            ConcursoCandidato.objects.select_related("candidato")
+            .filter(
+                concurso_uuid=concurso_uuid,
+                candidato__cpf=cpf,
+                codigo_cargo=codigo_cargo,
+            )
+            .order_by("-criado_em")
+            .first()
+        )
+
+    @classmethod
+    def filtrar_por_concurso_uuids(
+        cls, concurso_uuids: list[Any]
     ) -> QuerySet[ConcursoCandidato]:
-        """Filtra concurso candidatos pelos uuids dos lotes."""
-        return ConcursoCandidato.objects.filter(lote__uuid__in=lote_uuids)
+        """Filtra concurso candidatos pelos uuids dos concursos."""
+        if not concurso_uuids:
+            return ConcursoCandidato.objects.none()
+        return ConcursoCandidato.objects.filter(
+            concurso_uuid__in=concurso_uuids
+        )
 
     @classmethod
     def agregar_por_categoria(
@@ -243,14 +269,14 @@ class ConcursoCandidatoRepository:
     def filtrar_reclassificados_por_categoria(
         cls,
         *,
-        lote: ConcursoCandidatosLote,
+        concurso_uuid: UUID | str,
         codigo_cargo: Any,
         categoria: str,
         filtro_classificacao: dict[str, Any],
     ) -> QuerySet[ConcursoCandidato]:
         """Filtra reclassificados por categoria e limite de classificação."""
         return ConcursoCandidato.objects.filter(
-            lote=lote,
+            concurso_uuid=concurso_uuid,
             codigo_cargo=codigo_cargo,
             historicos_reclassificacao__desclassificado_de=categoria,
         ).filter(**filtro_classificacao)
@@ -259,13 +285,15 @@ class ConcursoCandidatoRepository:
     def filtrar_eliminados_por_filtro_q(
         cls,
         *,
-        lote: ConcursoCandidatosLote,
+        concurso_uuid: UUID | str,
         codigo_cargo: Any,
         filtro_q: Q,
     ) -> QuerySet[ConcursoCandidato]:
-        """Filtra eliminados do lote/cargo com filtro Q de classificação."""
+        """Filtra eliminados do concurso/cargo com filtro Q de classificação"""  # noqa: D400
         return ConcursoCandidato.objects.filter(
-            lote=lote, codigo_cargo=codigo_cargo, eliminado=True
+            concurso_uuid=concurso_uuid,
+            codigo_cargo=codigo_cargo,
+            eliminado=True,
         ).filter(filtro_q)
 
     @classmethod
@@ -276,16 +304,18 @@ class ConcursoCandidatoRepository:
         return queryset.values_list("id", flat=True)
 
     @classmethod
-    def filtrar_convocados_ativos_por_lote(
+    def filtrar_convocados_ativos_por_concurso(
         cls,
         *,
-        lote: ConcursoCandidatosLote | None,
+        concurso_uuid: UUID | str | None,
         codigo_cargo: Any = None,
         uuids: list[Any] | None = None,
     ) -> QuerySet[ConcursoCandidato]:
-        """Filtra convocados não eliminados do lote."""
+        """Filtra convocados não eliminados do concurso."""
         queryset = ConcursoCandidato.objects.filter(
-            lote=lote, foi_convocado=True, eliminado=False
+            concurso_uuid=concurso_uuid,
+            foi_convocado=True,
+            eliminado=False,
         )
         if codigo_cargo:
             queryset = queryset.filter(codigo_cargo=codigo_cargo)
@@ -304,14 +334,14 @@ class ConcursoCandidatoRepository:
     def listar_nao_convocados_geral(
         cls,
         *,
-        lote: ConcursoCandidatosLote | None,
+        concurso_uuid: UUID | str | None,
         codigo_cargo: Any,
         limite: int,
     ) -> QuerySet[ConcursoCandidato]:
         """Retorne gerais não convocados ordenados por classificação."""
         return (
             ConcursoCandidato.objects.filter(
-                lote=lote,
+                concurso_uuid=concurso_uuid,
                 foi_convocado=False,
                 eliminado=False,
                 codigo_cargo=codigo_cargo,
@@ -324,7 +354,7 @@ class ConcursoCandidatoRepository:
     def listar_nao_convocados_nna(
         cls,
         *,
-        lote: ConcursoCandidatosLote | None,
+        concurso_uuid: UUID | str | None,
         codigo_cargo: Any,
         excluir_uuids: Any,
         limite: int,
@@ -332,7 +362,7 @@ class ConcursoCandidatoRepository:
         """Lista candidatos NNA não convocados ordenados por classificação."""
         return (
             ConcursoCandidato.objects.filter(
-                lote=lote,
+                concurso_uuid=concurso_uuid,
                 foi_convocado=False,
                 eliminado=False,
                 classificacao_nna__isnull=False,
@@ -347,7 +377,7 @@ class ConcursoCandidatoRepository:
     def listar_nao_convocados_pcd(
         cls,
         *,
-        lote: ConcursoCandidatosLote | None,
+        concurso_uuid: UUID | str | None,
         codigo_cargo: Any,
         excluir_uuids: Any,
         limite: int,
@@ -355,7 +385,7 @@ class ConcursoCandidatoRepository:
         """Lista candidatos PCD não convocados ordenados por classificação."""
         return (
             ConcursoCandidato.objects.filter(
-                lote=lote,
+                concurso_uuid=concurso_uuid,
                 foi_convocado=False,
                 eliminado=False,
                 classificacao_pcd__isnull=False,
@@ -377,13 +407,15 @@ class ConcursoCandidatoRepository:
     def filtrar_reconvocacao(
         cls,
         *,
-        lote: ConcursoCandidatosLote,
+        concurso_uuid: UUID | str,
         candidato_uuids: list[Any],
         codigo_cargo: Any = None,
     ) -> QuerySet[ConcursoCandidato]:
         """Filtra candidatos convocados elegíveis à reconvocação."""
         queryset = ConcursoCandidato.objects.filter(
-            lote=lote, foi_convocado=True, uuid__in=candidato_uuids
+            concurso_uuid=concurso_uuid,
+            foi_convocado=True,
+            uuid__in=candidato_uuids,
         )
         if codigo_cargo not in (None, ""):
             queryset = queryset.filter(codigo_cargo=codigo_cargo)
@@ -393,18 +425,18 @@ class ConcursoCandidatoRepository:
     def filtrar_mandado_judicial(
         cls,
         *,
-        lote: ConcursoCandidatosLote,
+        concurso_uuid: UUID | str,
         codigo_cargo: Any = None,
         limite: int = 300,
     ) -> QuerySet[ConcursoCandidato]:
         """Filtra candidatos com reclassificação por mandado judicial.
 
-        Considera apenas candidatos do lote que possuam ao menos uma
+        Considera apenas candidatos do concurso que possuam ao menos uma
         reclassificação marcada com ``mandado_judicial=True``, ou seja,
         cuja desclassificação foi revertida por determinação judicial.
 
         Args:
-            lote: Lote de candidatos do concurso.
+            concurso_uuid: UUID do concurso.
             codigo_cargo: Código do cargo para restringir a busca.
             limite: Máximo de registros retornados.
 
@@ -412,7 +444,7 @@ class ConcursoCandidatoRepository:
             QuerySet de ConcursoCandidato ordenado por nome do candidato.
         """
         queryset = (
-            ConcursoCandidato.objects.select_related("candidato", "lote")
+            ConcursoCandidato.objects.select_related("candidato")
             .prefetch_related(
                 Prefetch(
                     "historicos_reclassificacao",
@@ -423,7 +455,7 @@ class ConcursoCandidatoRepository:
                 )
             )
             .filter(
-                lote=lote,
+                concurso_uuid=concurso_uuid,
                 historicos_reclassificacao__mandado_judicial=True,
                 foi_convocado=False,
             )
@@ -434,29 +466,31 @@ class ConcursoCandidatoRepository:
         return queryset.order_by("candidato__nome")[:limite]
 
     @classmethod
-    def filtrar_nao_convocados_por_lote(
+    def filtrar_nao_convocados_por_concurso(
         cls,
         *,
-        lote: ConcursoCandidatosLote,
+        concurso_uuid: UUID | str,
         codigo_cargo: Any = None,
     ) -> QuerySet[ConcursoCandidato]:
-        """Filtra não convocados do lote com relacionamentos."""
+        """Filtra não convocados do concurso com relacionamentos."""
         queryset = ConcursoCandidato.objects.select_related(
-            "candidato", "lote"
-        ).filter(lote=lote, foi_convocado=False)
+            "candidato"
+        ).filter(concurso_uuid=concurso_uuid, foi_convocado=False)
         if codigo_cargo not in (None, ""):
             queryset = queryset.filter(codigo_cargo=codigo_cargo)
         return queryset
 
     @classmethod
-    def filtrar_por_lote_e_uuids(
+    def filtrar_por_concurso_e_uuids(
         cls,
         *,
-        lote: ConcursoCandidatosLote,
+        concurso_uuid: UUID | str,
         uuids: list[Any],
     ) -> QuerySet[ConcursoCandidato]:
-        """Filtra por lote e lista de uuids."""
-        return ConcursoCandidato.objects.filter(lote=lote, uuid__in=uuids)
+        """Filtra por concurso e lista de uuids."""
+        return ConcursoCandidato.objects.filter(
+            concurso_uuid=concurso_uuid, uuid__in=uuids
+        )
 
     @classmethod
     def marcar_convocados(
@@ -508,7 +542,7 @@ class ConcursoCandidatoRepository:
         return (
             ConcursoCandidato.objects.filter(uuid__in=uuids)
             .order_by(order_by)
-            .select_related("candidato", "lote")
+            .select_related("candidato")
         )
 
     @classmethod
@@ -525,19 +559,19 @@ class ConcursoCandidatoRepository:
                 candidato__cpf__in=cpfs, processo_uuid=processo_uuid
             )
             .order_by(order_by)
-            .select_related("candidato", "lote")
+            .select_related("candidato")
         )
 
     @classmethod
     def listar_numeros_lote(
         cls,
         *,
-        lote: ConcursoCandidatosLote,
+        concurso_uuid: UUID | str,
         codigo_cargo: Any = None,
     ) -> QuerySet[Any]:
-        """Lista numeros de lote distintos do lote vigente."""
+        """Lista numeros de lote distintos do concurso vigente."""
         queryset = ConcursoCandidato.objects.filter(
-            lote=lote, numero_lote__isnull=False
+            concurso_uuid=concurso_uuid, numero_lote__isnull=False
         )
         if codigo_cargo:
             queryset = queryset.filter(codigo_cargo=codigo_cargo)
@@ -549,12 +583,12 @@ class ConcursoCandidatoRepository:
 
     @classmethod
     def listar_cargos_sigpec(
-        cls, *, lote: ConcursoCandidatosLote
+        cls, *, concurso_uuid: UUID | str
     ) -> QuerySet[Any]:
         """Lista cargos distintos com numero_lote preenchido."""
         return (
             ConcursoCandidato.objects.filter(
-                lote=lote, numero_lote__isnull=False
+                concurso_uuid=concurso_uuid, numero_lote__isnull=False
             )
             .values("codigo_cargo", "descricao_cargo")
             .distinct()
@@ -568,7 +602,7 @@ class ConcursoCandidatoRepository:
         """Busca concurso candidatos por filtro Q do candidato."""
         return (
             ConcursoCandidato.objects.filter(filtro)
-            .select_related("candidato", "lote")
+            .select_related("candidato")
             .order_by("candidato__nome")[:limite]
         )
 
@@ -576,14 +610,18 @@ class ConcursoCandidatoRepository:
     def filtrar_reclassificados_por_processo(
         cls,
         *,
-        lote: ConcursoCandidatosLote,
+        concurso_uuid: UUID | str,
         processo_uuid: UUID | str,
         desclassificado_de: str,
     ) -> QuerySet[ConcursoCandidato]:
         """Filtra reclassificados para GERAL no processo informado."""
         return (
-            ConcursoCandidato.objects.select_related("candidato", "lote")
-            .filter(lote=lote, eliminado=False, categoria_efetiva="GERAL")
+            ConcursoCandidato.objects.select_related("candidato")
+            .filter(
+                concurso_uuid=concurso_uuid,
+                eliminado=False,
+                categoria_efetiva="GERAL",
+            )
             .filter(historicos_reclassificacao__processo_uuid=processo_uuid)
             .filter(
                 historicos_reclassificacao__desclassificado_de=desclassificado_de
@@ -595,15 +633,15 @@ class ConcursoCandidatoRepository:
     def filtrar_eliminados_por_processo_e_classificacao(
         cls,
         *,
-        lote: ConcursoCandidatosLote,
+        concurso_uuid: UUID | str,
         processo_uuid: UUID | str,
         classificacao_min: Any,
         classificacao_max: Any,
     ) -> QuerySet[ConcursoCandidato]:
         """Filtra eliminados do processo no intervalo de classificação."""
         return (
-            ConcursoCandidato.objects.select_related("candidato", "lote")
-            .filter(lote=lote, eliminado=True)
+            ConcursoCandidato.objects.select_related("candidato")
+            .filter(concurso_uuid=concurso_uuid, eliminado=True)
             .filter(
                 classificacao__lte=classificacao_max,
                 classificacao__gte=classificacao_min,

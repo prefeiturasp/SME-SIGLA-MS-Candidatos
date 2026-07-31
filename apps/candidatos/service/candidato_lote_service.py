@@ -2,10 +2,6 @@
 
 from typing import Any
 
-from candidatos.repository import (
-    ConcursoCandidatoRepository,
-    ConcursoCandidatosLoteRepository,
-)
 from rest_framework import status
 
 from .candidato_service import upsert_candidato_e_concurso
@@ -28,16 +24,15 @@ def processar_criacao_candidatos_lote(
             "detail": "concurso_uuid é obrigatório"
         }, status.HTTP_400_BAD_REQUEST
 
-    lote = ConcursoCandidatosLoteRepository.criar(
-        concurso_uuid=concurso_uuid,
-        concurso_nome=data.get("concurso_nome", ""),
-    )
+    concurso_nome = data.get("concurso_nome", "")
+    mandado_judicial = data.get("mandado_judicial")
     itens: list[dict[str, Any]] = []
     for item in data.get("candidatos", []):
-        _cand, concurso = upsert_candidato_e_concurso(item)
-        concurso.lote = lote
-        ConcursoCandidatoRepository.salvar(
-            concurso, campos_atualizacao=["lote"]
+        _cand, concurso = upsert_candidato_e_concurso(
+            item,
+            concurso_uuid=concurso_uuid,
+            concurso_nome=concurso_nome,
+            mandado_judicial=mandado_judicial,
         )
         itens.append(
             {
@@ -47,6 +42,6 @@ def processar_criacao_candidatos_lote(
         )
 
     return {
-        "lote_uuid": str(lote.id),
+        "concurso_uuid": str(concurso_uuid),
         "total_itens": len(itens),
     }, status.HTTP_201_CREATED

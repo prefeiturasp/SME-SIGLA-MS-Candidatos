@@ -3,12 +3,10 @@
 from uuid import uuid4
 
 import pytest
-
 from candidatos.models import (
     Candidato,
     ConcursoCandidato,
     ConcursoCandidatoReclassificacao,
-    ConcursoCandidatosLote,
 )
 from candidatos.repository import (
     ConcursoCandidatoReclassificacaoRepository,
@@ -42,20 +40,19 @@ def _criar_candidato(nome, cpf, email=None):
 
 
 @pytest.fixture
-def lote():
-    """Lote de concurso usado nos testes."""
-    return ConcursoCandidatosLote.objects.create(
-        concurso_uuid=uuid4(), concurso_nome="Concurso Teste"
-    )
+def concurso_uuid():
+    """UUID de concurso usado nos testes."""
+    return uuid4()
 
 
 @pytest.fixture
-def cc_com_nna(lote):
+def cc_com_nna(concurso_uuid):
     """ConcursoCandidato com classificação NNA (e geral)."""
     c = _criar_candidato("Candidato NNA", "111.111.111-11")
     return ConcursoCandidato.objects.create(
         candidato=c,
-        lote=lote,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
         codigo_inscricao="001",
         classificacao=10,
         classificacao_nna=1,
@@ -65,12 +62,13 @@ def cc_com_nna(lote):
 
 
 @pytest.fixture
-def cc_com_pcd(lote):
+def cc_com_pcd(concurso_uuid):
     """ConcursoCandidato com classificação PCD (e geral)."""
     c = _criar_candidato("Candidato PCD", "222.222.222-22")
     return ConcursoCandidato.objects.create(
         candidato=c,
-        lote=lote,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
         codigo_inscricao="002",
         classificacao=20,
         classificacao_nna=None,
@@ -80,12 +78,13 @@ def cc_com_pcd(lote):
 
 
 @pytest.fixture
-def cc_com_nna_e_pcd(lote):
+def cc_com_nna_e_pcd(concurso_uuid):
     """ConcursoCandidato com classificação NNA e PCD."""
     c = _criar_candidato("Candidato NNA e PCD", "333.333.333-33")
     return ConcursoCandidato.objects.create(
         candidato=c,
-        lote=lote,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
         codigo_inscricao="003",
         classificacao=30,
         classificacao_nna=2,
@@ -276,13 +275,14 @@ class TestAplicarReclassificacao:
         assert cc.categoria_efetiva == "PCD"
 
     def test_reclassificar_candidato_so_nna_sem_geral_atualiza_para_geral(
-        self, lote
+        self, concurso_uuid
     ):
         """Verifica reclassificar so nna sem geral atualiza para geral."""
         c = _criar_candidato("Só NNA", "999.999.999-99")
         cc = ConcursoCandidato.objects.create(
             candidato=c,
-            lote=lote,
+            concurso_uuid=concurso_uuid,
+            concurso_nome="Concurso Teste",
             codigo_inscricao="só-nna",
             classificacao=None,
             classificacao_nna=1,

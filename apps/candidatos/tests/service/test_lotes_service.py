@@ -6,7 +6,6 @@ import pytest
 from candidatos.models import (
     Candidato,
     ConcursoCandidato,
-    ConcursoCandidatosLote,
 )
 from candidatos.service.lotes_service import SalvarLotesError, salvar_lotes
 
@@ -18,24 +17,26 @@ def _criar_candidato(nome, cpf, email):
     return Candidato.objects.create(nome=nome, cpf=cpf, email=email)
 
 
-def _criar_concurso_candidato(lote, candidato, codigo_inscricao):
+def _criar_concurso_candidato(concurso_uuid, candidato, codigo_inscricao):
     """Cria ConcursoCandidato de exemplo no banco."""
     return ConcursoCandidato.objects.create(
-        lote=lote, candidato=candidato, codigo_inscricao=codigo_inscricao
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
+        candidato=candidato,
+        codigo_inscricao=codigo_inscricao,
     )
 
 
 def test_salvar_lotes_persiste_chave_inscrito_quando_informada():
     """Verifica salvar lotes persiste chave inscrito quando informada."""
     concurso_uuid = str(uuid.uuid4())
-    lote = ConcursoCandidatosLote.objects.create(
-        concurso_uuid=concurso_uuid, concurso_nome="Concurso Teste"
-    )
     candidato = _criar_candidato(
         "Alice", "111.111.111-11", "alice@example.com"
     )
     cc = _criar_concurso_candidato(
-        lote=lote, candidato=candidato, codigo_inscricao="INSC001"
+        concurso_uuid=concurso_uuid,
+        candidato=candidato,
+        codigo_inscricao="INSC001",
     )
     total = salvar_lotes(
         concurso_uuid=concurso_uuid,
@@ -59,14 +60,13 @@ def test_salvar_lotes_persiste_chave_inscrito_quando_informada():
 def test_salvar_lotes_define_chave_inscrito_como_none_quando_nao_informada():
     """Verifica salvar lotes define chave inscrito como none quando nao."""
     concurso_uuid = str(uuid.uuid4())
-    lote = ConcursoCandidatosLote.objects.create(
-        concurso_uuid=concurso_uuid, concurso_nome="Concurso Teste"
-    )
     candidato = _criar_candidato(
         "Bruno", "222.222.222-22", "bruno@example.com"
     )
     cc = _criar_concurso_candidato(
-        lote=lote, candidato=candidato, codigo_inscricao="INSC002"
+        concurso_uuid=concurso_uuid,
+        candidato=candidato,
+        codigo_inscricao="INSC002",
     )
     total = salvar_lotes(
         concurso_uuid=concurso_uuid,
@@ -89,14 +89,13 @@ def test_salvar_lotes_define_chave_inscrito_como_none_quando_nao_informada():
 def test_salvar_lotes_faz_rollback_total_quando_ha_erro():
     """Verifica salvar lotes faz rollback total quando ha erro."""
     concurso_uuid = str(uuid.uuid4())
-    lote = ConcursoCandidatosLote.objects.create(
-        concurso_uuid=concurso_uuid, concurso_nome="Concurso Teste"
-    )
     candidato = _criar_candidato(
         "Carla", "333.333.333-33", "carla@example.com"
     )
     cc = _criar_concurso_candidato(
-        lote=lote, candidato=candidato, codigo_inscricao="INSC003"
+        concurso_uuid=concurso_uuid,
+        candidato=candidato,
+        codigo_inscricao="INSC003",
     )
     cc.numero_lote = 125
     cc.codigo_sigpec = 9

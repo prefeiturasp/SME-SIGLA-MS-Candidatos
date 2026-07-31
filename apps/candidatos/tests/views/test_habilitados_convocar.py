@@ -6,7 +6,6 @@ import pytest
 from candidatos.models import (
     Candidato,
     ConcursoCandidato,
-    ConcursoCandidatosLote,
 )
 from django.urls import reverse
 from rest_framework import status
@@ -22,16 +21,14 @@ def client():
 
 
 @pytest.fixture
-def lote():
-    """Lote de concurso usado nos testes."""
-    return ConcursoCandidatosLote.objects.create(
-        concurso_uuid=uuid4(), concurso_nome="Concurso Teste"
-    )
+def concurso_uuid():
+    """UUID de concurso usado nos testes."""
+    return uuid4()
 
 
 @pytest.fixture
-def candidatos_no_lote(lote):
-    """Candidatos vinculados ao lote de teste."""
+def candidatos_no_concurso(concurso_uuid):
+    """Candidatos vinculados ao concurso de teste."""
     cand1 = Candidato.objects.create(
         nome="Fulano", cpf="11111111111", email="john_wick@email.com"
     )
@@ -39,13 +36,15 @@ def candidatos_no_lote(lote):
         nome="Beltrano", cpf="22222222222", email="jardani@email.com"
     )
     cc1 = ConcursoCandidato.objects.create(
-        lote=lote,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
         candidato=cand1,
         codigo_inscricao="A1",
         descricao_cargo="Cargo X",
     )
     cc2 = ConcursoCandidato.objects.create(
-        lote=lote,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
         candidato=cand2,
         codigo_inscricao="A2",
         descricao_cargo="Cargo X",
@@ -53,12 +52,12 @@ def candidatos_no_lote(lote):
     return (cc1, cc2)
 
 
-def test_convocar_sucesso(client, lote, candidatos_no_lote):
+def test_convocar_sucesso(client, concurso_uuid, candidatos_no_concurso):
     """Verifica convocar sucesso."""
     url = reverse("habilitados-convocar")
-    cc1, cc2 = candidatos_no_lote
+    cc1, cc2 = candidatos_no_concurso
     payload = {
-        "concurso_uuid": str(lote.concurso_uuid),
+        "concurso_uuid": str(concurso_uuid),
         "candidatos": [str(cc1.uuid), str(cc2.uuid)],
     }
     resp = client.patch(url, payload, format="json")
@@ -70,12 +69,13 @@ def test_convocar_sucesso(client, lote, candidatos_no_lote):
     assert cc1.data_convocacao is not None and cc2.data_convocacao is not None
 
 
-def test_convocar_lote_inexistente(client):
-    """Verifica convocar lote inexistente."""
+def test_convocar_concurso_sem_candidatos_retorna_total_zero(client):
+    """Verifica convocar concurso sem candidatos retorna total zero."""
     url = reverse("habilitados-convocar")
     payload = {"concurso_uuid": str(uuid4()), "candidatos": []}
     resp = client.patch(url, payload, format="json")
-    assert resp.status_code == status.HTTP_404_NOT_FOUND
+    assert resp.status_code == status.HTTP_200_OK
+    assert resp.data.get("total") == 0
 
 
 def test_convocar_payload_invalido(client):

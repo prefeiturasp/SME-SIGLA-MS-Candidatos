@@ -11,7 +11,6 @@ import pytest
 from candidatos.models import (
     Candidato,
     ConcursoCandidato,
-    ConcursoCandidatosLote,
 )
 from candidatos.service.ranking_service import (
     atualizar_ranking,
@@ -40,21 +39,27 @@ def _candidato():
 
 
 @pytest.fixture
-def lote():
-    """Lote de concurso usado nos testes."""
-    return ConcursoCandidatosLote.objects.create(
-        concurso_uuid=uuid4(), concurso_nome="Concurso Teste"
-    )
+def concurso_uuid():
+    """UUID de concurso usado nos testes."""
+    return uuid4()
 
 
 @pytest.fixture
-def dois_cc(lote):
+def dois_cc(concurso_uuid):
     """Dois registros ConcursoCandidato para o teste."""
     c1 = ConcursoCandidato.objects.create(
-        candidato=_candidato(), lote=lote, codigo_inscricao="1", ranking=0
+        candidato=_candidato(),
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
+        codigo_inscricao="1",
+        ranking=0,
     )
     c2 = ConcursoCandidato.objects.create(
-        candidato=_candidato(), lote=lote, codigo_inscricao="2", ranking=0
+        candidato=_candidato(),
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
+        codigo_inscricao="2",
+        ranking=0,
     )
     return [c1, c2]
 
@@ -89,11 +94,14 @@ def test_atualizar_ranking_escolha_lista_vazia_nao_quebra():
     atualizar_ranking_escolha([])
 
 
-def test_atualizar_ranking_escolha_ordena_pcd_primeiro_e_persiste(lote):
+def test_atualizar_ranking_escolha_ordena_pcd_primeiro_e_persiste(
+    concurso_uuid,
+):
     """Verifica atualizar ranking escolha ordena pcd primeiro e persiste."""
     c_geral = ConcursoCandidato.objects.create(
         candidato=_candidato(),
-        lote=lote,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
         codigo_inscricao="g",
         classificacao=1,
         classificacao_pcd=None,
@@ -101,7 +109,8 @@ def test_atualizar_ranking_escolha_ordena_pcd_primeiro_e_persiste(lote):
     )
     c_pcd = ConcursoCandidato.objects.create(
         candidato=_candidato(),
-        lote=lote,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
         codigo_inscricao="p",
         classificacao=5,
         classificacao_pcd=1,

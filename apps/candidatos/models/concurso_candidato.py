@@ -8,7 +8,6 @@ from django.db import models
 
 from .base import BaseModel
 from .candidato import Candidato
-from .lote import ConcursoCandidatosLote
 
 CATEGORIA_CHOICES = (("GERAL", "GERAL"), ("NNA", "NNA"), ("PCD", "PCD"))
 
@@ -16,12 +15,14 @@ CATEGORIA_CHOICES = (("GERAL", "GERAL"), ("NNA", "NNA"), ("PCD", "PCD"))
 class ConcursoCandidato(BaseModel):
     """Representa ConcursoCandidato."""
 
-    lote = models.ForeignKey(
-        ConcursoCandidatosLote,
-        on_delete=models.CASCADE,
-        related_name="itens",
-        null=True,
+    concurso_uuid = models.UUIDField(
         blank=True,
+        null=True,
+        db_index=True,
+        verbose_name="UUID do Concurso",
+    )
+    concurso_nome = models.CharField(
+        max_length=255, blank=True, default="", verbose_name="Nome do Concurso"
     )
     candidato = models.ForeignKey(
         Candidato, on_delete=models.CASCADE, related_name="concursos"

@@ -5,14 +5,14 @@ from .base import BaseModel
 from .candidato import Candidato
 from .concurso_candidato import ConcursoCandidato
 from .eliminacao import ConcursoCandidatoEliminacao
-from .lote import ConcursoCandidatosLote
+from .historico_classificacao import ConcursoCandidatoHistoricoClassificacao
 from .reclassificacao import ConcursoCandidatoReclassificacao
 
 __all__ = [
     "BaseModel",
     "Candidato",
     "ConcursoCandidato",
-    "ConcursoCandidatosLote",
     "ConcursoCandidatoReclassificacao",
     "ConcursoCandidatoEliminacao",
+    "ConcursoCandidatoHistoricoClassificacao",
 ]

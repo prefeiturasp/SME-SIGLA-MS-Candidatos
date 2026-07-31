@@ -1,19 +1,15 @@
 """Agregações para a extração de dados de habilitados / convocados.
 
-Toda contagem parte sempre do **último lote importado** de cada concurso
-(o lote mais recente por ``criado_em``). Tanto para um concurso específico
-quanto para o agregado de todos os concursos, considera-se apenas o último
-lote vigente, garantindo regra única entre habilitados e convocados.
+Toda contagem parte dos registros de ``ConcursoCandidato`` filtrados por
+``concurso_uuid``. Quando nenhum concurso é informado, considera todos os
+registros existentes.
 """
 
 from typing import Any
 from uuid import UUID
 
 from candidatos.models import ConcursoCandidato
-from candidatos.repository import (
-    ConcursoCandidatoRepository,
-    ConcursoCandidatosLoteRepository,
-)
+from candidatos.repository import ConcursoCandidatoRepository
 from django.db.models.query import QuerySet
 
 CATEGORIAS = ("GERAL", "PCD", "NNA")
@@ -62,53 +58,22 @@ def montar_extracao_dados(
     return resultado
 
 
-def _uuids_ultimos_lotes(
-    concurso_uuid: UUID | str | None = None,
-) -> list[Any]:
-    """Resolve os ``uuid`` dos últimos lotes importados.
-
-    Args:
-        concurso_uuid: Concurso a restringir; ausente → último lote de cada
-            concurso distinto.
-
-    Returns:
-        Lista de ``uuid`` dos lotes vigentes (um por concurso). Vazia quando
-        não há lote no escopo.
-    """
-    if concurso_uuid:
-        lote = ConcursoCandidatosLoteRepository.obter_ultimo_por_concurso(
-            concurso_uuid
-        )
-        return [lote.uuid] if lote else []
-
-    # Sem concurso: o último lote (maior criado_em) de cada concurso. Itera do
-    # mais recente para o mais antigo e fica com o primeiro de cada concurso.
-    vistos: set[Any] = set()
-    uuids: list[Any] = []
-    lotes = (
-        ConcursoCandidatosLoteRepository.listar_pares_concurso_uuid_ordenado()
-    )
-    for concurso, uuid_lote in lotes:
-        if concurso not in vistos:
-            vistos.add(concurso)
-            uuids.append(uuid_lote)
-    return uuids
-
-
 def _queryset_base(
     concurso_uuid: UUID | str | None = None,
 ) -> QuerySet[ConcursoCandidato]:
-    """Queryset canônico de habilitados (apenas os últimos lotes).
+    """Queryset canônico de habilitados filtrado por concurso.
 
     Args:
         concurso_uuid: Concurso a restringir; ausente → todos os concursos.
 
     Returns:
-        ``ConcursoCandidato`` filtrado pelos lotes vigentes do escopo.
+        ``ConcursoCandidato`` filtrado pelo escopo informado.
     """
-    return ConcursoCandidatoRepository.filtrar_por_uuids_lotes(
-        _uuids_ultimos_lotes(concurso_uuid)
-    )
+    if concurso_uuid:
+        return ConcursoCandidatoRepository.filtrar_por_concurso_uuid(
+            ConcursoCandidato.objects.all(), concurso_uuid
+        )
+    return ConcursoCandidato.objects.all()
 
 
 def _agregar_por_categoria(
@@ -129,7 +94,7 @@ def _agregar_por_categoria(
 def _contar_habilitados(
     concurso_uuid: UUID | str | None = None,
 ) -> dict[str, int]:
-    """Conta habilitados por categoria efetiva no último lote.
+    """Conta habilitados por categoria efetiva no escopo informado.
 
     Args:
         concurso_uuid: Concurso a restringir; ausente → todos os concursos.
@@ -153,7 +118,7 @@ def _contar_habilitados_por_processos(
 
     Returns:
         Dicionário com o ``total`` e a quebra por ``geral`` / ``pcd`` /
-        ``nna`` no último lote, restrito aos processos informados.
+        ``nna`` no escopo, restrito aos processos informados.
     """
     if not processo_uuids:
         return {"total": 0, "geral": 0, "pcd": 0, "nna": 0}
@@ -168,7 +133,7 @@ def _contar_convocados(
     concurso_uuid: UUID | str | None = None,
     processo_uuids: list[UUID | str] | None = None,
 ) -> int:
-    """Conta ``foi_convocado=True`` no último lote.
+    """Conta ``foi_convocado=True`` no escopo informado.
 
     Args:
         concurso_uuid: Concurso a restringir; ausente → todos os concursos.

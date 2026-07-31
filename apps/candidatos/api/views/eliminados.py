@@ -5,10 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from candidatos.repository import (
-    ConcursoCandidatoRepository,
-    ConcursoCandidatosLoteRepository,
-)
+from candidatos.repository import ConcursoCandidatoRepository
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 
@@ -36,13 +33,8 @@ class EliminadosViewSet(viewsets.ViewSet):
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        lote = ConcursoCandidatosLoteRepository.obter_ultimo_por_concurso(
-            concurso_uuid
-        )
-        if not lote:
-            return Response({"geral": [], "nna": [], "pcd": []})
         base = ConcursoCandidatoRepository.filtrar_eliminados_por_processo_e_classificacao(  # noqa: E501
-            lote=lote,
+            concurso_uuid=concurso_uuid,
             processo_uuid=processo_uuid,
             classificacao_min=classificacao_min,
             classificacao_max=classificacao_max,

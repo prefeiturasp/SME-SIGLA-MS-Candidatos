@@ -36,8 +36,8 @@ def test_concurso_candidato_serializer_serializacao(concurso_candidato):
     data = ConcursoCandidatoSerializer(concurso_candidato).data
     assert data["codigo_inscricao"] == "001"
     assert data["concurso_candidato_uuid"] == str(concurso_candidato.uuid)
-    assert data["concurso_uuid"] == str(concurso_candidato.lote.concurso_uuid)
-    assert data["concurso_nome"] == concurso_candidato.lote.concurso_nome
+    assert data["concurso_uuid"] == str(concurso_candidato.concurso_uuid)
+    assert data["concurso_nome"] == concurso_candidato.concurso_nome
     assert data["candidato"]["cpf"] == concurso_candidato.candidato.cpf
     assert data["candidato"]["nome"] == concurso_candidato.candidato.nome
     assert len(data["reclassificacoes"]) == 1
@@ -59,22 +59,6 @@ def test_get_concurso_candidato_uuid_sem_uuid():
         serializer.get_concurso_candidato_uuid(SimpleNamespace(uuid=None))
         is None
     )
-
-
-def test_get_concurso_uuid_do_objeto_e_sem_lote():
-    """Testa get_concurso_uuid via atributo direto e ausência de lote."""
-    serializer = ConcursoCandidatoSerializer()
-    concurso_uuid = uuid4()
-    assert serializer.get_concurso_uuid(
-        SimpleNamespace(concurso_uuid=concurso_uuid, lote=None)
-    ) == str(concurso_uuid)
-    assert serializer.get_concurso_uuid(SimpleNamespace(lote=None)) is None
-
-
-def test_get_concurso_nome_sem_lote():
-    """Testa get_concurso_nome quando não há lote."""
-    serializer = ConcursoCandidatoSerializer()
-    assert serializer.get_concurso_nome(SimpleNamespace(lote=None)) is None
 
 
 def test_get_candidato_sem_candidato():
