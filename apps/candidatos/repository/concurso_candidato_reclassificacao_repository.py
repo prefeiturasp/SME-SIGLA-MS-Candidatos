@@ -75,8 +75,10 @@ class ConcursoCandidatoReclassificacaoRepository:
     ) -> bool:
         """Verifica se há desclassificação ativa para a categoria.
 
-        Registros revertidos por mandado judicial
-        (``mandado_judicial=True``) não são considerados ativos.
+        Considera apenas o registro mais recente entre os que têm
+        ``desclassificado_de`` igual à categoria informada. Se o mais
+        recente tiver ``mandado_judicial=True``, a desclassificação foi
+        revertida e não é considerada ativa.
 
         Args:
             concurso_candidato: ConcursoCandidato avaliado.
@@ -85,10 +87,9 @@ class ConcursoCandidatoReclassificacaoRepository:
         Returns:
             ``True`` se houver desclassificação ativa; senão ``False``.
         """
-        return concurso_candidato.historicos_reclassificacao.filter(
-            desclassificado_de=desclassificado_de,
-            mandado_judicial=False,
-        ).exists()
+        return cls.obter_ativa_por_categoria(
+            concurso_candidato, desclassificado_de
+        ) is not None
 
     @classmethod
     def obter_ativa_por_categoria(
@@ -98,6 +99,11 @@ class ConcursoCandidatoReclassificacaoRepository:
     ) -> ConcursoCandidatoReclassificacao | None:
         """Retorna a desclassificação ativa da categoria, se existir.
 
+        Considera o registro mais recente entre os que têm
+        ``desclassificado_de`` igual à categoria informada; se esse
+        registro tiver ``mandado_judicial=True``, a desclassificação foi
+        revertida e não há registro ativo.
+
         Args:
             concurso_candidato: ConcursoCandidato avaliado.
             desclassificado_de: Categoria de origem (``NNA`` ou ``PCD``).
@@ -105,10 +111,16 @@ class ConcursoCandidatoReclassificacaoRepository:
         Returns:
             O registro ativo ou ``None`` quando não houver.
         """
-        return concurso_candidato.historicos_reclassificacao.filter(
-            desclassificado_de=desclassificado_de,
-            mandado_judicial=False,
-        ).first()
+        mais_recente = (
+            concurso_candidato.historicos_reclassificacao.filter(
+                desclassificado_de=desclassificado_de,
+            )
+            .order_by("-criado_em")
+            .first()
+        )
+        if mais_recente is None or mais_recente.mandado_judicial:
+            return None
+        return mais_recente
 
     @classmethod
     def listar_por_concurso_candidato_ordenado(
