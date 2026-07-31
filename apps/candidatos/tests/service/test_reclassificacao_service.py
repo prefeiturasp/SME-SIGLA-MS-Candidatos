@@ -608,3 +608,73 @@ class TestMandadoJudicial:
                 desclassificar_de="NNA",
                 mandado_judicial=True,
             )
+
+    def test_ciclo_desclassificar_reclassificar_repetido(self):
+        """Permite repetir o ciclo desclassificar/reclassificar por mandado.
+
+        Cobre o cenário relatado: desclassificar NNA, reverter por
+        mandado, desclassificar de novo e reverter de novo, sem que o
+        segundo ciclo seja bloqueado por um registro antigo continuar
+        sendo considerado ativo (inclusive quando os registros são
+        criados no mesmo instante, como pode ocorrer em requisições
+        rápidas em sequência).
+        """
+        cc = _make_cc(classificacao_nna=5, categoria_efetiva="NNA")
+
+        aplicar_reclassificacao(
+            candidato_uuid=cc.uuid, desclassificar_de="NNA"
+        )
+        cc.refresh_from_db()
+        assert cc.categoria_efetiva == "GERAL"
+        assert (
+            ConcursoCandidatoReclassificacaoRepository.existe_desclassificacao(
+                cc, "NNA"
+            )
+            is True
+        )
+
+        aplicar_reclassificacao(
+            candidato_uuid=cc.uuid,
+            desclassificar_de="NNA",
+            mandado_judicial=True,
+        )
+        cc.refresh_from_db()
+        assert cc.categoria_efetiva == "NNA"
+        assert (
+            ConcursoCandidatoReclassificacaoRepository.existe_desclassificacao(
+                cc, "NNA"
+            )
+            is False
+        )
+
+        aplicar_reclassificacao(
+            candidato_uuid=cc.uuid, desclassificar_de="NNA"
+        )
+        cc.refresh_from_db()
+        assert cc.categoria_efetiva == "GERAL"
+        assert (
+            ConcursoCandidatoReclassificacaoRepository.existe_desclassificacao(
+                cc, "NNA"
+            )
+            is True
+        )
+
+        aplicar_reclassificacao(
+            candidato_uuid=cc.uuid,
+            desclassificar_de="NNA",
+            mandado_judicial=True,
+        )
+        cc.refresh_from_db()
+        assert cc.categoria_efetiva == "NNA"
+        assert (
+            ConcursoCandidatoReclassificacaoRepository.existe_desclassificacao(
+                cc, "NNA"
+            )
+            is False
+        )
+        assert (
+            ConcursoCandidatoReclassificacao.objects.filter(
+                concurso_candidato=cc
+            ).count()
+            == 4
+        )

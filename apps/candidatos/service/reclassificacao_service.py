@@ -59,8 +59,10 @@ def _reverter_por_mandado(
 ) -> tuple[ConcursoCandidato, ConcursoCandidatoReclassificacao]:
     """Reverte a desclassificação ativa de uma categoria por mandado.
 
-    Marca o registro existente com ``mandado_judicial=True`` (mantendo-o
-    como histórico) e recalcula a ``categoria_efetiva`` do candidato.
+    Cria um novo registro de histórico com ``mandado_judicial=True``,
+    invertendo ``desclassificado_de`` e ``nova_classificacao`` do
+    registro ativo (preservando-o como histórico), e recalcula a
+    ``categoria_efetiva`` do candidato.
 
     Args:
         cc: ConcursoCandidato já bloqueado para atualização.
@@ -69,7 +71,7 @@ def _reverter_por_mandado(
         executado_por: Usuário que executou a reversão.
 
     Returns:
-        Tupla com o ConcursoCandidato e o histórico revertido.
+        Tupla com o ConcursoCandidato e o novo histórico criado.
 
     Raises:
         ValueError: Se não houver desclassificação ativa a reverter.
@@ -83,26 +85,20 @@ def _reverter_por_mandado(
         raise ValueError(
             f"Não há desclassificação a reverter para {desclassificar_de}."
         )
-    hist.mandado_judicial = True
-    if motivo:
-        hist.motivo = motivo
-    if executado_por:
-        hist.executado_por = executado_por
-    ConcursoCandidatoReclassificacaoRepository.salvar(
-        hist,
-        campos_atualizacao=[
-            "mandado_judicial",
-            "motivo",
-            "executado_por",
-        ],
+    novo_hist = ConcursoCandidatoReclassificacaoRepository.criar(
+        concurso_candidato=cc,
+        desclassificado_de=hist.nova_classificacao,
+        nova_classificacao=hist.desclassificado_de,
+        mandado_judicial=True,
+        motivo=motivo or "",
+        executado_por=executado_por or "",
     )
-    nova_categoria = _categoria_efetiva_calculada(cc)
-    if cc.categoria_efetiva != nova_categoria:
-        cc.categoria_efetiva = nova_categoria
-        ConcursoCandidatoRepository.salvar(
-            cc, campos_atualizacao=["categoria_efetiva", "atualizado_em"]
-        )
-    return (cc, hist)
+
+    cc.categoria_efetiva = hist.desclassificado_de
+    ConcursoCandidatoRepository.salvar(
+        cc, campos_atualizacao=["categoria_efetiva", "atualizado_em"]
+    )
+    return (cc, novo_hist)
 
 
 @transaction.atomic
