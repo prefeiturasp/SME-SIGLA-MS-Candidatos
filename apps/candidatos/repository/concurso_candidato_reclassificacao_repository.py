@@ -9,7 +9,7 @@ from candidatos.models import (
     ConcursoCandidato,
     ConcursoCandidatoReclassificacao,
 )
-from django.db.models import QuerySet
+from django.db.models import Q, QuerySet
 
 
 class ConcursoCandidatoReclassificacaoRepository:
@@ -75,8 +75,10 @@ class ConcursoCandidatoReclassificacaoRepository:
     ) -> bool:
         """Verifica se há desclassificação ativa para a categoria.
 
-        Registros revertidos por mandado judicial
-        (``mandado_judicial=True``) não são considerados ativos.
+        Considera apenas o registro mais recente entre os que têm
+        ``desclassificado_de`` igual à categoria informada. Se o mais
+        recente tiver ``mandado_judicial=True``, a desclassificação foi
+        revertida e não é considerada ativa.
 
         Args:
             concurso_candidato: ConcursoCandidato avaliado.
@@ -85,10 +87,9 @@ class ConcursoCandidatoReclassificacaoRepository:
         Returns:
             ``True`` se houver desclassificação ativa; senão ``False``.
         """
-        return concurso_candidato.historicos_reclassificacao.filter(
-            desclassificado_de=desclassificado_de,
-            mandado_judicial=False,
-        ).exists()
+        return cls.obter_ativa_por_categoria(
+            concurso_candidato, desclassificado_de
+        ) is not None
 
     @classmethod
     def obter_ativa_por_categoria(
@@ -98,6 +99,20 @@ class ConcursoCandidatoReclassificacaoRepository:
     ) -> ConcursoCandidatoReclassificacao | None:
         """Retorna a desclassificação ativa da categoria, se existir.
 
+        Considera o registro mais recente entre os que envolvem a
+        categoria informada — seja como origem da desclassificação
+        (``desclassificado_de``), seja como destino de uma reversão por
+        mandado judicial (``nova_classificacao`` com
+        ``mandado_judicial=True``, que inverte esses campos). Só há
+        desclassificação ativa se esse registro mais recente for, ele
+        próprio, uma desclassificação (``desclassificado_de`` igual à
+        categoria) ainda não revertida (``mandado_judicial=False``).
+
+        O desempate por ``-id`` é necessário porque ``criado_em`` tem
+        resolução de datetime e duas operações podem ser persistidas no
+        mesmo instante, tornando a ordenação por ``-criado_em`` sozinha
+        indeterminada entre os registros empatados.
+
         Args:
             concurso_candidato: ConcursoCandidato avaliado.
             desclassificado_de: Categoria de origem (``NNA`` ou ``PCD``).
@@ -105,18 +120,36 @@ class ConcursoCandidatoReclassificacaoRepository:
         Returns:
             O registro ativo ou ``None`` quando não houver.
         """
-        return concurso_candidato.historicos_reclassificacao.filter(
-            desclassificado_de=desclassificado_de,
-            mandado_judicial=False,
-        ).first()
+        mais_recente = (
+            concurso_candidato.historicos_reclassificacao.filter(
+                Q(desclassificado_de=desclassificado_de)
+                | Q(
+                    nova_classificacao=desclassificado_de,
+                    mandado_judicial=True,
+                )
+            )
+            .order_by("-criado_em", "-id")
+            .first()
+        )
+        if (
+            mais_recente is None
+            or mais_recente.mandado_judicial
+            or mais_recente.desclassificado_de != desclassificado_de
+        ):
+            return None
+        return mais_recente
 
     @classmethod
     def listar_por_concurso_candidato_ordenado(
         cls, concurso_candidato: ConcursoCandidato
     ) -> QuerySet[ConcursoCandidatoReclassificacao]:
-        """Lista históricos do concurso candidato por criado_em desc."""
+        """Lista históricos do concurso candidato por criado_em desc.
+
+        O desempate por ``-id`` garante ordem determinística mesmo
+        quando dois registros têm o mesmo ``criado_em``.
+        """
         return concurso_candidato.historicos_reclassificacao.all().order_by(
-            "-criado_em"
+            "-criado_em", "-id"
         )
 
     @classmethod

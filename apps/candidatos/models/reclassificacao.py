@@ -56,7 +56,6 @@ class ConcursoCandidatoReclassificacao(BaseModel):
         verbose_name = "Reclassificação de ConcursoCandidato"
         verbose_name_plural = "Reclassificações de ConcursoCandidato"
         ordering = ["-criado_em"]
-        unique_together = (("concurso_candidato", "desclassificado_de"),)
 
     def __str__(self) -> Any:
         """Retorna representação textual do registro."""
