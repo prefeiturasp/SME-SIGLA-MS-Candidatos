@@ -4,7 +4,10 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
-from candidatos.models import ConcursoCandidatoReclassificacao
+from candidatos.models import (
+    ConcursoCandidatoHistoricoClassificacao,
+    ConcursoCandidatoReclassificacao,
+)
 from candidatos.serializer.concurso_candidato import (
     BuscarPorCpfsSerializer,
     BuscarPorUuidsSerializer,
@@ -33,6 +36,15 @@ def test_concurso_candidato_serializer_serializacao(concurso_candidato):
         motivo="Teste",
         executado_por="admin",
     )
+    ConcursoCandidatoHistoricoClassificacao.objects.create(
+        concurso_candidato=concurso_candidato,
+        classificacao_anterior=10,
+        classificacao_nova=12,
+        classificacao_nna_anterior=1,
+        classificacao_nna_nova=2,
+        foi_convocado=True,
+        motivo="Deslocamento",
+    )
     data = ConcursoCandidatoSerializer(concurso_candidato).data
     assert data["codigo_inscricao"] == "001"
     assert data["concurso_candidato_uuid"] == str(concurso_candidato.uuid)
@@ -42,6 +54,14 @@ def test_concurso_candidato_serializer_serializacao(concurso_candidato):
     assert data["candidato"]["nome"] == concurso_candidato.candidato.nome
     assert len(data["reclassificacoes"]) == 1
     assert data["reclassificacoes"][0]["desclassificado_de"] == "NNA"
+    assert len(data["historico_classificacao"]) == 1
+    assert data["historico_classificacao"][0]["classificacao_anterior"] == 10
+    assert data["historico_classificacao"][0]["classificacao_nova"] == 12
+    assert (
+        data["historico_classificacao"][0]["classificacao_nna_anterior"] == 1
+    )
+    assert data["historico_classificacao"][0]["classificacao_nna_nova"] == 2
+    assert data["historico_classificacao"][0]["foi_convocado"] is True
 
 
 def test_concurso_candidato_serializer_filtra_fields(concurso_candidato):
@@ -84,6 +104,28 @@ def test_get_reclassificacoes_sem_historico_e_com_erro():
     assert (
         serializer.get_reclassificacoes(
             SimpleNamespace(historicos_reclassificacao=HistoricoQuebrado())
+        )
+        == []
+    )
+
+
+def test_get_historico_classificacao_sem_historico_e_com_erro():
+    """Testa get_historico_classificacao sem related e com exceção."""
+    serializer = ConcursoCandidatoSerializer()
+    assert (
+        serializer.get_historico_classificacao(
+            SimpleNamespace(historicos_classificacao=None)
+        )
+        == []
+    )
+
+    class HistoricoQuebrado:
+        def all(self):
+            raise RuntimeError("falha")
+
+    assert (
+        serializer.get_historico_classificacao(
+            SimpleNamespace(historicos_classificacao=HistoricoQuebrado())
         )
         == []
     )

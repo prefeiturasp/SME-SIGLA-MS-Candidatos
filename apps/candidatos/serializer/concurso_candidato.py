@@ -27,6 +27,7 @@ class ConcursoCandidatoSerializer(DynamicFieldsSerializer):
 
     candidato = serializers.SerializerMethodField(read_only=True)
     reclassificacoes = serializers.SerializerMethodField(read_only=True)
+    historico_classificacao = serializers.SerializerMethodField(read_only=True)
     concurso_candidato_uuid = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
@@ -74,6 +75,16 @@ class ConcursoCandidatoSerializer(DynamicFieldsSerializer):
         )
 
         return ConcursoCandidatoReclassificacaoRepository.listar_serializado_por_concurso_candidato(  # noqa: E501
+            obj
+        )
+
+    def get_historico_classificacao(self, obj: Any) -> Any:
+        """Retorna histórico de deslocamento de classificação."""
+        from candidatos.repository import (
+            ConcursoCandidatoHistoricoClassificacaoRepository,
+        )
+
+        return ConcursoCandidatoHistoricoClassificacaoRepository.listar_serializado_por_concurso_candidato(  # noqa: E501
             obj
         )
 

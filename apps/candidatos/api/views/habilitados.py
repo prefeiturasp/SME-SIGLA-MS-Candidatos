@@ -19,20 +19,15 @@ from candidatos.serializers import (
 )
 from candidatos.service.agendas_api_service import AgendasApiService
 from candidatos.service.calculo_habilitados_service import (
-    gerar_sequencia_convocados,
+    CalculoHabilitadosService,
 )
-from candidatos.service.eliminacao_service import aplicar_eliminacao
+from candidatos.service.eliminacao_service import EliminacaoService
 from candidatos.service.escolhas_api_service import EscolhasApiService
 from candidatos.service.exceptions import SalvarLotesError
-from candidatos.service.extracao_dados_service import montar_extracao_dados
-from candidatos.service.lotes_service import (
-    salvar_lotes as salvar_lotes_service,
-)
-from candidatos.service.ranking_service import (
-    atualizar_ranking,
-    atualizar_ranking_escolha,
-)
-from candidatos.service.reclassificacao_service import aplicar_reclassificacao
+from candidatos.service.extracao_dados_service import ExtracaoDadosService
+from candidatos.service.lotes_service import LotesService
+from candidatos.service.ranking_service import RankingService
+from candidatos.service.reclassificacao_service import ReclassificacaoService
 from django.core.exceptions import FieldError
 from django.db import models
 from django.utils import timezone
@@ -103,7 +98,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         serializer = ExtracaoDadosSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         dados = serializer.validated_data
-        resultado = montar_extracao_dados(
+        resultado = ExtracaoDadosService.montar_extracao_dados(
             concurso_uuid=dados.get("concurso_uuid"),
             filtros=dados["filtros"],
         )
@@ -194,8 +189,8 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             "classificacao",
             "id",
         )[:quantidade]
-        atualizar_ranking(list(qs_final))
-        atualizar_ranking_escolha(list(qs_final))
+        RankingService.atualizar_ranking(list(qs_final))
+        RankingService.atualizar_ranking_escolha(list(qs_final))
         serializer = self.get_serializer(qs_final, many=True)
         logger.info(
             "Reconvocações encontradas",
@@ -288,7 +283,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         except Exception:
             username = ""
         try:
-            cc, hist = aplicar_reclassificacao(
+            cc, hist = ReclassificacaoService.aplicar_reclassificacao(
                 candidato_uuid=str(data["candidato_uuid"]),
                 desclassificar_de=str(data["desclassificar_de"]),
                 motivo=data.get("motivo") or "",
@@ -350,7 +345,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         except Exception:
             username = ""
         try:
-            cc, hist = aplicar_eliminacao(
+            cc, hist = EliminacaoService.aplicar_eliminacao(
                 candidato_uuid=str(data["candidato_uuid"]),
                 motivo=data.get("motivo") or "",
                 executado_por=username,
@@ -456,8 +451,8 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
                     ids_incluidos.add(obj.id)
                     resultados.append(obj.id)
         qs_final = qs.filter(id__in=resultados).order_by("classificacao")
-        atualizar_ranking(list(qs_final))
-        atualizar_ranking_escolha(list(qs_final))
+        RankingService.atualizar_ranking(list(qs_final))
+        RankingService.atualizar_ranking_escolha(list(qs_final))
         serializer = self.get_serializer(qs_final, many=True)
         return Response(serializer.data)
 
@@ -693,12 +688,14 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         except Exception as exc:
             logger.error(f"Erro ao buscar escolhas: {exc}")
             escolhas_candidato_uuids = []
-        itens, porcentagem_nna, porcentagem_pcd = gerar_sequencia_convocados(
-            quantidade,
-            concurso_uuid,
-            escolhas_candidato_uuids,
-            codigo_cargo,
-            processo_uuid,
+        itens, porcentagem_nna, porcentagem_pcd = (
+            CalculoHabilitadosService.gerar_sequencia_convocados(
+                quantidade,
+                concurso_uuid,
+                escolhas_candidato_uuids,
+                codigo_cargo,
+                processo_uuid,
+            )
         )
         serializer = self.get_serializer(itens, many=True)
         return Response(
@@ -769,7 +766,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         concurso_uuid = str(serializer.validated_data["concurso_uuid"])
         lotes = serializer.validated_data["lotes"]
         try:
-            total = salvar_lotes_service(
+            total = LotesService.salvar_lotes(
                 concurso_uuid=concurso_uuid, lotes=lotes
             )
         except SalvarLotesError as exc:

@@ -22,10 +22,8 @@ class TestConcursoCandidatoHistoricoClassificacao:
             classificacao_nova=2,
             classificacao_nna_anterior=1,
             classificacao_nna_nova=2,
-            mandado_judicial=True,
         )
         assert hist.foi_convocado is False
-        assert hist.mandado_judicial is True
         assert hist.classificacao_nna_anterior == 1
         assert hist.classificacao_nna_nova == 2
 
@@ -39,18 +37,8 @@ class TestConcursoCandidatoHistoricoClassificacao:
             classificacao_nova=21,
             classificacao_nna_anterior=1,
             classificacao_nna_nova=2,
-            mandado_judicial=True,
         )
         assert hist.foi_convocado is True
-
-    def test_mandado_judicial_opcional_null(self, concurso_candidato):
-        """Permite mandado_judicial None."""
-        hist = ConcursoCandidatoHistoricoClassificacaoRepository.criar(
-            concurso_candidato=concurso_candidato,
-            classificacao_anterior=1,
-            classificacao_nova=2,
-        )
-        assert hist.mandado_judicial is None
 
     def test_related_name_historicos_classificacao(self, concurso_candidato):
         """Related name historicos_classificacao funciona."""

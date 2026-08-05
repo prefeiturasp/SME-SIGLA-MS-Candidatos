@@ -3,8 +3,7 @@
 import pytest
 from candidatos.models import ConcursoCandidatoHistoricoClassificacao
 from candidatos.service.historico_classificacao_service import (
-    classificacao_deslocada,
-    registrar_deslocamento_classificacao,
+    HistoricoClassificacaoService,
 )
 
 pytestmark = pytest.mark.django_db
@@ -12,7 +11,7 @@ pytestmark = pytest.mark.django_db
 
 def test_classificacao_deslocada_quando_nna_piora():
     """Detecta deslocamento quando NNA aumenta."""
-    assert classificacao_deslocada(
+    assert HistoricoClassificacaoService.classificacao_deslocada(
         classificacao_anterior=20,
         classificacao_nova=21,
         classificacao_nna_anterior=1,
@@ -24,7 +23,7 @@ def test_classificacao_deslocada_quando_nna_piora():
 
 def test_classificacao_deslocada_false_quando_igual():
     """Não detecta deslocamento quando valores iguais."""
-    assert not classificacao_deslocada(
+    assert not HistoricoClassificacaoService.classificacao_deslocada(
         classificacao_anterior=1,
         classificacao_nova=1,
         classificacao_nna_anterior=None,
@@ -42,16 +41,14 @@ def test_registrar_deslocamento_cria_historico(concurso_candidato):
     concurso_candidato.save(
         update_fields=["classificacao_nna", "classificacao", "foi_convocado"]
     )
-    hist = registrar_deslocamento_classificacao(
+    hist = HistoricoClassificacaoService.registrar_deslocamento_classificacao(
         concurso_candidato,
         classificacao_nova=21,
         classificacao_nna_nova=2,
         classificacao_pcd_nova=None,
-        mandado_judicial=True,
     )
     assert hist is not None
     assert hist.foi_convocado is True
-    assert hist.mandado_judicial is True
     assert hist.classificacao_nna_anterior == 1
     assert hist.classificacao_nna_nova == 2
     assert ConcursoCandidatoHistoricoClassificacao.objects.count() == 1
@@ -59,7 +56,7 @@ def test_registrar_deslocamento_cria_historico(concurso_candidato):
 
 def test_registrar_deslocamento_sem_piora_retorna_none(concurso_candidato):
     """Não cria histórico quando classificação não piora."""
-    hist = registrar_deslocamento_classificacao(
+    hist = HistoricoClassificacaoService.registrar_deslocamento_classificacao(
         concurso_candidato,
         classificacao_nova=concurso_candidato.classificacao,
         classificacao_nna_nova=concurso_candidato.classificacao_nna,

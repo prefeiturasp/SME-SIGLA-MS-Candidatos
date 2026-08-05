@@ -550,7 +550,9 @@ def test_habilitados_buscar_por_cpfs_order_by_invalido_retorna_400(api_client):
 
 
 @patch("candidatos.api.views.habilitados.EscolhasApiService.buscar_escolhas")
-@patch("candidatos.api.views.habilitados.gerar_sequencia_convocados")
+@patch(
+    "candidatos.api.views.habilitados.CalculoHabilitadosService.gerar_sequencia_convocados"
+)
 def test_habilitados_calculados_sem_candidatos_retorna_lista_vazia(
     mock_gerar_sequencia, mock_buscar_escolhas, api_client
 ):
@@ -575,7 +577,9 @@ def test_habilitados_calculados_sem_candidatos_retorna_lista_vazia(
 
 
 @patch("candidatos.api.views.habilitados.EscolhasApiService.buscar_escolhas")
-@patch("candidatos.api.views.habilitados.gerar_sequencia_convocados")
+@patch(
+    "candidatos.api.views.habilitados.CalculoHabilitadosService.gerar_sequencia_convocados"
+)
 def test_habilitados_calculados_sucesso_mockando_externos(
     mock_gerar_sequencia, mock_buscar_escolhas, api_client
 ):
@@ -621,7 +625,9 @@ def test_habilitados_calculados_sucesso_mockando_externos(
     "candidatos.api.views.habilitados.EscolhasApiService.buscar_escolhas",
     side_effect=Exception("ms caiu"),
 )
-@patch("candidatos.api.views.habilitados.gerar_sequencia_convocados")
+@patch(
+    "candidatos.api.views.habilitados.CalculoHabilitadosService.gerar_sequencia_convocados"
+)
 def test_habilitados_calculados_quando_escolhas_falha_continua_com_lista_vazia(
     mock_gerar_sequencia, mock_buscar_escolhas, api_client
 ):
@@ -757,9 +763,11 @@ class TestReconvocacao:
                 "candidatos.api.views.habilitados.EscolhasApiService.buscar_reconvocacoes",
                 return_value=[{"candidato_uuid": str(cc.uuid)}],
             ),
-            patch("candidatos.api.views.habilitados.atualizar_ranking"),
             patch(
-                "candidatos.api.views.habilitados.atualizar_ranking_escolha"
+                "candidatos.api.views.habilitados.RankingService.atualizar_ranking"
+            ),
+            patch(
+                "candidatos.api.views.habilitados.RankingService.atualizar_ranking_escolha"
             ),
         ):
             resp = api_client.get(
@@ -801,9 +809,11 @@ class TestReconvocacao:
                     {"candidato_uuid": str(cc2.uuid)},
                 ],
             ),
-            patch("candidatos.api.views.habilitados.atualizar_ranking"),
             patch(
-                "candidatos.api.views.habilitados.atualizar_ranking_escolha"
+                "candidatos.api.views.habilitados.RankingService.atualizar_ranking"
+            ),
+            patch(
+                "candidatos.api.views.habilitados.RankingService.atualizar_ranking_escolha"
             ),
         ):
             resp = api_client.get(
@@ -840,7 +850,7 @@ class TestEliminar:
         hist_mock = MagicMock()
         hist_mock.uuid = uuid4()
         with patch(
-            "candidatos.api.views.habilitados.aplicar_eliminacao",
+            "candidatos.api.views.habilitados.EliminacaoService.aplicar_eliminacao",
             return_value=(cc, hist_mock),
         ):
             resp = api_client.post(
@@ -856,7 +866,7 @@ class TestEliminar:
     def test_value_error_retorna_400(self, api_client):
         """Verifica value error retorna 400."""
         with patch(
-            "candidatos.api.views.habilitados.aplicar_eliminacao",
+            "candidatos.api.views.habilitados.EliminacaoService.aplicar_eliminacao",
             side_effect=ValueError("candidato não encontrado"),
         ):
             resp = api_client.post(
@@ -958,12 +968,13 @@ class TestMandadoJudicial:
     def test_retorna_apenas_com_reclassificacao_judicial(
         self, api_client, concurso_uuid
     ):
-        """Verifica que só retorna quem tem mandado judicial ativo."""
+        """Verifica que só retorna quem tem mandado_judicial no CC."""
         com_mandado = self._criar_cc(
             concurso_uuid,
             "Ana Judicial",
             "111.111.111-11",
             classificacao_nna=1,
+            mandado_judicial=True,
         )
         ConcursoCandidatoReclassificacao.objects.create(
             concurso_candidato=com_mandado,
@@ -971,7 +982,11 @@ class TestMandadoJudicial:
             mandado_judicial=True,
         )
         sem_mandado = self._criar_cc(
-            concurso_uuid, "Bruno Comum", "222.222.222-22", classificacao_nna=2
+            concurso_uuid,
+            "Bruno Comum",
+            "222.222.222-22",
+            classificacao_nna=2,
+            mandado_judicial=False,
         )
         ConcursoCandidatoReclassificacao.objects.create(
             concurso_candidato=sem_mandado,
@@ -995,7 +1010,13 @@ class TestMandadoJudicial:
             ("Ana", "111.111.111-11", "1001"),
             ("Bruno", "222.222.222-22", "2002"),
         ):
-            cc = self._criar_cc(concurso_uuid, nome, cpf, codigo_cargo=cargo)
+            cc = self._criar_cc(
+                concurso_uuid,
+                nome,
+                cpf,
+                codigo_cargo=cargo,
+                mandado_judicial=True,
+            )
             ConcursoCandidatoReclassificacao.objects.create(
                 concurso_candidato=cc,
                 desclassificado_de="PCD",
@@ -1024,6 +1045,7 @@ class TestMandadoJudicial:
             "111.111.111-11",
             classificacao_nna=1,
             classificacao_pcd=1,
+            mandado_judicial=True,
         )
         for categoria in ("NNA", "PCD"):
             ConcursoCandidatoReclassificacao.objects.create(
@@ -1047,6 +1069,7 @@ class TestMandadoJudicial:
                 concurso_uuid,
                 f"Candidato {indice:03d}",
                 f"11{indice}.111.111-1{indice}",
+                mandado_judicial=True,
             )
             ConcursoCandidatoReclassificacao.objects.create(
                 concurso_candidato=cc,
@@ -1066,12 +1089,13 @@ class TestMandadoJudicial:
     def test_nao_faz_query_por_candidato(
         self, api_client, concurso_uuid, django_assert_max_num_queries
     ):
-
+        """Verifica que a listagem não dispara N+1 por candidato."""
         for indice in range(5):
             cc = self._criar_cc(
                 concurso_uuid,
                 f"Candidato {indice}",
                 f"11{indice}.111.111-1{indice}",
+                mandado_judicial=True,
             )
             ConcursoCandidatoReclassificacao.objects.create(
                 concurso_candidato=cc,
@@ -1116,6 +1140,7 @@ class TestMandadoJudicial:
             classificacao=10,
             classificacao_nna=1,
             codigo_cargo="1001",
+            mandado_judicial=True,
         )
         ConcursoCandidatoReclassificacao.objects.create(
             concurso_candidato=cc,

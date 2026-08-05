@@ -66,6 +66,9 @@ class ConcursoCandidato(BaseModel):
     data_convocacao = models.DateTimeField(
         blank=True, null=True, verbose_name="Data de Convocação"
     )
+    mandado_judicial = models.BooleanField(
+        default=False, verbose_name="Mandado judicial"
+    )
     ranking = models.IntegerField(default=0, verbose_name="Ranking")
     ranking_escolha = models.IntegerField(
         default=0, verbose_name="Ranking da Escolha"

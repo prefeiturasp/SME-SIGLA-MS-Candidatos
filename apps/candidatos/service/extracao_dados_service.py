@@ -15,140 +15,150 @@ from django.db.models.query import QuerySet
 CATEGORIAS = ("GERAL", "PCD", "NNA")
 
 
-def montar_extracao_dados(
-    concurso_uuid: UUID | str | None = None,
-    filtros: list[dict[str, Any]] | None = None,
-) -> dict[str, Any]:
-    """Monta o dicionário de indicadores de habilitados e convocações.
+class ExtracaoDadosService:
+    """Service para agregações de habilitados e convocados."""
 
-    Args:
-        concurso_uuid: Concurso a restringir; ausente → todos os concursos.
-        filtros: Lista de ``{ano, processo_uuids}``; ausente (ou vazia) →
-            agregado direto na raiz, sem quebra por ano.
+    @classmethod
+    def montar_extracao_dados(
+        cls,
+        concurso_uuid: UUID | str | None = None,
+        filtros: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
+        """Monta o dicionário de indicadores de habilitados e convocações.
 
-    Returns:
-        Dicionário com ``habilitados`` e, por ano (ou na raiz), os
-        ``convocados`` e ``nao-convocados`` do escopo.
-    """
-    habilitados = _contar_habilitados(concurso_uuid)
-    resultado: dict[str, Any] = {"habilitados": habilitados}
+        Args:
+            concurso_uuid: Concurso a restringir; ausente → todos os concursos.
+            filtros: Lista de ``{ano, processo_uuids}``; ausente (ou vazia) →
+                agregado direto na raiz, sem quebra por ano.
 
-    if filtros:
-        for filtro in filtros:
-            ano = str(filtro["ano"])
-            processo_uuids = filtro["processo_uuids"]
-            habilitados_ano = _contar_habilitados_por_processos(
-                concurso_uuid, processo_uuids
+        Returns:
+            Dicionário com ``habilitados`` e, por ano (ou na raiz), os
+            ``convocados`` e ``nao-convocados`` do escopo.
+        """
+        habilitados = cls._contar_habilitados(concurso_uuid)
+        resultado: dict[str, Any] = {"habilitados": habilitados}
+
+        if filtros:
+            for filtro in filtros:
+                ano = str(filtro["ano"])
+                processo_uuids = filtro["processo_uuids"]
+                habilitados_ano = cls._contar_habilitados_por_processos(
+                    concurso_uuid, processo_uuids
+                )
+                convocados = cls._contar_convocados(
+                    concurso_uuid, processo_uuids
+                )
+                resultado[ano] = {
+                    "habilitados": habilitados_ano,
+                    "convocados": convocados,
+                    "nao-convocados": habilitados["total"] - convocados,
+                }
+        else:
+            convocados = cls._contar_convocados(concurso_uuid)
+            resultado.update(
+                {
+                    "convocados": convocados,
+                    "nao-convocados": habilitados["total"] - convocados,
+                }
             )
-            convocados = _contar_convocados(concurso_uuid, processo_uuids)
-            resultado[ano] = {
-                "habilitados": habilitados_ano,
-                "convocados": convocados,
-                "nao-convocados": habilitados["total"] - convocados,
-            }
-    else:
-        convocados = _contar_convocados(concurso_uuid)
-        resultado.update(
-            {
-                "convocados": convocados,
-                "nao-convocados": habilitados["total"] - convocados,
-            }
-        )
 
-    return resultado
+        return resultado
 
+    @staticmethod
+    def _queryset_base(
+        concurso_uuid: UUID | str | None = None,
+    ) -> QuerySet[ConcursoCandidato]:
+        """Queryset canônico de habilitados filtrado por concurso.
 
-def _queryset_base(
-    concurso_uuid: UUID | str | None = None,
-) -> QuerySet[ConcursoCandidato]:
-    """Queryset canônico de habilitados filtrado por concurso.
+        Args:
+            concurso_uuid: Concurso a restringir; ausente → todos os concursos.
 
-    Args:
-        concurso_uuid: Concurso a restringir; ausente → todos os concursos.
+        Returns:
+            ``ConcursoCandidato`` filtrado pelo escopo informado.
+        """
+        if concurso_uuid:
+            return ConcursoCandidatoRepository.filtrar_por_concurso_uuid(
+                ConcursoCandidato.objects.all(), concurso_uuid
+            )
+        return ConcursoCandidato.objects.all()
 
-    Returns:
-        ``ConcursoCandidato`` filtrado pelo escopo informado.
-    """
-    if concurso_uuid:
-        return ConcursoCandidatoRepository.filtrar_por_concurso_uuid(
-            ConcursoCandidato.objects.all(), concurso_uuid
-        )
-    return ConcursoCandidato.objects.all()
+    @staticmethod
+    def _agregar_por_categoria(
+        qs: QuerySet[ConcursoCandidato],
+    ) -> dict[str, int]:
+        """Agrega a contagem por ``categoria_efetiva``.
 
+        Args:
+            qs: Queryset de ``ConcursoCandidato`` a agregar.
 
-def _agregar_por_categoria(
-    qs: QuerySet[ConcursoCandidato],
-) -> dict[str, int]:
-    """Agrega a contagem por ``categoria_efetiva``.
+        Returns:
+            Dicionário com o ``total`` e a quebra por ``geral`` / ``pcd`` /
+            ``nna``.
+        """
+        return ConcursoCandidatoRepository.agregar_por_categoria(qs)
 
-    Args:
-        qs: Queryset de ``ConcursoCandidato`` a agregar.
+    @classmethod
+    def _contar_habilitados(
+        cls,
+        concurso_uuid: UUID | str | None = None,
+    ) -> dict[str, int]:
+        """Conta habilitados por categoria efetiva no escopo informado.
 
-    Returns:
-        Dicionário com o ``total`` e a quebra por ``geral`` / ``pcd`` /
-        ``nna``.
-    """
-    return ConcursoCandidatoRepository.agregar_por_categoria(qs)
+        Args:
+            concurso_uuid: Concurso a restringir; ausente → todos os concursos.
 
+        Returns:
+            Dicionário com o ``total`` e a quebra por ``geral`` / ``pcd`` /
+            ``nna``.
+        """
+        return cls._agregar_por_categoria(cls._queryset_base(concurso_uuid))
 
-def _contar_habilitados(
-    concurso_uuid: UUID | str | None = None,
-) -> dict[str, int]:
-    """Conta habilitados por categoria efetiva no escopo informado.
+    @classmethod
+    def _contar_habilitados_por_processos(
+        cls,
+        concurso_uuid: UUID | str | None = None,
+        processo_uuids: list[UUID | str] | None = None,
+    ) -> dict[str, int]:
+        """Conta habilitados por categoria no escopo dos processos informados.
 
-    Args:
-        concurso_uuid: Concurso a restringir; ausente → todos os concursos.
+        Args:
+            concurso_uuid: Concurso a restringir; ausente → todos os concursos.
+            processo_uuids: Processos a filtrar; vazio → zeros.
 
-    Returns:
-        Dicionário com o ``total`` e a quebra por ``geral`` / ``pcd`` /
-        ``nna``.
-    """
-    return _agregar_por_categoria(_queryset_base(concurso_uuid))
+        Returns:
+            Dicionário com o ``total`` e a quebra por ``geral`` / ``pcd`` /
+            ``nna`` no escopo, restrito aos processos informados.
+        """
+        if not processo_uuids:
+            return {"total": 0, "geral": 0, "pcd": 0, "nna": 0}
 
-
-def _contar_habilitados_por_processos(
-    concurso_uuid: UUID | str | None = None,
-    processo_uuids: list[UUID | str] | None = None,
-) -> dict[str, int]:
-    """Conta habilitados por categoria no escopo dos processos informados.
-
-    Args:
-        concurso_uuid: Concurso a restringir; ausente → todos os concursos.
-        processo_uuids: Processos a filtrar; vazio → zeros.
-
-    Returns:
-        Dicionário com o ``total`` e a quebra por ``geral`` / ``pcd`` /
-        ``nna`` no escopo, restrito aos processos informados.
-    """
-    if not processo_uuids:
-        return {"total": 0, "geral": 0, "pcd": 0, "nna": 0}
-
-    qs = ConcursoCandidatoRepository.filtrar_por_processos(
-        _queryset_base(concurso_uuid), processo_uuids
-    )
-    return _agregar_por_categoria(qs)
-
-
-def _contar_convocados(
-    concurso_uuid: UUID | str | None = None,
-    processo_uuids: list[UUID | str] | None = None,
-) -> int:
-    """Conta ``foi_convocado=True`` no escopo informado.
-
-    Args:
-        concurso_uuid: Concurso a restringir; ausente → todos os concursos.
-        processo_uuids: Processos a filtrar. ``None`` → modo "ALL" (todos os
-            convocados do escopo); lista → filtra também pelos processos do
-            ano.
-
-    Returns:
-        Quantidade de convocados no escopo informado.
-    """
-    qs = ConcursoCandidatoRepository.filtrar_convocados(
-        _queryset_base(concurso_uuid)
-    )
-    if processo_uuids is not None:
         qs = ConcursoCandidatoRepository.filtrar_por_processos(
-            qs, processo_uuids
+            cls._queryset_base(concurso_uuid), processo_uuids
         )
-    return ConcursoCandidatoRepository.contar(qs)
+        return cls._agregar_por_categoria(qs)
+
+    @classmethod
+    def _contar_convocados(
+        cls,
+        concurso_uuid: UUID | str | None = None,
+        processo_uuids: list[UUID | str] | None = None,
+    ) -> int:
+        """Conta ``foi_convocado=True`` no escopo informado.
+
+        Args:
+            concurso_uuid: Concurso a restringir; ausente → todos os concursos.
+            processo_uuids: Processos a filtrar. ``None`` → modo "ALL"
+                (todos os convocados do escopo); lista → filtra também
+                pelos processos do ano.
+
+        Returns:
+            Quantidade de convocados no escopo informado.
+        """
+        qs = ConcursoCandidatoRepository.filtrar_convocados(
+            cls._queryset_base(concurso_uuid)
+        )
+        if processo_uuids is not None:
+            qs = ConcursoCandidatoRepository.filtrar_por_processos(
+                qs, processo_uuids
+            )
+        return ConcursoCandidatoRepository.contar(qs)

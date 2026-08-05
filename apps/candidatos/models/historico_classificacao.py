@@ -41,12 +41,6 @@ class ConcursoCandidatoHistoricoClassificacao(BaseModel):
     classificacao_pcd_nova = models.IntegerField(
         blank=True, null=True, verbose_name="Classificação PCD nova"
     )
-    mandado_judicial = models.BooleanField(
-        null=True,
-        blank=True,
-        default=None,
-        verbose_name="Mandado judicial",
-    )
     foi_convocado = models.BooleanField(
         default=False, verbose_name="Foi convocado?"
     )

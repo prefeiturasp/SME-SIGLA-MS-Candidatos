@@ -88,6 +88,13 @@ class ConcursoCandidatoRepository:
         return ConcursoCandidato.objects.create(**dados)
 
     @classmethod
+    def existe_por_concurso_uuid(cls, concurso_uuid: UUID | str) -> bool:
+        """Indica se já existe algum candidato no concurso informado."""
+        return ConcursoCandidato.objects.filter(
+            concurso_uuid=concurso_uuid
+        ).exists()
+
+    @classmethod
     def salvar(
         cls,
         concurso_candidato: ConcursoCandidato,
@@ -452,11 +459,12 @@ class ConcursoCandidatoRepository:
                         mandado_judicial=True
                     ).order_by("-criado_em"),
                     to_attr="reclassificacoes_judiciais",
-                )
+                ),
+                "historicos_classificacao",
             )
             .filter(
                 concurso_uuid=concurso_uuid,
-                historicos_reclassificacao__mandado_judicial=True,
+                mandado_judicial=True,
                 foi_convocado=False,
             )
             .distinct()

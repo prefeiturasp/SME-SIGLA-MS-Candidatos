@@ -12,10 +12,7 @@ from candidatos.models import (
     Candidato,
     ConcursoCandidato,
 )
-from candidatos.service.ranking_service import (
-    atualizar_ranking,
-    atualizar_ranking_escolha,
-)
+from candidatos.service.ranking_service import RankingService
 
 pytestmark = pytest.mark.django_db
 
@@ -66,12 +63,12 @@ def dois_cc(concurso_uuid):
 
 def test_atualizar_ranking_lista_vazia_nao_quebra():
     """Verifica atualizar ranking lista vazia nao quebra."""
-    atualizar_ranking([])
+    RankingService.atualizar_ranking([])
 
 
 def test_atualizar_ranking_atribui_ranking_e_persiste(dois_cc):
     """Verifica atualizar ranking atribui ranking e persiste."""
-    atualizar_ranking(dois_cc)
+    RankingService.atualizar_ranking(dois_cc)
     dois_cc[0].refresh_from_db()
     dois_cc[1].refresh_from_db()
     assert dois_cc[0].ranking == 1
@@ -85,13 +82,13 @@ def test_atualizar_ranking_excecao_nao_propaga():
         "candidatos.service.ranking_service.ConcursoCandidatoRepository.bulk_atualizar_ranking",
         side_effect=Exception("db"),
     ):
-        atualizar_ranking(itens)
+        RankingService.atualizar_ranking(itens)
     assert itens[0].ranking == 1
 
 
 def test_atualizar_ranking_escolha_lista_vazia_nao_quebra():
     """Verifica atualizar ranking escolha lista vazia nao quebra."""
-    atualizar_ranking_escolha([])
+    RankingService.atualizar_ranking_escolha([])
 
 
 def test_atualizar_ranking_escolha_ordena_pcd_primeiro_e_persiste(
@@ -117,7 +114,7 @@ def test_atualizar_ranking_escolha_ordena_pcd_primeiro_e_persiste(
         ranking_escolha=0,
     )
     itens = [c_geral, c_pcd]
-    atualizar_ranking_escolha(itens)
+    RankingService.atualizar_ranking_escolha(itens)
     c_pcd.refresh_from_db()
     c_geral.refresh_from_db()
     assert c_pcd.ranking_escolha == 1
@@ -133,5 +130,5 @@ def test_atualizar_ranking_escolha_excecao_nao_propaga():
         "candidatos.service.ranking_service.ConcursoCandidatoRepository.bulk_atualizar_ranking_escolha",
         side_effect=Exception("db"),
     ):
-        atualizar_ranking_escolha(itens)
+        RankingService.atualizar_ranking_escolha(itens)
     assert itens[0].ranking_escolha == 1

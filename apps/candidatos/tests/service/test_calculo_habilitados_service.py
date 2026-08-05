@@ -15,15 +15,7 @@ from candidatos.models import (
     ConcursoCandidatoReclassificacao,
 )
 from candidatos.service.calculo_habilitados_service import (
-    _atualizar_processo_uuid_para_eliminados,
-    _atualizar_processo_uuid_para_reclassificados,
-    _safe_max_classificacao,
-    calcular_posicao_nna,
-    calcular_posicao_pcd,
-    calcular_quantidade_geral,
-    calcular_quantidade_nna,
-    calcular_quantidade_pcd,
-    gerar_sequencia_convocados,
+    CalculoHabilitadosService,
 )
 
 pytestmark = pytest.mark.django_db
@@ -75,23 +67,33 @@ class TestCalcularQuantidade:
 
     def test_calcular_quantidade_nna(self):
         """Verifica calcular quantidade nna."""
-        assert calcular_quantidade_nna(0, 0.2) == 0
-        assert calcular_quantidade_nna(10, 0.2) == 2
-        assert calcular_quantidade_nna(7, 0.2) == 2
-        assert calcular_quantidade_nna(100, 0.2) == 20
+        assert CalculoHabilitadosService.calcular_quantidade_nna(0, 0.2) == 0
+        assert CalculoHabilitadosService.calcular_quantidade_nna(10, 0.2) == 2
+        assert CalculoHabilitadosService.calcular_quantidade_nna(7, 0.2) == 2
+        assert (
+            CalculoHabilitadosService.calcular_quantidade_nna(100, 0.2) == 20
+        )
 
     def test_calcular_quantidade_pcd(self):
         """Verifica calcular quantidade pcd."""
-        assert calcular_quantidade_pcd(0, 0.05) == 0
-        assert calcular_quantidade_pcd(100, 0.05) == 5
-        assert calcular_quantidade_pcd(30, 0.05) == 2
-        assert calcular_quantidade_pcd(20, 0.05) == 1
-        assert calcular_quantidade_pcd(10, 0.05) == 1
+        assert CalculoHabilitadosService.calcular_quantidade_pcd(0, 0.05) == 0
+        assert (
+            CalculoHabilitadosService.calcular_quantidade_pcd(100, 0.05) == 5
+        )
+        assert CalculoHabilitadosService.calcular_quantidade_pcd(30, 0.05) == 2
+        assert CalculoHabilitadosService.calcular_quantidade_pcd(20, 0.05) == 1
+        assert CalculoHabilitadosService.calcular_quantidade_pcd(10, 0.05) == 1
 
     def test_calcular_quantidade_geral(self):
         """Verifica calcular quantidade geral."""
-        assert calcular_quantidade_geral(100, 0.2, 0.05) == 100 - 20 - 5
-        assert calcular_quantidade_geral(10, 0.2, 0.05) == 10 - 2 - 1
+        assert (
+            CalculoHabilitadosService.calcular_quantidade_geral(100, 0.2, 0.05)
+            == 100 - 20 - 5
+        )
+        assert (
+            CalculoHabilitadosService.calcular_quantidade_geral(10, 0.2, 0.05)
+            == 10 - 2 - 1
+        )
 
 
 class TestCalcularPosicao:
@@ -99,15 +101,15 @@ class TestCalcularPosicao:
 
     def test_calcular_posicao_nna(self):
         """Verifica calcular posicao nna."""
-        assert calcular_posicao_nna(1) == 1
-        assert calcular_posicao_nna(2) == 6
-        assert calcular_posicao_nna(3) == 11
+        assert CalculoHabilitadosService.calcular_posicao_nna(1) == 1
+        assert CalculoHabilitadosService.calcular_posicao_nna(2) == 6
+        assert CalculoHabilitadosService.calcular_posicao_nna(3) == 11
 
     def test_calcular_posicao_pcd(self):
         """Verifica calcular posicao pcd."""
-        assert calcular_posicao_pcd(1) == 10
-        assert calcular_posicao_pcd(2) == 30
-        assert calcular_posicao_pcd(3) == 50
+        assert CalculoHabilitadosService.calcular_posicao_pcd(1) == 10
+        assert CalculoHabilitadosService.calcular_posicao_pcd(2) == 30
+        assert CalculoHabilitadosService.calcular_posicao_pcd(3) == 50
 
 
 class TestSafeMaxClassificacao:
@@ -121,7 +123,12 @@ class TestSafeMaxClassificacao:
         o2 = MagicMock(
             classificacao=10, classificacao_nna=None, classificacao_pcd=None
         )
-        assert _safe_max_classificacao([o1, o2], "classificacao") == 10
+        assert (
+            CalculoHabilitadosService._safe_max_classificacao(
+                [o1, o2], "classificacao"
+            )
+            == 10
+        )
 
     def test_ignora_nulos(self):
         """Verifica ignora nulos."""
@@ -131,7 +138,12 @@ class TestSafeMaxClassificacao:
         o2 = MagicMock(
             classificacao=3, classificacao_nna=None, classificacao_pcd=None
         )
-        assert _safe_max_classificacao([o1, o2], "classificacao") == 3
+        assert (
+            CalculoHabilitadosService._safe_max_classificacao(
+                [o1, o2], "classificacao"
+            )
+            == 3
+        )
 
     def test_geral_ignora_itens_com_classificacao_nna(self):
         """Verifica geral ignora itens com classificacao nna."""
@@ -141,7 +153,12 @@ class TestSafeMaxClassificacao:
         o2 = MagicMock(
             classificacao=5, classificacao_nna=None, classificacao_pcd=None
         )
-        assert _safe_max_classificacao([o1, o2], "classificacao") == 5
+        assert (
+            CalculoHabilitadosService._safe_max_classificacao(
+                [o1, o2], "classificacao"
+            )
+            == 5
+        )
 
     def test_geral_ignora_itens_com_classificacao_pcd(self):
         """Verifica geral ignora itens com classificacao pcd."""
@@ -151,24 +168,44 @@ class TestSafeMaxClassificacao:
         o2 = MagicMock(
             classificacao=5, classificacao_nna=None, classificacao_pcd=None
         )
-        assert _safe_max_classificacao([o1, o2], "classificacao") == 5
+        assert (
+            CalculoHabilitadosService._safe_max_classificacao(
+                [o1, o2], "classificacao"
+            )
+            == 5
+        )
 
     def test_lista_vazia_retorna_none(self):
         """Verifica lista vazia retorna none."""
-        assert _safe_max_classificacao([], "classificacao") is None
+        assert (
+            CalculoHabilitadosService._safe_max_classificacao(
+                [], "classificacao"
+            )
+            is None
+        )
 
     def test_todos_nulos_retorna_none(self):
         """Verifica todos nulos retorna none."""
         o = MagicMock(
             classificacao=None, classificacao_nna=None, classificacao_pcd=None
         )
-        assert _safe_max_classificacao([o], "classificacao") is None
+        assert (
+            CalculoHabilitadosService._safe_max_classificacao(
+                [o], "classificacao"
+            )
+            is None
+        )
 
     def test_classificacao_nna_attr(self):
         """Verifica classificacao nna attr."""
         o1 = MagicMock(classificacao_nna=2)
         o2 = MagicMock(classificacao_nna=7)
-        assert _safe_max_classificacao([o1, o2], "classificacao_nna") == 7
+        assert (
+            CalculoHabilitadosService._safe_max_classificacao(
+                [o1, o2], "classificacao_nna"
+            )
+            == 7
+        )
 
     def test_ignora_item_que_lanca_excecao_ao_acessar_attr(self):
         """Verifica ignora item que lanca excecao ao acessar attr."""
@@ -188,7 +225,12 @@ class TestSafeMaxClassificacao:
             classificacao=5, classificacao_nna=None, classificacao_pcd=None
         )
         lista = [o1, BadObj()]
-        assert _safe_max_classificacao(lista, "classificacao") == 5
+        assert (
+            CalculoHabilitadosService._safe_max_classificacao(
+                lista, "classificacao"
+            )
+            == 5
+        )
 
 
 class TestAtualizarProcessoUuidReclassificados:
@@ -196,7 +238,7 @@ class TestAtualizarProcessoUuidReclassificados:
 
     def test_sem_processo_uuid_nao_faz_nada(self, concurso_uuid):
         """Verifica sem processo uuid nao faz nada."""
-        _atualizar_processo_uuid_para_reclassificados(
+        CalculoHabilitadosService._atualizar_processo_uuid_para_reclassificados(
             final_itens=[],
             categoria="NNA",
             classificacao_attr="classificacao_nna",
@@ -227,7 +269,7 @@ class TestAtualizarProcessoUuidReclassificados:
         obj_maior.classificacao_pcd = None
         obj_maior.classificacao = None
         processo_uuid = uuid4()
-        _atualizar_processo_uuid_para_reclassificados(
+        CalculoHabilitadosService._atualizar_processo_uuid_para_reclassificados(
             final_itens=[obj_maior],
             categoria="NNA",
             classificacao_attr="classificacao_nna",
@@ -246,7 +288,7 @@ class TestAtualizarProcessoUuidEliminados:
 
     def test_sem_processo_uuid_nao_faz_nada(self, concurso_uuid):
         """Verifica sem processo uuid nao faz nada."""
-        _atualizar_processo_uuid_para_eliminados(
+        CalculoHabilitadosService._atualizar_processo_uuid_para_eliminados(
             final_itens=[],
             processo_uuid=None,
             concurso_uuid=concurso_uuid,
@@ -272,7 +314,7 @@ class TestAtualizarProcessoUuidEliminados:
         obj.classificacao_nna = None
         obj.classificacao_pcd = None
         processo_uuid = uuid4()
-        _atualizar_processo_uuid_para_eliminados(
+        CalculoHabilitadosService._atualizar_processo_uuid_para_eliminados(
             final_itens=[obj],
             processo_uuid=processo_uuid,
             concurso_uuid=concurso_uuid,
@@ -289,20 +331,20 @@ class TestGerarSequenciaConvocados:
         """Verifica total zero retorna lista vazia."""
         with (
             patch(
-                "candidatos.service.calculo_habilitados_service.atualizar_ranking"
+                "candidatos.service.calculo_habilitados_service.RankingService.atualizar_ranking"
             ),
             patch(
-                "candidatos.service.calculo_habilitados_service.atualizar_ranking_escolha"
+                "candidatos.service.calculo_habilitados_service.RankingService.atualizar_ranking_escolha"
             ),
         ):
             assert (
-                gerar_sequencia_convocados(
+                CalculoHabilitadosService.gerar_sequencia_convocados(
                     0, concurso_uuid=concurso_uuid, codigo_cargo="CARGO1"
                 )
                 == []
             )
             assert (
-                gerar_sequencia_convocados(
+                CalculoHabilitadosService.gerar_sequencia_convocados(
                     -1, concurso_uuid=concurso_uuid, codigo_cargo="CARGO1"
                 )
                 == []
@@ -312,14 +354,14 @@ class TestGerarSequenciaConvocados:
         """Verifica sem candidatos retorna lista vazia."""
         with (
             patch(
-                "candidatos.service.calculo_habilitados_service.atualizar_ranking"
+                "candidatos.service.calculo_habilitados_service.RankingService.atualizar_ranking"
             ),
             patch(
-                "candidatos.service.calculo_habilitados_service.atualizar_ranking_escolha"
+                "candidatos.service.calculo_habilitados_service.RankingService.atualizar_ranking_escolha"
             ),
         ):
             itens, porcentagem_nna, porcentagem_pcd = (
-                gerar_sequencia_convocados(
+                CalculoHabilitadosService.gerar_sequencia_convocados(
                     5, concurso_uuid=concurso_uuid, codigo_cargo="CARGO1"
                 )
             )
@@ -339,13 +381,13 @@ class TestGerarSequenciaConvocados:
             )
         with (
             patch(
-                "candidatos.service.calculo_habilitados_service.atualizar_ranking"
+                "candidatos.service.calculo_habilitados_service.RankingService.atualizar_ranking"
             ),
             patch(
-                "candidatos.service.calculo_habilitados_service.atualizar_ranking_escolha"
+                "candidatos.service.calculo_habilitados_service.RankingService.atualizar_ranking_escolha"
             ),
         ):
-            itens, _, _ = gerar_sequencia_convocados(
+            itens, _, _ = CalculoHabilitadosService.gerar_sequencia_convocados(
                 3, concurso_uuid=concurso_uuid, codigo_cargo="CARGO1"
             )
         assert len(itens) == 3
@@ -365,13 +407,13 @@ class TestGerarSequenciaConvocados:
             )
         with (
             patch(
-                "candidatos.service.calculo_habilitados_service.atualizar_ranking"
+                "candidatos.service.calculo_habilitados_service.RankingService.atualizar_ranking"
             ),
             patch(
-                "candidatos.service.calculo_habilitados_service.atualizar_ranking_escolha"
+                "candidatos.service.calculo_habilitados_service.RankingService.atualizar_ranking_escolha"
             ),
         ):
-            itens, _, _ = gerar_sequencia_convocados(
+            itens, _, _ = CalculoHabilitadosService.gerar_sequencia_convocados(
                 4, concurso_uuid=concurso_uuid, codigo_cargo="CARGO1"
             )
         assert len(itens) == 4
@@ -408,13 +450,13 @@ class TestGerarSequenciaConvocados:
         )
         with (
             patch(
-                "candidatos.service.calculo_habilitados_service.atualizar_ranking"
+                "candidatos.service.calculo_habilitados_service.RankingService.atualizar_ranking"
             ),
             patch(
-                "candidatos.service.calculo_habilitados_service.atualizar_ranking_escolha"
+                "candidatos.service.calculo_habilitados_service.RankingService.atualizar_ranking_escolha"
             ),
         ):
-            itens, _, _ = gerar_sequencia_convocados(
+            itens, _, _ = CalculoHabilitadosService.gerar_sequencia_convocados(
                 4, concurso_uuid=concurso_uuid, codigo_cargo="CARGO1"
             )
         assert len(itens) == 3
@@ -428,13 +470,13 @@ class TestGerarSequenciaConvocados:
         _cc(concurso_uuid, codigo_cargo="CARGO1", classificacao=2)
         with (
             patch(
-                "candidatos.service.calculo_habilitados_service.atualizar_ranking"
+                "candidatos.service.calculo_habilitados_service.RankingService.atualizar_ranking"
             ),
             patch(
-                "candidatos.service.calculo_habilitados_service.atualizar_ranking_escolha"
+                "candidatos.service.calculo_habilitados_service.RankingService.atualizar_ranking_escolha"
             ),
         ):
-            itens, _, _ = gerar_sequencia_convocados(
+            itens, _, _ = CalculoHabilitadosService.gerar_sequencia_convocados(
                 3,
                 concurso_uuid=concurso_uuid,
                 codigo_cargo="CARGO1",
@@ -461,13 +503,13 @@ class TestGerarSequenciaConvocados:
         )
         with (
             patch(
-                "candidatos.service.calculo_habilitados_service.atualizar_ranking"
+                "candidatos.service.calculo_habilitados_service.RankingService.atualizar_ranking"
             ),
             patch(
-                "candidatos.service.calculo_habilitados_service.atualizar_ranking_escolha"
+                "candidatos.service.calculo_habilitados_service.RankingService.atualizar_ranking_escolha"
             ),
         ):
-            itens, _, _ = gerar_sequencia_convocados(
+            itens, _, _ = CalculoHabilitadosService.gerar_sequencia_convocados(
                 2, concurso_uuid=concurso_uuid, codigo_cargo="CARGO1"
             )
         assert len(itens) >= 1
@@ -478,13 +520,13 @@ class TestGerarSequenciaConvocados:
             _cc(concurso_uuid, codigo_cargo="CARGO1", classificacao=i)
         with (
             patch(
-                "candidatos.service.calculo_habilitados_service.atualizar_ranking"
+                "candidatos.service.calculo_habilitados_service.RankingService.atualizar_ranking"
             ) as mock_rank,
             patch(
-                "candidatos.service.calculo_habilitados_service.atualizar_ranking_escolha"
+                "candidatos.service.calculo_habilitados_service.RankingService.atualizar_ranking_escolha"
             ),
         ):
-            itens, _, _ = gerar_sequencia_convocados(
+            itens, _, _ = CalculoHabilitadosService.gerar_sequencia_convocados(
                 3, concurso_uuid=concurso_uuid, codigo_cargo="CARGO1"
             )
         assert len(itens) == 3
@@ -501,13 +543,13 @@ class TestGerarSequenciaConvocados:
         processo_uuid = uuid4()
         with (
             patch(
-                "candidatos.service.calculo_habilitados_service.atualizar_ranking"
+                "candidatos.service.calculo_habilitados_service.RankingService.atualizar_ranking"
             ),
             patch(
-                "candidatos.service.calculo_habilitados_service.atualizar_ranking_escolha"
+                "candidatos.service.calculo_habilitados_service.RankingService.atualizar_ranking_escolha"
             ),
         ):
-            itens, _, _ = gerar_sequencia_convocados(
+            itens, _, _ = CalculoHabilitadosService.gerar_sequencia_convocados(
                 2,
                 concurso_uuid=concurso_uuid,
                 codigo_cargo="CARGO1",
@@ -536,13 +578,13 @@ class TestGerarSequenciaConvocados:
         )
         with (
             patch(
-                "candidatos.service.calculo_habilitados_service.atualizar_ranking"
+                "candidatos.service.calculo_habilitados_service.RankingService.atualizar_ranking"
             ),
             patch(
-                "candidatos.service.calculo_habilitados_service.atualizar_ranking_escolha"
+                "candidatos.service.calculo_habilitados_service.RankingService.atualizar_ranking_escolha"
             ),
         ):
-            itens, _, _ = gerar_sequencia_convocados(
+            itens, _, _ = CalculoHabilitadosService.gerar_sequencia_convocados(
                 5, concurso_uuid=concurso_uuid, codigo_cargo="CARGO1"
             )
         assert len(itens) >= 2
@@ -565,13 +607,13 @@ class TestGerarSequenciaConvocados:
         )
         with (
             patch(
-                "candidatos.service.calculo_habilitados_service.atualizar_ranking"
+                "candidatos.service.calculo_habilitados_service.RankingService.atualizar_ranking"
             ),
             patch(
-                "candidatos.service.calculo_habilitados_service.atualizar_ranking_escolha"
+                "candidatos.service.calculo_habilitados_service.RankingService.atualizar_ranking_escolha"
             ),
         ):
-            itens, _, _ = gerar_sequencia_convocados(
+            itens, _, _ = CalculoHabilitadosService.gerar_sequencia_convocados(
                 5, concurso_uuid=concurso_uuid, codigo_cargo=""
             )
         assert len(itens) == 1

@@ -11,10 +11,7 @@ from candidatos.models import (
 from candidatos.repository import (
     ConcursoCandidatoReclassificacaoRepository,
 )
-from candidatos.service.reclassificacao_service import (
-    _categoria_efetiva_calculada,
-    aplicar_reclassificacao,
-)
+from candidatos.service.reclassificacao_service import ReclassificacaoService
 
 pytestmark = pytest.mark.django_db
 
@@ -100,7 +97,7 @@ class TestAplicarReclassificacao:
         self, cc_com_nna
     ):
         """Verifica reclassificar nna atualiza categoria para geral."""
-        cc, hist = aplicar_reclassificacao(
+        cc, hist = ReclassificacaoService.aplicar_reclassificacao(
             candidato_uuid=str(cc_com_nna.uuid),
             desclassificar_de="NNA",
             motivo="Reclassificação solicitada",
@@ -119,7 +116,7 @@ class TestAplicarReclassificacao:
         self, cc_com_pcd
     ):
         """Verifica reclassificar pcd atualiza categoria para geral."""
-        cc, hist = aplicar_reclassificacao(
+        cc, hist = ReclassificacaoService.aplicar_reclassificacao(
             candidato_uuid=str(cc_com_pcd.uuid),
             desclassificar_de="PCD",
             motivo="",
@@ -136,7 +133,7 @@ class TestAplicarReclassificacao:
         self, cc_com_nna
     ):
         """Verifica reclassificar aceita desclassificar de minusculo."""
-        cc, _ = aplicar_reclassificacao(
+        cc, _ = ReclassificacaoService.aplicar_reclassificacao(
             candidato_uuid=str(cc_com_nna.uuid),
             desclassificar_de="nna",
             motivo="",
@@ -148,7 +145,7 @@ class TestAplicarReclassificacao:
     def test_reclassificar_cc_inexistente_levanta_does_not_exist(self):
         """Verifica reclassificar inexistente levanta DoesNotExist."""
         with pytest.raises(ConcursoCandidato.DoesNotExist):
-            aplicar_reclassificacao(
+            ReclassificacaoService.aplicar_reclassificacao(
                 candidato_uuid=str(uuid4()),
                 desclassificar_de="NNA",
                 motivo="",
@@ -160,7 +157,7 @@ class TestAplicarReclassificacao:
     ):
         """Verifica reclassificar desclassificar de invalido levanta value."""
         with pytest.raises(ValueError, match="desclassificar_de inválido"):
-            aplicar_reclassificacao(
+            ReclassificacaoService.aplicar_reclassificacao(
                 candidato_uuid=str(cc_com_nna.uuid),
                 desclassificar_de="INVALIDO",
                 motivo="",
@@ -172,7 +169,7 @@ class TestAplicarReclassificacao:
     ):
         """Verifica reclassificar sem classificacao nna levanta value error."""
         with pytest.raises(ValueError, match="não possui classificação NNA"):
-            aplicar_reclassificacao(
+            ReclassificacaoService.aplicar_reclassificacao(
                 candidato_uuid=str(cc_com_pcd.uuid),
                 desclassificar_de="NNA",
                 motivo="",
@@ -184,7 +181,7 @@ class TestAplicarReclassificacao:
     ):
         """Verifica reclassificar sem classificacao pcd levanta value error."""
         with pytest.raises(ValueError, match="não possui classificação PCD"):
-            aplicar_reclassificacao(
+            ReclassificacaoService.aplicar_reclassificacao(
                 candidato_uuid=str(cc_com_nna.uuid),
                 desclassificar_de="PCD",
                 motivo="",
@@ -195,7 +192,7 @@ class TestAplicarReclassificacao:
         self, cc_com_nna
     ):
         """Verifica reclassificar duplicado para mesma cota levanta value."""
-        aplicar_reclassificacao(
+        ReclassificacaoService.aplicar_reclassificacao(
             candidato_uuid=str(cc_com_nna.uuid),
             desclassificar_de="NNA",
             motivo="",
@@ -204,7 +201,7 @@ class TestAplicarReclassificacao:
         with pytest.raises(
             ValueError, match="Já há desclassificação registrada para NNA"
         ):
-            aplicar_reclassificacao(
+            ReclassificacaoService.aplicar_reclassificacao(
                 candidato_uuid=str(cc_com_nna.uuid),
                 desclassificar_de="NNA",
                 motivo="",
@@ -216,7 +213,7 @@ class TestAplicarReclassificacao:
     ):
         """Verifica reclassificar nna e depois pcd em candidato com ambas."""
         cc = cc_com_nna_e_pcd
-        cc, hist1 = aplicar_reclassificacao(
+        cc, hist1 = ReclassificacaoService.aplicar_reclassificacao(
             candidato_uuid=str(cc.uuid),
             desclassificar_de="PCD",
             motivo="",
@@ -230,7 +227,7 @@ class TestAplicarReclassificacao:
             ).count()
             == 1
         )
-        cc, hist2 = aplicar_reclassificacao(
+        cc, hist2 = ReclassificacaoService.aplicar_reclassificacao(
             candidato_uuid=str(cc.uuid),
             desclassificar_de="NNA",
             motivo="",
@@ -251,7 +248,7 @@ class TestAplicarReclassificacao:
         """Verifica campos classificacao originais nao sao alterados."""
         classificacao_antes = cc_com_nna.classificacao
         classificacao_nna_antes = cc_com_nna.classificacao_nna
-        aplicar_reclassificacao(
+        ReclassificacaoService.aplicar_reclassificacao(
             candidato_uuid=str(cc_com_nna.uuid),
             desclassificar_de="NNA",
             motivo="",
@@ -265,7 +262,7 @@ class TestAplicarReclassificacao:
         self, cc_com_nna_e_pcd
     ):
         """Verifica reclassificar nna com pcd atualiza para pcd."""
-        cc, _ = aplicar_reclassificacao(
+        cc, _ = ReclassificacaoService.aplicar_reclassificacao(
             candidato_uuid=str(cc_com_nna_e_pcd.uuid),
             desclassificar_de="NNA",
             motivo="",
@@ -289,7 +286,7 @@ class TestAplicarReclassificacao:
             classificacao_pcd=None,
             categoria_efetiva="NNA",
         )
-        cc, _ = aplicar_reclassificacao(
+        cc, _ = ReclassificacaoService.aplicar_reclassificacao(
             candidato_uuid=str(cc.uuid),
             desclassificar_de="NNA",
             motivo="",
@@ -334,19 +331,19 @@ def test_categoria_efetiva_calculada_pcd_ativo():
     cc = _make_cc(
         classificacao_pcd=2, classificacao_nna=3, categoria_efetiva="PCD"
     )
-    assert _categoria_efetiva_calculada(cc) == "PCD"
+    assert ReclassificacaoService._categoria_efetiva_calculada(cc) == "PCD"
 
 
 def test_categoria_efetiva_calculada_nna_ativo():
     """Verifica categoria efetiva calculada nna ativo."""
     cc = _make_cc(classificacao_nna=3, categoria_efetiva="NNA")
-    assert _categoria_efetiva_calculada(cc) == "NNA"
+    assert ReclassificacaoService._categoria_efetiva_calculada(cc) == "NNA"
 
 
 def test_categoria_efetiva_calculada_geral():
     """Verifica categoria efetiva calculada geral."""
     cc = _make_cc(categoria_efetiva="GERAL")
-    assert _categoria_efetiva_calculada(cc) == "GERAL"
+    assert ReclassificacaoService._categoria_efetiva_calculada(cc) == "GERAL"
 
 
 def test_categoria_efetiva_pcd_desclassificado_cai_para_nna():
@@ -357,7 +354,7 @@ def test_categoria_efetiva_pcd_desclassificado_cai_para_nna():
     ConcursoCandidatoReclassificacao.objects.create(
         concurso_candidato=cc, desclassificado_de="PCD"
     )
-    assert _categoria_efetiva_calculada(cc) == "NNA"
+    assert ReclassificacaoService._categoria_efetiva_calculada(cc) == "NNA"
 
 
 def test_categoria_efetiva_pcd_e_nna_desclassificados_cai_para_geral():
@@ -371,19 +368,19 @@ def test_categoria_efetiva_pcd_e_nna_desclassificados_cai_para_geral():
     ConcursoCandidatoReclassificacao.objects.create(
         concurso_candidato=cc, desclassificado_de="NNA"
     )
-    assert _categoria_efetiva_calculada(cc) == "GERAL"
+    assert ReclassificacaoService._categoria_efetiva_calculada(cc) == "GERAL"
 
 
 def test_categoria_efetiva_calculada_sem_classificacao_retorna_geral():
     """Verifica categoria efetiva calculada sem classificacao retorna geral."""
     cc = _make_cc(classificacao=None, categoria_efetiva="GERAL")
-    assert _categoria_efetiva_calculada(cc) == "GERAL"
+    assert ReclassificacaoService._categoria_efetiva_calculada(cc) == "GERAL"
 
 
 def test_aplicar_reclassificacao_nna_cria_historico():
     """Verifica aplicar reclassificacao nna cria historico."""
     cc = _make_cc(classificacao_nna=5, categoria_efetiva="NNA")
-    cc_ret, hist = aplicar_reclassificacao(
+    cc_ret, hist = ReclassificacaoService.aplicar_reclassificacao(
         candidato_uuid=cc.uuid,
         desclassificar_de="NNA",
         motivo="Documentação inválida",
@@ -403,7 +400,7 @@ def test_aplicar_reclassificacao_nna_cria_historico():
 def test_aplicar_reclassificacao_nna_atualiza_categoria_para_geral():
     """Verifica aplicar reclassificacao nna atualiza categoria para geral."""
     cc = _make_cc(classificacao_nna=5, categoria_efetiva="NNA")
-    cc_ret, _ = aplicar_reclassificacao(
+    cc_ret, _ = ReclassificacaoService.aplicar_reclassificacao(
         candidato_uuid=cc.uuid, desclassificar_de="NNA"
     )
     cc.refresh_from_db()
@@ -413,7 +410,7 @@ def test_aplicar_reclassificacao_nna_atualiza_categoria_para_geral():
 def test_aplicar_reclassificacao_pcd_cria_historico():
     """Verifica aplicar reclassificacao pcd cria historico."""
     cc = _make_cc(classificacao_pcd=3, categoria_efetiva="PCD")
-    cc_ret, hist = aplicar_reclassificacao(
+    cc_ret, hist = ReclassificacaoService.aplicar_reclassificacao(
         candidato_uuid=cc.uuid, desclassificar_de="PCD", motivo="Laudo vencido"
     )
     assert hist.desclassificado_de == "PCD"
@@ -425,7 +422,7 @@ def test_aplicar_reclassificacao_pcd_com_nna_ativo_vira_nna():
     cc = _make_cc(
         classificacao_pcd=3, classificacao_nna=5, categoria_efetiva="PCD"
     )
-    cc_ret, _ = aplicar_reclassificacao(
+    cc_ret, _ = ReclassificacaoService.aplicar_reclassificacao(
         candidato_uuid=cc.uuid, desclassificar_de="PCD"
     )
     cc.refresh_from_db()
@@ -435,7 +432,7 @@ def test_aplicar_reclassificacao_pcd_com_nna_ativo_vira_nna():
 def test_aplicar_reclassificacao_retorna_tupla_correta():
     """Verifica aplicar reclassificacao retorna tupla correta."""
     cc = _make_cc(classificacao_nna=2, categoria_efetiva="NNA")
-    result = aplicar_reclassificacao(
+    result = ReclassificacaoService.aplicar_reclassificacao(
         candidato_uuid=cc.uuid, desclassificar_de="NNA"
     )
     assert isinstance(result, tuple) and len(result) == 2
@@ -447,7 +444,7 @@ def test_aplicar_reclassificacao_retorna_tupla_correta():
 def test_aplicar_reclassificacao_sem_motivo_usa_string_vazia():
     """Verifica aplicar reclassificacao sem motivo usa string vazia."""
     cc = _make_cc(classificacao_nna=1, categoria_efetiva="NNA")
-    _, hist = aplicar_reclassificacao(
+    _, hist = ReclassificacaoService.aplicar_reclassificacao(
         candidato_uuid=cc.uuid, desclassificar_de="NNA"
     )
     assert hist.motivo == ""
@@ -458,7 +455,7 @@ def test_aplicar_reclassificacao_desclassificar_de_invalido():
     """Verifica aplicar reclassificacao desclassificar de invalido."""
     cc = _make_cc()
     with pytest.raises(ValueError, match="inválido"):
-        aplicar_reclassificacao(
+        ReclassificacaoService.aplicar_reclassificacao(
             candidato_uuid=cc.uuid, desclassificar_de="GERAL"
         )
 
@@ -467,14 +464,16 @@ def test_aplicar_reclassificacao_desclassificar_de_vazio():
     """Verifica aplicar reclassificacao desclassificar de vazio."""
     cc = _make_cc()
     with pytest.raises(ValueError, match="inválido"):
-        aplicar_reclassificacao(candidato_uuid=cc.uuid, desclassificar_de="")
+        ReclassificacaoService.aplicar_reclassificacao(
+            candidato_uuid=cc.uuid, desclassificar_de=""
+        )
 
 
 def test_aplicar_reclassificacao_nna_sem_classificacao_nna():
     """Verifica aplicar reclassificacao nna sem classificacao nna."""
     cc = _make_cc(classificacao_nna=None, categoria_efetiva="GERAL")
     with pytest.raises(ValueError, match="não possui classificação NNA"):
-        aplicar_reclassificacao(
+        ReclassificacaoService.aplicar_reclassificacao(
             candidato_uuid=cc.uuid, desclassificar_de="NNA"
         )
 
@@ -483,7 +482,7 @@ def test_aplicar_reclassificacao_pcd_sem_classificacao_pcd():
     """Verifica aplicar reclassificacao pcd sem classificacao pcd."""
     cc = _make_cc(classificacao_pcd=None, categoria_efetiva="GERAL")
     with pytest.raises(ValueError, match="não possui classificação PCD"):
-        aplicar_reclassificacao(
+        ReclassificacaoService.aplicar_reclassificacao(
             candidato_uuid=cc.uuid, desclassificar_de="PCD"
         )
 
@@ -491,9 +490,11 @@ def test_aplicar_reclassificacao_pcd_sem_classificacao_pcd():
 def test_aplicar_reclassificacao_duplicata_levanta_erro():
     """Verifica aplicar reclassificacao duplicata levanta erro."""
     cc = _make_cc(classificacao_nna=4, categoria_efetiva="NNA")
-    aplicar_reclassificacao(candidato_uuid=cc.uuid, desclassificar_de="NNA")
+    ReclassificacaoService.aplicar_reclassificacao(
+        candidato_uuid=cc.uuid, desclassificar_de="NNA"
+    )
     with pytest.raises(ValueError, match="Já há desclassificação"):
-        aplicar_reclassificacao(
+        ReclassificacaoService.aplicar_reclassificacao(
             candidato_uuid=cc.uuid, desclassificar_de="NNA"
         )
 
@@ -503,7 +504,7 @@ def test_aplicar_reclassificacao_uuid_inexistente():
     import uuid as _uuid
 
     with pytest.raises(ConcursoCandidato.DoesNotExist):
-        aplicar_reclassificacao(
+        ReclassificacaoService.aplicar_reclassificacao(
             candidato_uuid=_uuid.uuid4(), desclassificar_de="NNA"
         )
 
@@ -511,7 +512,7 @@ def test_aplicar_reclassificacao_uuid_inexistente():
 def test_aplicar_reclassificacao_aceita_lowercase():
     """Verifica aplicar reclassificacao aceita lowercase."""
     cc = _make_cc(classificacao_nna=2, categoria_efetiva="NNA")
-    _, hist = aplicar_reclassificacao(
+    _, hist = ReclassificacaoService.aplicar_reclassificacao(
         candidato_uuid=cc.uuid, desclassificar_de="nna"
     )
     assert hist.desclassificado_de == "NNA"
@@ -524,7 +525,7 @@ def test_aplicar_reclassificacao_nao_salva_se_categoria_nao_muda():
         categoria_efetiva="GERAL"
     )
     cc.refresh_from_db()
-    _, hist = aplicar_reclassificacao(
+    _, hist = ReclassificacaoService.aplicar_reclassificacao(
         candidato_uuid=cc.uuid, desclassificar_de="NNA"
     )
     assert hist.desclassificado_de == "NNA"
@@ -536,13 +537,13 @@ class TestMandadoJudicial:
     def test_mandado_marca_registro_e_devolve_categoria(self):
         """Reversão marca mandado_judicial e devolve o candidato ao NNA."""
         cc = _make_cc(classificacao_nna=5, categoria_efetiva="NNA")
-        aplicar_reclassificacao(
+        ReclassificacaoService.aplicar_reclassificacao(
             candidato_uuid=cc.uuid, desclassificar_de="NNA"
         )
         cc.refresh_from_db()
         assert cc.categoria_efetiva == "GERAL"
 
-        cc_ret, hist = aplicar_reclassificacao(
+        cc_ret, hist = ReclassificacaoService.aplicar_reclassificacao(
             candidato_uuid=cc.uuid,
             desclassificar_de="NNA",
             motivo="Mandado 123",
@@ -558,10 +559,10 @@ class TestMandadoJudicial:
     def test_mandado_mantem_registro_como_historico(self):
         """A reversão não deleta o registro; apenas o marca."""
         cc = _make_cc(classificacao_nna=5, categoria_efetiva="NNA")
-        aplicar_reclassificacao(
+        ReclassificacaoService.aplicar_reclassificacao(
             candidato_uuid=cc.uuid, desclassificar_de="NNA"
         )
-        aplicar_reclassificacao(
+        ReclassificacaoService.aplicar_reclassificacao(
             candidato_uuid=cc.uuid,
             desclassificar_de="NNA",
             mandado_judicial=True,
@@ -576,7 +577,7 @@ class TestMandadoJudicial:
     def test_mandado_torna_desclassificacao_inativa(self):
         """existe_desclassificacao ignora registros revertidos."""
         cc = _make_cc(classificacao_nna=5, categoria_efetiva="NNA")
-        aplicar_reclassificacao(
+        ReclassificacaoService.aplicar_reclassificacao(
             candidato_uuid=cc.uuid, desclassificar_de="NNA"
         )
         assert (
@@ -585,7 +586,7 @@ class TestMandadoJudicial:
             )
             is True
         )
-        aplicar_reclassificacao(
+        ReclassificacaoService.aplicar_reclassificacao(
             candidato_uuid=cc.uuid,
             desclassificar_de="NNA",
             mandado_judicial=True,
@@ -603,7 +604,7 @@ class TestMandadoJudicial:
         with pytest.raises(
             ValueError, match="Não há desclassificação a reverter para NNA"
         ):
-            aplicar_reclassificacao(
+            ReclassificacaoService.aplicar_reclassificacao(
                 candidato_uuid=cc.uuid,
                 desclassificar_de="NNA",
                 mandado_judicial=True,

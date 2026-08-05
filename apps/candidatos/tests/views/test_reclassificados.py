@@ -11,7 +11,7 @@ from candidatos.models import (
     ConcursoCandidato,
     ConcursoCandidatoReclassificacao,
 )
-from candidatos.service.reclassificacao_service import aplicar_reclassificacao
+from candidatos.service.reclassificacao_service import ReclassificacaoService
 from django.urls import reverse
 from rest_framework.test import APIClient
 
@@ -102,7 +102,7 @@ class TestReclassificadosViewSetList:
             categoria_efetiva="GERAL",
             eliminado=False,
         )
-        aplicar_reclassificacao(
+        ReclassificacaoService.aplicar_reclassificacao(
             candidato_uuid=str(cc_nna.uuid),
             desclassificar_de="NNA",
             motivo="",
@@ -123,7 +123,7 @@ class TestReclassificadosViewSetList:
             categoria_efetiva="GERAL",
             eliminado=False,
         )
-        aplicar_reclassificacao(
+        ReclassificacaoService.aplicar_reclassificacao(
             candidato_uuid=str(cc_pcd.uuid),
             desclassificar_de="PCD",
             motivo="",

@@ -7,7 +7,8 @@ from candidatos.models import (
     Candidato,
     ConcursoCandidato,
 )
-from candidatos.service.lotes_service import SalvarLotesError, salvar_lotes
+from candidatos.service.exceptions import SalvarLotesError
+from candidatos.service.lotes_service import LotesService
 
 pytestmark = pytest.mark.django_db
 
@@ -38,7 +39,7 @@ def test_salvar_lotes_persiste_chave_inscrito_quando_informada():
         candidato=candidato,
         codigo_inscricao="INSC001",
     )
-    total = salvar_lotes(
+    total = LotesService.salvar_lotes(
         concurso_uuid=concurso_uuid,
         lotes=[
             {
@@ -68,7 +69,7 @@ def test_salvar_lotes_define_chave_inscrito_como_none_quando_nao_informada():
         candidato=candidato,
         codigo_inscricao="INSC002",
     )
-    total = salvar_lotes(
+    total = LotesService.salvar_lotes(
         concurso_uuid=concurso_uuid,
         lotes=[
             {
@@ -110,7 +111,7 @@ def test_salvar_lotes_faz_rollback_total_quando_ha_erro():
         ]
     )
     with pytest.raises(SalvarLotesError):
-        salvar_lotes(
+        LotesService.salvar_lotes(
             concurso_uuid=concurso_uuid,
             lotes=[
                 {
