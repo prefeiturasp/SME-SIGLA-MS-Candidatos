@@ -10,26 +10,31 @@ from django.utils import timezone
 pytestmark = pytest.mark.django_db
 
 
-def test_concurso_candidato_cria_com_campos_obrigatorios(lote, candidato):
+def test_concurso_candidato_cria_com_campos_obrigatorios(
+    concurso_uuid, candidato
+):
     """Testa criação do concurso candidato com campos obrigatórios."""
     cc = ConcursoCandidato.objects.create(
         candidato=candidato,
-        lote=lote,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
         codigo_inscricao="001",
     )
     assert cc.candidato == candidato
-    assert cc.lote == lote
+    assert cc.concurso_uuid == concurso_uuid
+    assert cc.concurso_nome == "Concurso Teste"
     assert cc.codigo_inscricao == "001"
     assert cc.uuid is not None
     assert cc.criado_em is not None
     assert cc.esta_ativo is True
 
 
-def test_concurso_candidato_cria_com_valores_padrao(lote, candidato):
+def test_concurso_candidato_cria_com_valores_padrao(concurso_uuid, candidato):
     """Testa valores padrão do concurso candidato."""
     cc = ConcursoCandidato.objects.create(
         candidato=candidato,
-        lote=lote,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
         codigo_inscricao="002",
     )
     assert cc.pontos == 0.0
@@ -43,20 +48,21 @@ def test_concurso_candidato_cria_com_valores_padrao(lote, candidato):
     assert cc.eliminado_por == ""
 
 
-def test_concurso_candidato_cria_sem_lote(candidato):
-    """Testa criação do concurso candidato sem lote."""
+def test_concurso_candidato_cria_sem_concurso_uuid(candidato):
+    """Testa criação do concurso candidato sem concurso_uuid."""
     cc = ConcursoCandidato.objects.create(
         candidato=candidato,
         codigo_inscricao="003",
     )
-    assert cc.lote is None
+    assert cc.concurso_uuid is None
 
 
-def test_concurso_candidato_representacao_str(lote, candidato):
+def test_concurso_candidato_representacao_str(concurso_uuid, candidato):
     """Testa a representação textual do concurso candidato."""
     cc = ConcursoCandidato.objects.create(
         candidato=candidato,
-        lote=lote,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
         codigo_inscricao="001",
         classificacao=10,
         classificacao_pcd=2,
@@ -97,25 +103,35 @@ def test_concurso_candidato_related_name_concursos(candidato):
     assert candidato.concursos.count() == 2
 
 
-def test_concurso_candidato_related_name_itens(
-    lote, candidato, criar_candidato
+def test_concurso_candidato_filtra_por_concurso_uuid(
+    concurso_uuid, candidato, criar_candidato
 ):
-    """Testa o related_name itens no lote."""
+    """Testa filtro por concurso_uuid."""
     outro = criar_candidato(nome="Outro", cpf="222.222.222-22")
     ConcursoCandidato.objects.create(
-        candidato=candidato, lote=lote, codigo_inscricao="001"
+        candidato=candidato,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
+        codigo_inscricao="001",
     )
     ConcursoCandidato.objects.create(
-        candidato=outro, lote=lote, codigo_inscricao="002"
+        candidato=outro,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
+        codigo_inscricao="002",
     )
-    assert lote.itens.count() == 2
+    assert (
+        ConcursoCandidato.objects.filter(concurso_uuid=concurso_uuid).count()
+        == 2
+    )
 
 
-def test_concurso_candidato_update_convocacao(lote, candidato):
+def test_concurso_candidato_update_convocacao(concurso_uuid, candidato):
     """Testa o update de convocação do concurso candidato."""
     cc = ConcursoCandidato.objects.create(
         candidato=candidato,
-        lote=lote,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
         codigo_inscricao="001",
     )
     processo_uuid = uuid4()
@@ -130,11 +146,12 @@ def test_concurso_candidato_update_convocacao(lote, candidato):
     assert cc.data_convocacao is not None
 
 
-def test_concurso_candidato_marca_eliminado(lote, candidato):
+def test_concurso_candidato_marca_eliminado(concurso_uuid, candidato):
     """Testa a marcação de eliminado no concurso candidato."""
     cc = ConcursoCandidato.objects.create(
         candidato=candidato,
-        lote=lote,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
         codigo_inscricao="001",
     )
     cc.eliminado = True
@@ -149,25 +166,14 @@ def test_concurso_candidato_marca_eliminado(lote, candidato):
     assert cc.eliminado_em is not None
 
 
-def test_concurso_candidato_cascade_delete_candidato(lote, candidato):
+def test_concurso_candidato_cascade_delete_candidato(concurso_uuid, candidato):
     """Testa cascade delete ao remover o candidato."""
     ConcursoCandidato.objects.create(
         candidato=candidato,
-        lote=lote,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
         codigo_inscricao="001",
     )
     assert ConcursoCandidato.objects.count() == 1
     candidato.delete()
-    assert ConcursoCandidato.objects.count() == 0
-
-
-def test_concurso_candidato_cascade_delete_lote(lote, candidato):
-    """Testa cascade delete ao remover o lote."""
-    ConcursoCandidato.objects.create(
-        candidato=candidato,
-        lote=lote,
-        codigo_inscricao="001",
-    )
-    assert ConcursoCandidato.objects.count() == 1
-    lote.delete()
     assert ConcursoCandidato.objects.count() == 0

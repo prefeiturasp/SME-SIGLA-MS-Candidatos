@@ -6,7 +6,6 @@ import pytest
 from candidatos.models import (
     Candidato,
     ConcursoCandidato,
-    ConcursoCandidatosLote,
 )
 from django.urls import reverse
 from rest_framework.test import APIClient
@@ -126,32 +125,18 @@ def candidato(criar_candidato):
 
 
 @pytest.fixture
-def criar_lote():
-    """Crie lotes de exemplo no banco."""
-
-    def _criar(**overrides):
-        dados = {
-            "concurso_uuid": uuid4(),
-            "concurso_nome": "Concurso Teste",
-        }
-        dados.update(overrides)
-        return ConcursoCandidatosLote.objects.create(**dados)
-
-    return _criar
+def concurso_uuid():
+    """UUID de concurso usado nos testes."""
+    return uuid4()
 
 
 @pytest.fixture
-def lote(criar_lote):
-    """Lote de concurso usado nos testes."""
-    return criar_lote()
-
-
-@pytest.fixture
-def concurso_candidato(lote, candidato):
+def concurso_candidato(candidato, concurso_uuid):
     """ConcursoCandidato de exemplo para os testes."""
     return ConcursoCandidato.objects.create(
         candidato=candidato,
-        lote=lote,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
         codigo_inscricao="001",
         classificacao=1,
         classificacao_nna=1,

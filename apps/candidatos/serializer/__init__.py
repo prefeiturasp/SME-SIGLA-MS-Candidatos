@@ -19,6 +19,9 @@ from .concurso_candidato import (
     ReclassificarSerializer,
     SalvarLotesSerializer,
 )
+from .historico_classificacao import (
+    ConcursoCandidatoHistoricoClassificacaoSerializer,
+)
 
 __all__ = [
     "ConcursoCandidatoSerializer",
@@ -31,6 +34,7 @@ __all__ = [
     "ExtracaoDadosSerializer",
     "ConcursoCandidatoReclassificadoSerializer",
     "ConcursoCandidatoEliminadoSerializer",
+    "ConcursoCandidatoHistoricoClassificacaoSerializer",
     "LoteItemSerializer",
     "SalvarLotesSerializer",
     "CandidatoSerializer",

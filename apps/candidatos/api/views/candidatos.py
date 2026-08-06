@@ -13,9 +13,7 @@ from candidatos.serializers import (
     CandidatoSerializer,
     CandidatosLoteCreateSerializer,
 )
-from candidatos.service.candidato_lote_service import (
-    processar_criacao_candidatos_lote,
-)
+from candidatos.service.candidato_lote_service import CandidatoLoteService
 from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
@@ -51,8 +49,10 @@ class CandidatoViewSet(viewsets.ModelViewSet):
         """Cria lote de candidatos a partir do payload recebido."""
         input_serializer = CandidatosLoteCreateSerializer(data=request.data)
         input_serializer.is_valid(raise_exception=True)
-        resp_data, status_code = processar_criacao_candidatos_lote(
-            input_serializer.validated_data
+        resp_data, status_code = (
+            CandidatoLoteService.processar_criacao_candidatos_lote(
+                input_serializer.validated_data
+            )
         )
         return Response(resp_data, status=status_code)
 

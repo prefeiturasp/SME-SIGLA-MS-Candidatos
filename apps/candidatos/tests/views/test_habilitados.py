@@ -8,7 +8,6 @@ from candidatos.models import (
     Candidato,
     ConcursoCandidato,
     ConcursoCandidatoReclassificacao,
-    ConcursoCandidatosLote,
 )
 from candidatos.repository import ConcursoCandidatoRepository
 from django.urls import reverse
@@ -24,11 +23,9 @@ def api_client():
 
 
 @pytest.fixture
-def lote():
-    """Lote de concurso usado nos testes."""
-    return ConcursoCandidatosLote.objects.create(
-        concurso_uuid=uuid4(), concurso_nome="Concurso Teste"
-    )
+def concurso_uuid():
+    """UUID de concurso usado nos testes."""
+    return uuid4()
 
 
 def criar_candidato(nome, cpf, email=None):
@@ -51,38 +48,43 @@ def criar_candidato(nome, cpf, email=None):
     )
 
 
-def test_habilitados_filtra_por_ultimo_lote_e_limites(api_client):
-    """Verifica habilitados filtra por ultimo lote e limites."""
+def test_habilitados_filtra_por_concurso_uuid_e_limites(api_client):
+    """Verifica habilitados filtra por concurso_uuid e limites."""
     url = reverse("habilitados-reposicao")
     concurso_uuid = uuid4()
-    lote1 = ConcursoCandidatosLote.objects.create(
-        concurso_uuid=concurso_uuid, concurso_nome="X"
-    )
-    lote2 = ConcursoCandidatosLote.objects.create(
-        concurso_uuid=concurso_uuid, concurso_nome="X2"
-    )
+    outro_concurso_uuid = uuid4()
     for i in range(1, 6):
         c = criar_candidato(f"C{i}", f"000.000.000-0{i}")
         ConcursoCandidato.objects.create(
-            candidato=c, lote=lote2, codigo_inscricao=str(i), classificacao=i
+            candidato=c,
+            concurso_uuid=concurso_uuid,
+            concurso_nome="Concurso X",
+            codigo_inscricao=str(i),
+            classificacao=i,
         )
     cpcd = criar_candidato("PCD1", "111.111.111-11")
     ConcursoCandidato.objects.create(
         candidato=cpcd,
-        lote=lote2,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso X",
         codigo_inscricao="pcd1",
         classificacao_pcd=1,
     )
     cnna = criar_candidato("NNA1", "222.222.222-22")
     ConcursoCandidato.objects.create(
         candidato=cnna,
-        lote=lote2,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso X",
         codigo_inscricao="nna1",
         classificacao_nna=1,
     )
     cold = criar_candidato("OLD", "333.333.333-33")
     ConcursoCandidato.objects.create(
-        candidato=cold, lote=lote1, codigo_inscricao="old", classificacao=1
+        candidato=cold,
+        concurso_uuid=outro_concurso_uuid,
+        concurso_nome="Outro",
+        codigo_inscricao="old",
+        classificacao=1,
     )
     resp = api_client.get(
         url,
@@ -99,28 +101,25 @@ def test_habilitados_filtra_por_ultimo_lote_e_limites(api_client):
     assert "nome" in results[0]["candidato"]
 
 
-def test_habilitados_list_quando_concurso_uuid_filtra_apenas_ultimo_lote(
+def test_habilitados_list_quando_concurso_uuid_filtra_por_concurso(
     api_client,
 ):
-    """Verifica list com concurso uuid filtra apenas ultimo lote."""
+    """Verifica list com concurso_uuid retorna candidatos do concurso."""
     concurso_uuid = uuid4()
-    lote_antigo = ConcursoCandidatosLote.objects.create(
-        concurso_uuid=concurso_uuid, concurso_nome="Antigo"
-    )
-    lote_recente = ConcursoCandidatosLote.objects.create(
-        concurso_uuid=concurso_uuid, concurso_nome="Recente"
-    )
+    outro_concurso_uuid = uuid4()
     cold = criar_candidato("OLD", "999.999.999-99")
     cnew = criar_candidato("NEW", "888.888.888-88")
     ConcursoCandidato.objects.create(
         candidato=cold,
-        lote=lote_antigo,
+        concurso_uuid=outro_concurso_uuid,
+        concurso_nome="Outro",
         codigo_inscricao="old",
         classificacao=1,
     )
     ConcursoCandidato.objects.create(
         candidato=cnew,
-        lote=lote_recente,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
         codigo_inscricao="new",
         classificacao=1,
     )
@@ -132,37 +131,38 @@ def test_habilitados_list_quando_concurso_uuid_filtra_apenas_ultimo_lote(
     assert resp.data[0]["candidato"]["cpf"] == "888.888.888-88"
 
 
-def test_habilitados_list_quando_concurso_uuid_sem_lote_retorna_vazio(
+def test_habilitados_list_quando_concurso_uuid_sem_candidatos_retorna_vazio(
     api_client,
 ):
-    """Verifica list com concurso uuid sem lote retorna vazio."""
+    """Verifica list com concurso uuid sem candidatos retorna vazio."""
     url = reverse("habilitados-list")
     resp = api_client.get(url, {"concurso_uuid": str(uuid4())})
     assert resp.status_code == 200
     assert resp.data == []
 
 
-def test_habilitados_list_lote_uuid_nao_restringe_ao_ultimo_lote(
-    api_client,
-):
-    """Verifica list com lote uuid nao restringe ao ultimo lote."""
+def test_habilitados_list_filtra_por_concurso_uuid(api_client):
+    """Verifica list com concurso_uuid exclui candidatos de outro concurso."""
     concurso_uuid = uuid4()
-    lote1 = ConcursoCandidatosLote.objects.create(
-        concurso_uuid=concurso_uuid, concurso_nome="L1"
-    )
-    lote2 = ConcursoCandidatosLote.objects.create(
-        concurso_uuid=concurso_uuid, concurso_nome="L2"
-    )
+    outro_concurso_uuid = uuid4()
     c1 = criar_candidato("C1", "777.777.777-77")
     c2 = criar_candidato("C2", "666.666.666-66")
     ConcursoCandidato.objects.create(
-        candidato=c1, lote=lote1, codigo_inscricao="1", classificacao=1
+        candidato=c1,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso A",
+        codigo_inscricao="1",
+        classificacao=1,
     )
     ConcursoCandidato.objects.create(
-        candidato=c2, lote=lote2, codigo_inscricao="2", classificacao=1
+        candidato=c2,
+        concurso_uuid=outro_concurso_uuid,
+        concurso_nome="Concurso B",
+        codigo_inscricao="2",
+        classificacao=1,
     )
     url = reverse("habilitados-list")
-    resp = api_client.get(url, {"lote__uuid": str(lote1.uuid)})
+    resp = api_client.get(url, {"concurso_uuid": str(concurso_uuid)})
     assert resp.status_code == 200
     assert len(resp.data) == 1
     assert resp.data[0]["candidato"]["cpf"] == "777.777.777-77"
@@ -172,13 +172,14 @@ class TestReclassificacaoHabilitados:
     """Testes unitários para o endpoint POST /habilitados/reclassificar/."""
 
     def test_reclassificar_de_nna_retorna_200_e_atualiza_categoria(
-        self, api_client, lote
+        self, api_client, concurso_uuid
     ):
         """Verifica reclassificar de nna retorna 200 e atualiza categoria."""
         c = criar_candidato("Candidato NNA", "111.111.111-11")
         cc = ConcursoCandidato.objects.create(
             candidato=c,
-            lote=lote,
+            concurso_uuid=concurso_uuid,
+            concurso_nome="Concurso Teste",
             codigo_inscricao="001",
             classificacao=10,
             classificacao_nna=1,
@@ -202,346 +203,15 @@ class TestReclassificacaoHabilitados:
             concurso_candidato=cc, desclassificado_de="NNA"
         ).exists()
 
-
-def test_habilitados_desconvocar_sem_codigo_cargo_desconvoca_todos(
-    api_client, lote
-):
-    """Verifica habilitados desconvocar sem codigo cargo desconvoca todos."""
-    processo_uuid = uuid4()
-    c1 = criar_candidato("C1", "111.111.111-11")
-    c2 = criar_candidato("C2", "222.222.222-22")
-    cc1 = ConcursoCandidato.objects.create(
-        candidato=c1,
-        lote=lote,
-        codigo_inscricao="1",
-        foi_convocado=True,
-        processo_uuid=processo_uuid,
-        codigo_cargo="1008",
-    )
-    cc2 = ConcursoCandidato.objects.create(
-        candidato=c2,
-        lote=lote,
-        codigo_inscricao="2",
-        foi_convocado=True,
-        processo_uuid=processo_uuid,
-        codigo_cargo="2001",
-    )
-    url = reverse("habilitados-desconvocar")
-    resp = api_client.patch(
-        url, {"processo_uuid": str(processo_uuid)}, format="json"
-    )
-    assert resp.status_code == 200
-    assert resp.data["total"] == 2
-    assert set(resp.data["desconvocados"]) == {str(cc1.uuid), str(cc2.uuid)}
-    assert resp.data["codigo_cargo"] is None
-    cc1.refresh_from_db()
-    cc2.refresh_from_db()
-    assert cc1.foi_convocado is False
-    assert cc1.processo_uuid is None
-    assert cc2.foi_convocado is False
-    assert cc2.processo_uuid is None
-
-
-def test_habilitados_desconvocar_com_codigo_cargo_desconvoca_so_um(
-    api_client, lote
-):
-    """Verifica habilitados desconvocar com codigo cargo desconvoca so um."""
-    processo_uuid = uuid4()
-    c1 = criar_candidato("C1", "333.333.333-33")
-    c2 = criar_candidato("C2", "444.444.444-44")
-    cc1 = ConcursoCandidato.objects.create(
-        candidato=c1,
-        lote=lote,
-        codigo_inscricao="1",
-        foi_convocado=True,
-        processo_uuid=processo_uuid,
-        codigo_cargo="1008",
-    )
-    cc2 = ConcursoCandidato.objects.create(
-        candidato=c2,
-        lote=lote,
-        codigo_inscricao="2",
-        foi_convocado=True,
-        processo_uuid=processo_uuid,
-        codigo_cargo="2001",
-    )
-    url = reverse("habilitados-desconvocar")
-    resp = api_client.patch(
-        url,
-        {"processo_uuid": str(processo_uuid), "codigo_cargo": "1008"},
-        format="json",
-    )
-    assert resp.status_code == 200
-    assert resp.data["total"] == 1
-    assert resp.data["desconvocados"] == [str(cc1.uuid)]
-    assert resp.data["codigo_cargo"] == "1008"
-    cc1.refresh_from_db()
-    cc2.refresh_from_db()
-    assert cc1.foi_convocado is False
-    assert cc1.processo_uuid is None
-    assert cc2.foi_convocado is True
-    assert str(cc2.processo_uuid) == str(processo_uuid)
-
-
-def test_habilitados_desconvocar_sem_processo_uuid_retorna_400(api_client):
-    """Verifica habilitados desconvocar sem processo uuid retorna 400."""
-    url = reverse("habilitados-desconvocar")
-    resp = api_client.patch(url, {"codigo_cargo": "1008"}, format="json")
-    assert resp.status_code == 400
-    assert "processo_uuid" in resp.data["detail"]
-
-
-@patch(
-    "candidatos.api.views.habilitados.AgendasApiService.remover_agendas_por_processo_uuid_e_cargo"
-)
-def test_desconvocar_com_codigo_cargo_chama_agendas(
-    mock_remover_agendas, api_client, lote
-):
-    """Verifica desconvocar com cargo chama remoção de agendas."""
-    mock_remover_agendas.return_value = {"excluidas": 1}
-    processo_uuid = uuid4()
-    candidato = criar_candidato("C1", "555.555.555-55")
-    cc = ConcursoCandidato.objects.create(
-        candidato=candidato,
-        lote=lote,
-        codigo_inscricao="1",
-        foi_convocado=True,
-        processo_uuid=processo_uuid,
-        codigo_cargo="1008",
-    )
-    url = reverse("habilitados-desconvocar")
-    resp = api_client.patch(
-        url,
-        {"processo_uuid": str(processo_uuid), "codigo_cargo": "1008"},
-        format="json",
-    )
-    assert resp.status_code == 200
-    assert resp.data["total"] == 1
-    mock_remover_agendas.assert_called_once_with(
-        processo_uuid=str(processo_uuid), codigo_cargo="1008"
-    )
-    cc.refresh_from_db()
-    assert cc.foi_convocado is False
-
-
-@patch(
-    "candidatos.api.views.habilitados.AgendasApiService.remover_agendas_por_processo_uuid_e_cargo"
-)
-def test_desconvocar_sem_codigo_cargo_nao_chama_agendas(
-    mock_remover_agendas, api_client, lote
-):
-    """Verifica desconvocar sem cargo não chama remoção de agendas."""
-    processo_uuid = uuid4()
-    candidato = criar_candidato("C1", "666.666.666-66")
-    ConcursoCandidato.objects.create(
-        candidato=candidato,
-        lote=lote,
-        codigo_inscricao="1",
-        foi_convocado=True,
-        processo_uuid=processo_uuid,
-        codigo_cargo="1008",
-    )
-    url = reverse("habilitados-desconvocar")
-    resp = api_client.patch(
-        url, {"processo_uuid": str(processo_uuid)}, format="json"
-    )
-    assert resp.status_code == 200
-    mock_remover_agendas.assert_not_called()
-
-
-@patch(
-    "candidatos.api.views.habilitados.AgendasApiService.remover_agendas_por_processo_uuid_e_cargo"
-)
-def test_habilitados_desconvocar_erro_agendas_api_mantem_resposta_200(
-    mock_remover_agendas, api_client, lote
-):
-    """Verifica falha no MS-Agendas não impede desconvocação dos candidatos."""
-    mock_remover_agendas.side_effect = Exception("falha no MS-Agendas")
-    processo_uuid = uuid4()
-    candidato = criar_candidato("C1", "777.777.777-77")
-    cc = ConcursoCandidato.objects.create(
-        candidato=candidato,
-        lote=lote,
-        codigo_inscricao="1",
-        foi_convocado=True,
-        processo_uuid=processo_uuid,
-        codigo_cargo="1008",
-    )
-    url = reverse("habilitados-desconvocar")
-    resp = api_client.patch(
-        url,
-        {"processo_uuid": str(processo_uuid), "codigo_cargo": "1008"},
-        format="json",
-    )
-    assert resp.status_code == 200
-    assert resp.data["total"] == 1
-    assert resp.data["desconvocados"] == [str(cc.uuid)]
-    cc.refresh_from_db()
-    assert cc.foi_convocado is False
-
-
-def test_habilitados_buscar_por_cpfs_retorna_dados_do_processo(
-    api_client, lote
-):
-    """Verifica habilitados buscar por cpfs retorna dados do processo."""
-    processo_uuid = uuid4()
-    c1 = criar_candidato("C1", "12345678901")
-    c2 = criar_candidato("C2", "98765432100")
-    ConcursoCandidato.objects.create(
-        candidato=c1,
-        lote=lote,
-        codigo_inscricao="1",
-        processo_uuid=processo_uuid,
-        classificacao=2,
-    )
-    ConcursoCandidato.objects.create(
-        candidato=c2,
-        lote=lote,
-        codigo_inscricao="2",
-        processo_uuid=processo_uuid,
-        classificacao=1,
-    )
-    c3 = criar_candidato("C3", "11122233344")
-    ConcursoCandidato.objects.create(
-        candidato=c3,
-        lote=lote,
-        codigo_inscricao="3",
-        processo_uuid=uuid4(),
-        classificacao=1,
-    )
-    url = reverse("habilitados-buscar-por-cpfs")
-    payload = {
-        "cpfs": ["12345678901", "98765432100", "11122233344"],
-        "processo_uuid": str(processo_uuid),
-    }
-    resp = api_client.post(url, payload, format="json")
-    assert resp.status_code == 200
-    assert isinstance(resp.data, list)
-    assert len(resp.data) == 2
-    returned_cpfs = {item["cpf"] for item in resp.data}
-    assert returned_cpfs == {"12345678901", "98765432100"}
-    assert resp.data[0]["cpf"] == "98765432100"
-
-
-def test_habilitados_buscar_por_cpfs_order_by_invalido_retorna_400(api_client):
-    """Verifica habilitados buscar por cpfs order by invalido retorna 400."""
-    url = reverse("habilitados-buscar-por-cpfs")
-    payload = {"cpfs": ["12345678901"], "processo_uuid": str(uuid4())}
-    resp = api_client.post(
-        url + "?order_by=campo_inexistente", payload, format="json"
-    )
-    assert resp.status_code == 400
-    assert resp.data["detail"] == "Parâmetro order_by inválido"
-
-
-def test_habilitados_calculados_sem_lote_retorna_404(api_client):
-    """Verifica habilitados calculados sem lote retorna 404."""
-    url = reverse("habilitados-calculados")
-    resp = api_client.get(
-        url,
-        {
-            "quantidade": 5,
-            "concurso_uuid": str(uuid4()),
-            "processo_uuid": str(uuid4()),
-            "codigo_cargo": "1008",
-        },
-    )
-    assert resp.status_code == 404
-    assert (
-        resp.data["detail"]
-        == "Lote não encontrado para o concurso_uuid informado"
-    )
-
-
-@patch("candidatos.api.views.habilitados.EscolhasApiService.buscar_escolhas")
-@patch("candidatos.api.views.habilitados.gerar_sequencia_convocados")
-def test_habilitados_calculados_sucesso_mockando_externos(
-    mock_gerar_sequencia, mock_buscar_escolhas, api_client
-):
-    """Verifica habilitados calculados sucesso mockando externos."""
-    concurso_uuid = uuid4()
-    processo_uuid = uuid4()
-    lote = ConcursoCandidatosLote.objects.create(
-        concurso_uuid=concurso_uuid, concurso_nome="X"
-    )
-    mock_buscar_escolhas.return_value = [
-        {"candidato_uuid": "u1"},
-        {"candidato_uuid": None},
-        {},
-        {"candidato_uuid": "u2"},
-    ]
-    mock_gerar_sequencia.return_value = ([], 0.2, 0.05)
-    url = reverse("habilitados-calculados")
-    resp = api_client.get(
-        url,
-        {
-            "quantidade": 3,
-            "concurso_uuid": str(concurso_uuid),
-            "processo_uuid": str(processo_uuid),
-            "codigo_cargo": "1008",
-        },
-    )
-    assert resp.status_code == 200
-    assert resp.data["quantidade"] == 3
-    assert resp.data["concurso_uuid"] == str(concurso_uuid)
-    assert resp.data["lote_uuid"] == str(lote.uuid)
-    assert resp.data["results"] == []
-    assert resp.data["porcentagem_nna"] == 0.2
-    assert resp.data["porcentagem_pcd"] == 0.05
-    mock_buscar_escolhas.assert_called_once_with(
-        concurso_uuid=str(concurso_uuid)
-    )
-    mock_gerar_sequencia.assert_called_once()
-    args = mock_gerar_sequencia.call_args.args
-    assert args[0] == 3
-    assert args[1] == lote
-    assert args[2] == ["u1", "u2"]
-    assert args[3] == "1008"
-    assert args[4] == str(processo_uuid)
-
-
-@patch(
-    "candidatos.api.views.habilitados.EscolhasApiService.buscar_escolhas",
-    side_effect=Exception("ms caiu"),
-)
-@patch("candidatos.api.views.habilitados.gerar_sequencia_convocados")
-def test_habilitados_calculados_quando_escolhas_falha_continua_com_lista_vazia(
-    mock_gerar_sequencia, mock_buscar_escolhas, api_client
-):
-    """Verifica habilitados calculados quando escolhas falha continua com."""
-    concurso_uuid = uuid4()
-    processo_uuid = uuid4()
-    lote = ConcursoCandidatosLote.objects.create(
-        concurso_uuid=concurso_uuid, concurso_nome="X"
-    )
-    mock_gerar_sequencia.return_value = ([], 0.2, 0.05)
-    url = reverse("habilitados-calculados")
-    resp = api_client.get(
-        url,
-        {
-            "quantidade": 2,
-            "concurso_uuid": str(concurso_uuid),
-            "processo_uuid": str(processo_uuid),
-            "codigo_cargo": "1008",
-        },
-    )
-    assert resp.status_code == 200
-    assert resp.data["lote_uuid"] == str(lote.uuid)
-    assert resp.data["results"] == []
-    mock_buscar_escolhas.assert_called_once_with(
-        concurso_uuid=str(concurso_uuid)
-    )
-    args = mock_gerar_sequencia.call_args.args
-    assert args[2] == []
-
     def test_reclassificar_de_pcd_retorna_200_e_atualiza_categoria(
-        self, api_client, lote
+        self, api_client, concurso_uuid
     ):
         """Verifica reclassificar de pcd retorna 200 e atualiza categoria."""
         c = criar_candidato("Candidato PCD", "222.222.222-22")
         cc = ConcursoCandidato.objects.create(
             candidato=c,
-            lote=lote,
+            concurso_uuid=concurso_uuid,
+            concurso_nome="Concurso Teste",
             codigo_inscricao="002",
             classificacao=20,
             classificacao_nna=None,
@@ -581,13 +251,14 @@ def test_habilitados_calculados_quando_escolhas_falha_continua_com_lista_vazia(
         assert "detail" in resp.data
 
     def test_reclassificar_sem_classificacao_nna_retorna_400(
-        self, api_client, lote
+        self, api_client, concurso_uuid
     ):
         """Verifica reclassificar sem classificacao nna retorna 400."""
         c = criar_candidato("Só PCD", "333.333.333-33")
         cc = ConcursoCandidato.objects.create(
             candidato=c,
-            lote=lote,
+            concurso_uuid=concurso_uuid,
+            concurso_nome="Concurso Teste",
             codigo_inscricao="003",
             classificacao=30,
             classificacao_nna=None,
@@ -605,13 +276,14 @@ def test_habilitados_calculados_quando_escolhas_falha_continua_com_lista_vazia(
         assert "NNA" in (resp.data.get("detail") or "")
 
     def test_reclassificar_duplicado_para_mesma_cota_retorna_400(
-        self, api_client, lote
+        self, api_client, concurso_uuid
     ):
         """Verifica reclassificar duplicado para mesma cota retorna 400."""
         c = criar_candidato("NNA Duplicado", "444.444.444-44")
         cc = ConcursoCandidato.objects.create(
             candidato=c,
-            lote=lote,
+            concurso_uuid=concurso_uuid,
+            concurso_nome="Concurso Teste",
             codigo_inscricao="004",
             classificacao=40,
             classificacao_nna=1,
@@ -634,6 +306,353 @@ def test_habilitados_calculados_quando_escolhas_falha_continua_com_lista_vazia(
             or "desclassificação" in detail
             or "já há" in detail
         )
+
+
+def test_habilitados_desconvocar_sem_codigo_cargo_desconvoca_todos(
+    api_client, concurso_uuid
+):
+    """Verifica habilitados desconvocar sem codigo cargo desconvoca todos."""
+    processo_uuid = uuid4()
+    c1 = criar_candidato("C1", "111.111.111-11")
+    c2 = criar_candidato("C2", "222.222.222-22")
+    cc1 = ConcursoCandidato.objects.create(
+        candidato=c1,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
+        codigo_inscricao="1",
+        foi_convocado=True,
+        processo_uuid=processo_uuid,
+        codigo_cargo="1008",
+    )
+    cc2 = ConcursoCandidato.objects.create(
+        candidato=c2,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
+        codigo_inscricao="2",
+        foi_convocado=True,
+        processo_uuid=processo_uuid,
+        codigo_cargo="2001",
+    )
+    url = reverse("habilitados-desconvocar")
+    resp = api_client.patch(
+        url, {"processo_uuid": str(processo_uuid)}, format="json"
+    )
+    assert resp.status_code == 200
+    assert resp.data["total"] == 2
+    assert set(resp.data["desconvocados"]) == {str(cc1.uuid), str(cc2.uuid)}
+    assert resp.data["codigo_cargo"] is None
+    cc1.refresh_from_db()
+    cc2.refresh_from_db()
+    assert cc1.foi_convocado is False
+    assert cc1.processo_uuid is None
+    assert cc2.foi_convocado is False
+    assert cc2.processo_uuid is None
+
+
+def test_habilitados_desconvocar_com_codigo_cargo_desconvoca_so_um(
+    api_client, concurso_uuid
+):
+    """Verifica habilitados desconvocar com codigo cargo desconvoca so um."""
+    processo_uuid = uuid4()
+    c1 = criar_candidato("C1", "333.333.333-33")
+    c2 = criar_candidato("C2", "444.444.444-44")
+    cc1 = ConcursoCandidato.objects.create(
+        candidato=c1,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
+        codigo_inscricao="1",
+        foi_convocado=True,
+        processo_uuid=processo_uuid,
+        codigo_cargo="1008",
+    )
+    cc2 = ConcursoCandidato.objects.create(
+        candidato=c2,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
+        codigo_inscricao="2",
+        foi_convocado=True,
+        processo_uuid=processo_uuid,
+        codigo_cargo="2001",
+    )
+    url = reverse("habilitados-desconvocar")
+    resp = api_client.patch(
+        url,
+        {"processo_uuid": str(processo_uuid), "codigo_cargo": "1008"},
+        format="json",
+    )
+    assert resp.status_code == 200
+    assert resp.data["total"] == 1
+    assert resp.data["desconvocados"] == [str(cc1.uuid)]
+    assert resp.data["codigo_cargo"] == "1008"
+    cc1.refresh_from_db()
+    cc2.refresh_from_db()
+    assert cc1.foi_convocado is False
+    assert cc1.processo_uuid is None
+    assert cc2.foi_convocado is True
+    assert str(cc2.processo_uuid) == str(processo_uuid)
+
+
+def test_habilitados_desconvocar_sem_processo_uuid_retorna_400(api_client):
+    """Verifica habilitados desconvocar sem processo uuid retorna 400."""
+    url = reverse("habilitados-desconvocar")
+    resp = api_client.patch(url, {"codigo_cargo": "1008"}, format="json")
+    assert resp.status_code == 400
+    assert "processo_uuid" in resp.data["detail"]
+
+
+@patch(
+    "candidatos.api.views.habilitados.AgendasApiService.remover_agendas_por_processo_uuid_e_cargo"
+)
+def test_desconvocar_com_codigo_cargo_chama_agendas(
+    mock_remover_agendas, api_client, concurso_uuid
+):
+    """Verifica desconvocar com cargo chama remoção de agendas."""
+    mock_remover_agendas.return_value = {"excluidas": 1}
+    processo_uuid = uuid4()
+    candidato = criar_candidato("C1", "555.555.555-55")
+    cc = ConcursoCandidato.objects.create(
+        candidato=candidato,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
+        codigo_inscricao="1",
+        foi_convocado=True,
+        processo_uuid=processo_uuid,
+        codigo_cargo="1008",
+    )
+    url = reverse("habilitados-desconvocar")
+    resp = api_client.patch(
+        url,
+        {"processo_uuid": str(processo_uuid), "codigo_cargo": "1008"},
+        format="json",
+    )
+    assert resp.status_code == 200
+    assert resp.data["total"] == 1
+    mock_remover_agendas.assert_called_once_with(
+        processo_uuid=str(processo_uuid), codigo_cargo="1008"
+    )
+    cc.refresh_from_db()
+    assert cc.foi_convocado is False
+
+
+@patch(
+    "candidatos.api.views.habilitados.AgendasApiService.remover_agendas_por_processo_uuid_e_cargo"
+)
+def test_desconvocar_sem_codigo_cargo_nao_chama_agendas(
+    mock_remover_agendas, api_client, concurso_uuid
+):
+    """Verifica desconvocar sem cargo não chama remoção de agendas."""
+    processo_uuid = uuid4()
+    candidato = criar_candidato("C1", "666.666.666-66")
+    ConcursoCandidato.objects.create(
+        candidato=candidato,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
+        codigo_inscricao="1",
+        foi_convocado=True,
+        processo_uuid=processo_uuid,
+        codigo_cargo="1008",
+    )
+    url = reverse("habilitados-desconvocar")
+    resp = api_client.patch(
+        url, {"processo_uuid": str(processo_uuid)}, format="json"
+    )
+    assert resp.status_code == 200
+    mock_remover_agendas.assert_not_called()
+
+
+@patch(
+    "candidatos.api.views.habilitados.AgendasApiService.remover_agendas_por_processo_uuid_e_cargo"
+)
+def test_habilitados_desconvocar_erro_agendas_api_mantem_resposta_200(
+    mock_remover_agendas, api_client, concurso_uuid
+):
+    """Verifica falha no MS-Agendas não impede desconvocação dos candidatos."""
+    mock_remover_agendas.side_effect = Exception("falha no MS-Agendas")
+    processo_uuid = uuid4()
+    candidato = criar_candidato("C1", "777.777.777-77")
+    cc = ConcursoCandidato.objects.create(
+        candidato=candidato,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
+        codigo_inscricao="1",
+        foi_convocado=True,
+        processo_uuid=processo_uuid,
+        codigo_cargo="1008",
+    )
+    url = reverse("habilitados-desconvocar")
+    resp = api_client.patch(
+        url,
+        {"processo_uuid": str(processo_uuid), "codigo_cargo": "1008"},
+        format="json",
+    )
+    assert resp.status_code == 200
+    assert resp.data["total"] == 1
+    assert resp.data["desconvocados"] == [str(cc.uuid)]
+    cc.refresh_from_db()
+    assert cc.foi_convocado is False
+
+
+def test_habilitados_buscar_por_cpfs_retorna_dados_do_processo(
+    api_client, concurso_uuid
+):
+    """Verifica habilitados buscar por cpfs retorna dados do processo."""
+    processo_uuid = uuid4()
+    c1 = criar_candidato("C1", "12345678901")
+    c2 = criar_candidato("C2", "98765432100")
+    ConcursoCandidato.objects.create(
+        candidato=c1,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
+        codigo_inscricao="1",
+        processo_uuid=processo_uuid,
+        classificacao=2,
+    )
+    ConcursoCandidato.objects.create(
+        candidato=c2,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
+        codigo_inscricao="2",
+        processo_uuid=processo_uuid,
+        classificacao=1,
+    )
+    c3 = criar_candidato("C3", "11122233344")
+    ConcursoCandidato.objects.create(
+        candidato=c3,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
+        codigo_inscricao="3",
+        processo_uuid=uuid4(),
+        classificacao=1,
+    )
+    url = reverse("habilitados-buscar-por-cpfs")
+    payload = {
+        "cpfs": ["12345678901", "98765432100", "11122233344"],
+        "processo_uuid": str(processo_uuid),
+    }
+    resp = api_client.post(url, payload, format="json")
+    assert resp.status_code == 200
+    assert isinstance(resp.data, list)
+    assert len(resp.data) == 2
+    returned_cpfs = {item["cpf"] for item in resp.data}
+    assert returned_cpfs == {"12345678901", "98765432100"}
+    assert resp.data[0]["cpf"] == "98765432100"
+
+
+def test_habilitados_buscar_por_cpfs_order_by_invalido_retorna_400(api_client):
+    """Verifica habilitados buscar por cpfs order by invalido retorna 400."""
+    url = reverse("habilitados-buscar-por-cpfs")
+    payload = {"cpfs": ["12345678901"], "processo_uuid": str(uuid4())}
+    resp = api_client.post(
+        url + "?order_by=campo_inexistente", payload, format="json"
+    )
+    assert resp.status_code == 400
+    assert resp.data["detail"] == "Parâmetro order_by inválido"
+
+
+@patch("candidatos.api.views.habilitados.EscolhasApiService.buscar_escolhas")
+@patch(
+    "candidatos.api.views.habilitados.CalculoHabilitadosService.gerar_sequencia_convocados"
+)
+def test_habilitados_calculados_sem_candidatos_retorna_lista_vazia(
+    mock_gerar_sequencia, mock_buscar_escolhas, api_client
+):
+    """Verifica habilitados calculados sem candidatos retorna lista vazia."""
+    concurso_uuid = uuid4()
+    processo_uuid = uuid4()
+    mock_buscar_escolhas.return_value = []
+    mock_gerar_sequencia.return_value = ([], 0.2, 0.05)
+    url = reverse("habilitados-calculados")
+    resp = api_client.get(
+        url,
+        {
+            "quantidade": 5,
+            "concurso_uuid": str(concurso_uuid),
+            "processo_uuid": str(processo_uuid),
+            "codigo_cargo": "1008",
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.data["concurso_uuid"] == str(concurso_uuid)
+    assert resp.data["results"] == []
+
+
+@patch("candidatos.api.views.habilitados.EscolhasApiService.buscar_escolhas")
+@patch(
+    "candidatos.api.views.habilitados.CalculoHabilitadosService.gerar_sequencia_convocados"
+)
+def test_habilitados_calculados_sucesso_mockando_externos(
+    mock_gerar_sequencia, mock_buscar_escolhas, api_client
+):
+    """Verifica habilitados calculados sucesso mockando externos."""
+    concurso_uuid = uuid4()
+    processo_uuid = uuid4()
+    mock_buscar_escolhas.return_value = [
+        {"candidato_uuid": "u1"},
+        {"candidato_uuid": None},
+        {},
+        {"candidato_uuid": "u2"},
+    ]
+    mock_gerar_sequencia.return_value = ([], 0.2, 0.05)
+    url = reverse("habilitados-calculados")
+    resp = api_client.get(
+        url,
+        {
+            "quantidade": 3,
+            "concurso_uuid": str(concurso_uuid),
+            "processo_uuid": str(processo_uuid),
+            "codigo_cargo": "1008",
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.data["quantidade"] == 3
+    assert resp.data["concurso_uuid"] == str(concurso_uuid)
+    assert resp.data["results"] == []
+    assert resp.data["porcentagem_nna"] == 0.2
+    assert resp.data["porcentagem_pcd"] == 0.05
+    mock_buscar_escolhas.assert_called_once_with(
+        concurso_uuid=str(concurso_uuid)
+    )
+    mock_gerar_sequencia.assert_called_once()
+    args = mock_gerar_sequencia.call_args.args
+    assert args[0] == 3
+    assert args[1] == str(concurso_uuid)
+    assert args[2] == ["u1", "u2"]
+    assert args[3] == "1008"
+    assert args[4] == str(processo_uuid)
+
+
+@patch(
+    "candidatos.api.views.habilitados.EscolhasApiService.buscar_escolhas",
+    side_effect=Exception("ms caiu"),
+)
+@patch(
+    "candidatos.api.views.habilitados.CalculoHabilitadosService.gerar_sequencia_convocados"
+)
+def test_habilitados_calculados_quando_escolhas_falha_continua_com_lista_vazia(
+    mock_gerar_sequencia, mock_buscar_escolhas, api_client
+):
+    """Verifica habilitados calculados quando escolhas falha continua com."""
+    concurso_uuid = uuid4()
+    processo_uuid = uuid4()
+    mock_gerar_sequencia.return_value = ([], 0.2, 0.05)
+    url = reverse("habilitados-calculados")
+    resp = api_client.get(
+        url,
+        {
+            "quantidade": 2,
+            "concurso_uuid": str(concurso_uuid),
+            "processo_uuid": str(processo_uuid),
+            "codigo_cargo": "1008",
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.data["concurso_uuid"] == str(concurso_uuid)
+    assert resp.data["results"] == []
+    mock_buscar_escolhas.assert_called_once_with(
+        concurso_uuid=str(concurso_uuid)
+    )
+    args = mock_gerar_sequencia.call_args.args
+    assert args[2] == []
 
 
 class TestReconvocacao:
@@ -714,8 +733,8 @@ class TestReconvocacao:
             )
         assert resp.status_code == 400
 
-    def test_sem_lote_retorna_lista_vazia(self, api_client):
-        """Verifica sem lote retorna lista vazia."""
+    def test_sem_candidatos_retorna_lista_vazia(self, api_client):
+        """Verifica sem candidatos retorna lista vazia."""
         with patch(
             "candidatos.api.views.habilitados.EscolhasApiService.buscar_reconvocacoes",
             return_value=[{"candidato_uuid": str(uuid4())}],
@@ -727,26 +746,34 @@ class TestReconvocacao:
         assert resp.status_code == 200
         assert resp.data == []
 
-    def test_retorna_convocados_na_lista_reconvocacoes(self, api_client, lote):
+    def test_retorna_convocados_na_lista_reconvocacoes(
+        self, api_client, concurso_uuid
+    ):
         """Verifica retorna convocados na lista reconvocacoes."""
         c = criar_candidato("Reconv", "555.555.555-55")
         cc = ConcursoCandidato.objects.create(
-            candidato=c, lote=lote, codigo_inscricao="rc1", foi_convocado=True
+            candidato=c,
+            concurso_uuid=concurso_uuid,
+            concurso_nome="Concurso Teste",
+            codigo_inscricao="rc1",
+            foi_convocado=True,
         )
         with (
             patch(
                 "candidatos.api.views.habilitados.EscolhasApiService.buscar_reconvocacoes",
                 return_value=[{"candidato_uuid": str(cc.uuid)}],
             ),
-            patch("candidatos.api.views.habilitados.atualizar_ranking"),
             patch(
-                "candidatos.api.views.habilitados.atualizar_ranking_escolha"
+                "candidatos.api.views.habilitados.RankingService.atualizar_ranking"
+            ),
+            patch(
+                "candidatos.api.views.habilitados.RankingService.atualizar_ranking_escolha"
             ),
         ):
             resp = api_client.get(
                 reverse("habilitados-reconvocacao"),
                 {
-                    "concurso_uuid": str(lote.concurso_uuid),
+                    "concurso_uuid": str(concurso_uuid),
                     "quantidade": "5",
                 },
             )
@@ -754,20 +781,22 @@ class TestReconvocacao:
         assert len(resp.data) == 1
         assert resp.data[0]["codigo_inscricao"] == "rc1"
 
-    def test_filtra_por_codigo_cargo(self, api_client, lote):
+    def test_filtra_por_codigo_cargo(self, api_client, concurso_uuid):
         """Verifica filtra por codigo cargo."""
         c1 = criar_candidato("C1", "666.666.666-66")
         c2 = criar_candidato("C2", "777.777.777-77")
         cc1 = ConcursoCandidato.objects.create(
             candidato=c1,
-            lote=lote,
+            concurso_uuid=concurso_uuid,
+            concurso_nome="Concurso Teste",
             codigo_inscricao="a",
             foi_convocado=True,
             codigo_cargo="CARGO_A",
         )
         cc2 = ConcursoCandidato.objects.create(
             candidato=c2,
-            lote=lote,
+            concurso_uuid=concurso_uuid,
+            concurso_nome="Concurso Teste",
             codigo_inscricao="b",
             foi_convocado=True,
             codigo_cargo="CARGO_B",
@@ -780,15 +809,17 @@ class TestReconvocacao:
                     {"candidato_uuid": str(cc2.uuid)},
                 ],
             ),
-            patch("candidatos.api.views.habilitados.atualizar_ranking"),
             patch(
-                "candidatos.api.views.habilitados.atualizar_ranking_escolha"
+                "candidatos.api.views.habilitados.RankingService.atualizar_ranking"
+            ),
+            patch(
+                "candidatos.api.views.habilitados.RankingService.atualizar_ranking_escolha"
             ),
         ):
             resp = api_client.get(
                 reverse("habilitados-reconvocacao"),
                 {
-                    "concurso_uuid": str(lote.concurso_uuid),
+                    "concurso_uuid": str(concurso_uuid),
                     "quantidade": "5",
                     "codigo_cargo": "CARGO_A",
                 },
@@ -808,17 +839,18 @@ class TestEliminar:
         )
         assert resp.status_code == 400
 
-    def test_sucesso_retorna_200_com_dados(self, api_client, lote):
+    def test_sucesso_retorna_200_com_dados(self, api_client, concurso_uuid):
         """Verifica sucesso retorna 200 com dados."""
         cc = ConcursoCandidato.objects.create(
             candidato=criar_candidato("Elim", "888.888.888-88"),
-            lote=lote,
+            concurso_uuid=concurso_uuid,
+            concurso_nome="Concurso Teste",
             codigo_inscricao="el1",
         )
         hist_mock = MagicMock()
         hist_mock.uuid = uuid4()
         with patch(
-            "candidatos.api.views.habilitados.aplicar_eliminacao",
+            "candidatos.api.views.habilitados.EliminacaoService.aplicar_eliminacao",
             return_value=(cc, hist_mock),
         ):
             resp = api_client.post(
@@ -834,7 +866,7 @@ class TestEliminar:
     def test_value_error_retorna_400(self, api_client):
         """Verifica value error retorna 400."""
         with patch(
-            "candidatos.api.views.habilitados.aplicar_eliminacao",
+            "candidatos.api.views.habilitados.EliminacaoService.aplicar_eliminacao",
             side_effect=ValueError("candidato não encontrado"),
         ):
             resp = api_client.post(
@@ -874,11 +906,12 @@ class TestBuscarPorUuids:
         )
         assert resp.status_code == 400
 
-    def test_retorna_candidatos_encontrados(self, api_client, lote):
+    def test_retorna_candidatos_encontrados(self, api_client, concurso_uuid):
         """Verifica retorna candidatos encontrados."""
         cc = ConcursoCandidato.objects.create(
             candidato=criar_candidato("Uuid", "999.999.999-99"),
-            lote=lote,
+            concurso_uuid=concurso_uuid,
+            concurso_nome="Concurso Teste",
             codigo_inscricao="uu1",
         )
         resp = api_client.post(
@@ -901,11 +934,12 @@ class TestBuscarPorUuids:
         assert resp.status_code == 200
         assert resp.data["results"] == []
 
-    def test_order_by_invalido_retorna_400(self, api_client, lote):
+    def test_order_by_invalido_retorna_400(self, api_client, concurso_uuid):
         """Verifica order by invalido retorna 400."""
         cc = ConcursoCandidato.objects.create(
             candidato=criar_candidato("O", "101.101.101-10"),
-            lote=lote,
+            concurso_uuid=concurso_uuid,
+            concurso_nome="Concurso Teste",
             codigo_inscricao="oo1",
         )
         resp = api_client.post(
@@ -921,21 +955,26 @@ class TestBuscarPorUuids:
 class TestMandadoJudicial:
     """Testes da action de busca por mandado judicial."""
 
-    def _criar_cc(self, lote, nome, cpf, **kwargs):
-        """Cria ConcursoCandidato de exemplo vinculado ao lote."""
+    def _criar_cc(self, concurso_uuid, nome, cpf, **kwargs):
+        """Cria ConcursoCandidato de exemplo vinculado ao concurso."""
         return ConcursoCandidato.objects.create(
             candidato=criar_candidato(nome, cpf),
-            lote=lote,
+            concurso_uuid=concurso_uuid,
+            concurso_nome="Concurso Teste",
             codigo_inscricao=kwargs.pop("codigo_inscricao", cpf[-4:]),
             **kwargs,
         )
 
     def test_retorna_apenas_com_reclassificacao_judicial(
-        self, api_client, lote
+        self, api_client, concurso_uuid
     ):
-        """Verifica que só retorna quem tem mandado judicial ativo."""
+        """Verifica que só retorna quem tem mandado_judicial no CC."""
         com_mandado = self._criar_cc(
-            lote, "Ana Judicial", "111.111.111-11", classificacao_nna=1
+            concurso_uuid,
+            "Ana Judicial",
+            "111.111.111-11",
+            classificacao_nna=1,
+            mandado_judicial=True,
         )
         ConcursoCandidatoReclassificacao.objects.create(
             concurso_candidato=com_mandado,
@@ -943,31 +982,41 @@ class TestMandadoJudicial:
             mandado_judicial=True,
         )
         sem_mandado = self._criar_cc(
-            lote, "Bruno Comum", "222.222.222-22", classificacao_nna=2
+            concurso_uuid,
+            "Bruno Comum",
+            "222.222.222-22",
+            classificacao_nna=2,
+            mandado_judicial=False,
         )
         ConcursoCandidatoReclassificacao.objects.create(
             concurso_candidato=sem_mandado,
             desclassificado_de="NNA",
             mandado_judicial=False,
         )
-        self._criar_cc(lote, "Carla Sem Reclass", "333.333.333-33")
+        self._criar_cc(concurso_uuid, "Carla Sem Reclass", "333.333.333-33")
 
         resp = api_client.get(
             reverse("habilitados-mandado-judicial"),
-            {"concurso_uuid": str(lote.concurso_uuid)},
+            {"concurso_uuid": str(concurso_uuid)},
         )
 
         assert resp.status_code == 200
         assert len(resp.data) == 1
         assert resp.data[0]["candidato"]["nome"] == "Ana Judicial"
 
-    def test_filtra_por_codigo_cargo(self, api_client, lote):
+    def test_filtra_por_codigo_cargo(self, api_client, concurso_uuid):
         """Verifica filtro por codigo_cargo."""
         for nome, cpf, cargo in (
             ("Ana", "111.111.111-11", "1001"),
             ("Bruno", "222.222.222-22", "2002"),
         ):
-            cc = self._criar_cc(lote, nome, cpf, codigo_cargo=cargo)
+            cc = self._criar_cc(
+                concurso_uuid,
+                nome,
+                cpf,
+                codigo_cargo=cargo,
+                mandado_judicial=True,
+            )
             ConcursoCandidatoReclassificacao.objects.create(
                 concurso_candidato=cc,
                 desclassificado_de="PCD",
@@ -977,7 +1026,7 @@ class TestMandadoJudicial:
         resp = api_client.get(
             reverse("habilitados-mandado-judicial"),
             {
-                "concurso_uuid": str(lote.concurso_uuid),
+                "concurso_uuid": str(concurso_uuid),
                 "codigo_cargo": "1001",
             },
         )
@@ -987,15 +1036,16 @@ class TestMandadoJudicial:
         assert resp.data[0]["candidato"]["nome"] == "Ana"
 
     def test_candidato_com_duas_reclassificacoes_nao_duplica(
-        self, api_client, lote
+        self, api_client, concurso_uuid
     ):
         """Verifica que reclassificações NNA e PCD não duplicam a linha."""
         cc = self._criar_cc(
-            lote,
+            concurso_uuid,
             "Duplo Mandado",
             "111.111.111-11",
             classificacao_nna=1,
             classificacao_pcd=1,
+            mandado_judicial=True,
         )
         for categoria in ("NNA", "PCD"):
             ConcursoCandidatoReclassificacao.objects.create(
@@ -1006,19 +1056,20 @@ class TestMandadoJudicial:
 
         resp = api_client.get(
             reverse("habilitados-mandado-judicial"),
-            {"concurso_uuid": str(lote.concurso_uuid)},
+            {"concurso_uuid": str(concurso_uuid)},
         )
 
         assert resp.status_code == 200
         assert len(resp.data) == 1
 
-    def test_respeita_limite_padrao_de_resultados(self, lote):
+    def test_respeita_limite_padrao_de_resultados(self, concurso_uuid):
         """Verifica que a busca trunca no limite padrão."""
         for indice in range(5):
             cc = self._criar_cc(
-                lote,
+                concurso_uuid,
                 f"Candidato {indice:03d}",
                 f"11{indice}.111.111-1{indice}",
+                mandado_judicial=True,
             )
             ConcursoCandidatoReclassificacao.objects.create(
                 concurso_candidato=cc,
@@ -1027,7 +1078,7 @@ class TestMandadoJudicial:
             )
 
         qs = ConcursoCandidatoRepository.filtrar_mandado_judicial(
-            lote=lote, limite=3
+            concurso_uuid=concurso_uuid, limite=3
         )
 
         assert len(qs) == 3
@@ -1036,12 +1087,15 @@ class TestMandadoJudicial:
         assert qs[2].candidato.nome == "Candidato 002"
 
     def test_nao_faz_query_por_candidato(
-        self, api_client, lote, django_assert_max_num_queries
+        self, api_client, concurso_uuid, django_assert_max_num_queries
     ):
-        
+        """Verifica que a listagem não dispara N+1 por candidato."""
         for indice in range(5):
             cc = self._criar_cc(
-                lote, f"Candidato {indice}", f"11{indice}.111.111-1{indice}"
+                concurso_uuid,
+                f"Candidato {indice}",
+                f"11{indice}.111.111-1{indice}",
+                mandado_judicial=True,
             )
             ConcursoCandidatoReclassificacao.objects.create(
                 concurso_candidato=cc,
@@ -1052,7 +1106,7 @@ class TestMandadoJudicial:
         with django_assert_max_num_queries(3 + 5):
             resp = api_client.get(
                 reverse("habilitados-mandado-judicial"),
-                {"concurso_uuid": str(lote.concurso_uuid)},
+                {"concurso_uuid": str(concurso_uuid)},
             )
 
         assert resp.status_code == 200
@@ -1065,8 +1119,8 @@ class TestMandadoJudicial:
         assert resp.status_code == 400
         assert "concurso_uuid" in resp.data.get("detail", "")
 
-    def test_concurso_sem_lote_retorna_lista_vazia(self, api_client):
-        """Verifica retorno vazio quando não há lote para o concurso."""
+    def test_concurso_sem_candidatos_retorna_lista_vazia(self, api_client):
+        """Verifica retorno vazio quando não há candidatos para o concurso."""
         resp = api_client.get(
             reverse("habilitados-mandado-judicial"),
             {"concurso_uuid": str(uuid4())},
@@ -1075,15 +1129,18 @@ class TestMandadoJudicial:
         assert resp.status_code == 200
         assert resp.data == []
 
-    def test_serializer_expoe_campos_da_tabela(self, api_client, lote):
+    def test_serializer_expoe_campos_da_tabela(
+        self, api_client, concurso_uuid
+    ):
         """Verifica os campos usados pela tabela de mandado judicial."""
         cc = self._criar_cc(
-            lote,
+            concurso_uuid,
             "Ana Judicial",
             "111.111.111-11",
             classificacao=10,
             classificacao_nna=1,
             codigo_cargo="1001",
+            mandado_judicial=True,
         )
         ConcursoCandidatoReclassificacao.objects.create(
             concurso_candidato=cc,
@@ -1094,7 +1151,7 @@ class TestMandadoJudicial:
 
         resp = api_client.get(
             reverse("habilitados-mandado-judicial"),
-            {"concurso_uuid": str(lote.concurso_uuid)},
+            {"concurso_uuid": str(concurso_uuid)},
         )
 
         assert resp.status_code == 200
