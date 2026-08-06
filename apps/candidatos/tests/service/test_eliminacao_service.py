@@ -10,9 +10,8 @@ from candidatos.models import (
     Candidato,
     ConcursoCandidato,
     ConcursoCandidatoEliminacao,
-    ConcursoCandidatosLote,
 )
-from candidatos.service.eliminacao_service import aplicar_eliminacao
+from candidatos.service.eliminacao_service import EliminacaoService
 from django.utils import timezone
 
 pytestmark = pytest.mark.django_db
@@ -37,19 +36,18 @@ def _candidato(**kwargs):
 
 
 @pytest.fixture
-def lote():
-    """Lote de concurso usado nos testes."""
-    return ConcursoCandidatosLote.objects.create(
-        concurso_uuid=uuid4(), concurso_nome="Concurso Teste"
-    )
+def concurso_uuid():
+    """UUID de concurso usado nos testes."""
+    return uuid4()
 
 
 @pytest.fixture
-def cc_habilitado(lote):
+def cc_habilitado(concurso_uuid):
     """ConcursoCandidato habilitado para convocação."""
     return ConcursoCandidato.objects.create(
         candidato=_candidato(),
-        lote=lote,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
         codigo_inscricao="001",
         eliminado=False,
     )
@@ -57,7 +55,7 @@ def cc_habilitado(lote):
 
 def test_aplicar_eliminacao_marca_eliminado_e_cria_historico(cc_habilitado):
     """Verifica aplicar eliminacao marca eliminado e cria historico."""
-    cc, hist = aplicar_eliminacao(
+    cc, hist = EliminacaoService.aplicar_eliminacao(
         candidato_uuid=cc_habilitado.uuid,
         motivo="Desistência",
         executado_por="sistema",
@@ -80,7 +78,7 @@ def test_aplicar_eliminacao_marca_eliminado_e_cria_historico(cc_habilitado):
 
 def test_aplicar_eliminacao_motivo_e_executado_vazios(cc_habilitado):
     """Verifica aplicar eliminacao motivo e executado vazios."""
-    cc, hist = aplicar_eliminacao(
+    cc, hist = EliminacaoService.aplicar_eliminacao(
         candidato_uuid=cc_habilitado.uuid, motivo="", executado_por=""
     )
     cc.refresh_from_db()
@@ -90,22 +88,27 @@ def test_aplicar_eliminacao_motivo_e_executado_vazios(cc_habilitado):
     assert hist.executado_por == ""
 
 
-def test_aplicar_eliminacao_ja_eliminado_levanta_value_error(lote):
+def test_aplicar_eliminacao_ja_eliminado_levanta_value_error(concurso_uuid):
     """Verifica aplicar eliminacao ja eliminado levanta value error."""
     cc = ConcursoCandidato.objects.create(
         candidato=_candidato(),
-        lote=lote,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
         codigo_inscricao="002",
         eliminado=True,
     )
     with pytest.raises(ValueError, match="já está eliminado"):
-        aplicar_eliminacao(candidato_uuid=cc.uuid, motivo="", executado_por="")
+        EliminacaoService.aplicar_eliminacao(
+            candidato_uuid=cc.uuid, motivo="", executado_por=""
+        )
 
 
 def test_aplicar_eliminacao_uuid_inexistente_levanta_does_not_exist():
     """Verifica aplicar eliminacao uuid inexistente levanta does not exist."""
     with pytest.raises(ConcursoCandidato.DoesNotExist):
-        aplicar_eliminacao(candidato_uuid=uuid4(), motivo="", executado_por="")
+        EliminacaoService.aplicar_eliminacao(
+            candidato_uuid=uuid4(), motivo="", executado_por=""
+        )
 
 
 def _make_candidato(cpf="00000000001", email="c1@test.com"):
@@ -134,7 +137,7 @@ def test_aplicar_eliminacao_marca_eliminado():
     """Verifica aplicar eliminacao marca eliminado."""
     cc = _make_cc()
     assert cc.eliminado is False
-    cc_ret, hist = aplicar_eliminacao(
+    cc_ret, hist = EliminacaoService.aplicar_eliminacao(
         candidato_uuid=cc.uuid,
         motivo="Falta de documentos",
         executado_por="admin",
@@ -149,7 +152,7 @@ def test_aplicar_eliminacao_marca_eliminado():
 def test_aplicar_eliminacao_cria_historico():
     """Verifica aplicar eliminacao cria historico."""
     cc = _make_cc()
-    cc_ret, hist = aplicar_eliminacao(
+    cc_ret, hist = EliminacaoService.aplicar_eliminacao(
         candidato_uuid=cc.uuid, motivo="Reprovado", executado_por="gestor"
     )
     assert (
@@ -166,7 +169,7 @@ def test_aplicar_eliminacao_cria_historico():
 def test_aplicar_eliminacao_retorna_tupla_correta():
     """Verifica aplicar eliminacao retorna tupla correta."""
     cc = _make_cc()
-    result = aplicar_eliminacao(candidato_uuid=cc.uuid)
+    result = EliminacaoService.aplicar_eliminacao(candidato_uuid=cc.uuid)
     assert isinstance(result, tuple)
     assert len(result) == 2
     cc_ret, hist = result
@@ -177,7 +180,7 @@ def test_aplicar_eliminacao_retorna_tupla_correta():
 def test_aplicar_eliminacao_sem_motivo_usa_string_vazia():
     """Verifica aplicar eliminacao sem motivo usa string vazia."""
     cc = _make_cc()
-    cc_ret, hist = aplicar_eliminacao(candidato_uuid=cc.uuid)
+    cc_ret, hist = EliminacaoService.aplicar_eliminacao(candidato_uuid=cc.uuid)
     cc.refresh_from_db()
     assert cc.eliminado_motivo == ""
     assert cc.eliminado_por == ""
@@ -189,7 +192,7 @@ def test_aplicar_eliminacao_atualiza_eliminado_em():
     """Verifica aplicar eliminacao atualiza eliminado em."""
     before = timezone.now()
     cc = _make_cc()
-    aplicar_eliminacao(candidato_uuid=cc.uuid)
+    EliminacaoService.aplicar_eliminacao(candidato_uuid=cc.uuid)
     cc.refresh_from_db()
     assert cc.eliminado_em >= before
 
@@ -197,17 +200,21 @@ def test_aplicar_eliminacao_atualiza_eliminado_em():
 def test_aplicar_eliminacao_ja_eliminado_levanta_erro():
     """Verifica aplicar eliminacao ja eliminado levanta erro."""
     cc = _make_cc()
-    aplicar_eliminacao(candidato_uuid=cc.uuid, motivo="Primeira vez")
+    EliminacaoService.aplicar_eliminacao(
+        candidato_uuid=cc.uuid, motivo="Primeira vez"
+    )
     with pytest.raises(ValueError, match="já está eliminado"):
-        aplicar_eliminacao(candidato_uuid=cc.uuid, motivo="Segunda vez")
+        EliminacaoService.aplicar_eliminacao(
+            candidato_uuid=cc.uuid, motivo="Segunda vez"
+        )
 
 
 def test_aplicar_eliminacao_ja_eliminado_nao_cria_segundo_historico():
     """Verifica aplicar eliminacao ja eliminado nao cria segundo historico."""
     cc = _make_cc()
-    aplicar_eliminacao(candidato_uuid=cc.uuid)
+    EliminacaoService.aplicar_eliminacao(candidato_uuid=cc.uuid)
     with pytest.raises(ValueError):
-        aplicar_eliminacao(candidato_uuid=cc.uuid)
+        EliminacaoService.aplicar_eliminacao(candidato_uuid=cc.uuid)
     assert (
         ConcursoCandidatoEliminacao.objects.filter(
             concurso_candidato=cc
@@ -221,7 +228,7 @@ def test_aplicar_eliminacao_uuid_inexistente():
     import uuid as _uuid
 
     with pytest.raises(ConcursoCandidato.DoesNotExist):
-        aplicar_eliminacao(candidato_uuid=_uuid.uuid4())
+        EliminacaoService.aplicar_eliminacao(candidato_uuid=_uuid.uuid4())
 
 
 def test_aplicar_eliminacao_atomicidade(monkeypatch):
@@ -236,6 +243,6 @@ def test_aplicar_eliminacao_atomicidade(monkeypatch):
         ConcursoCandidatoEliminacao.objects, "create", create_raise
     )
     with pytest.raises(RuntimeError):
-        aplicar_eliminacao(candidato_uuid=cc.uuid)
+        EliminacaoService.aplicar_eliminacao(candidato_uuid=cc.uuid)
     cc.refresh_from_db()
     assert cc.eliminado is False

@@ -7,63 +7,67 @@ from typing import Any
 from candidatos.repository import ConcursoCandidatoRepository
 
 
-def atualizar_ranking(itens: Any) -> None:
-    """Atualiza ranking.
+class RankingService:
+    """Service para atualização de ranking de candidatos."""
 
-    Args:
-        itens: Lista de ConcursoCandidato na ordem desejada.
+    @staticmethod
+    def atualizar_ranking(itens: Any) -> None:
+        """Atualiza ranking.
 
-    Returns:
-        Nenhum valor; persiste alterações no banco.
-    """
-    try:
-        for idx, it in enumerate(itens, start=1):
-            it.ranking = idx
-        if itens:
-            ConcursoCandidatoRepository.bulk_atualizar_ranking(itens)
-    except Exception:
-        pass
+        Args:
+            itens: Lista de ConcursoCandidato na ordem desejada.
 
+        Returns:
+            Nenhum valor; persiste alterações no banco.
+        """
+        try:
+            for idx, it in enumerate(itens, start=1):
+                it.ranking = idx
+            if itens:
+                ConcursoCandidatoRepository.bulk_atualizar_ranking(itens)
+        except Exception:
+            pass
 
-def atualizar_ranking_escolha(itens: Any) -> None:
-    """Atualiza ranking escolha.
+    @staticmethod
+    def atualizar_ranking_escolha(itens: Any) -> None:
+        """Atualiza ranking escolha.
 
-    Args:
-        itens: Lista de ConcursoCandidato a reordenar.
+        Args:
+            itens: Lista de ConcursoCandidato a reordenar.
 
-    Returns:
-        Nenhum valor; persiste alterações no banco.
-    """
-    try:
-        "classificacao"
-        itens_pcd = [
-            it
-            for it in itens
-            if getattr(it, "classificacao_pcd", None) is not None
-        ]
-        itens_pcd.sort(
-            key=lambda it: (
-                getattr(it, "classificacao", None) is None,
-                getattr(it, "classificacao", 0),
+        Returns:
+            Nenhum valor; persiste alterações no banco.
+        """
+        try:
+            "classificacao"
+            itens_pcd = [
+                it
+                for it in itens
+                if getattr(it, "classificacao_pcd", None) is not None
+            ]
+            itens_pcd.sort(
+                key=lambda it: (
+                    getattr(it, "classificacao", None) is None,
+                    getattr(it, "classificacao", 0),
+                )
             )
-        )
-        itens_restantes = [
-            it
-            for it in itens
-            if getattr(it, "classificacao_pcd", None) is None
-        ]
-        itens_restantes.sort(
-            key=lambda it: (
-                getattr(it, "classificacao", None) is None,
-                getattr(it, "classificacao", float("inf")),
+            itens_restantes = [
+                it
+                for it in itens
+                if getattr(it, "classificacao_pcd", None) is None
+            ]
+            itens_restantes.sort(
+                key=lambda it: (
+                    getattr(it, "classificacao", None) is None,
+                    getattr(it, "classificacao", float("inf")),
+                )
             )
-        )
-        nova_ordem = itens_pcd + itens_restantes
-        for idx, it in enumerate(nova_ordem, start=1):
-            it.ranking_escolha = idx
-        if nova_ordem:
-            ConcursoCandidatoRepository.bulk_atualizar_ranking_escolha(
-                nova_ordem
-            )
-    except Exception:
-        pass
+            nova_ordem = itens_pcd + itens_restantes
+            for idx, it in enumerate(nova_ordem, start=1):
+                it.ranking_escolha = idx
+            if nova_ordem:
+                ConcursoCandidatoRepository.bulk_atualizar_ranking_escolha(
+                    nova_ordem
+                )
+        except Exception:
+            pass

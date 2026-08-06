@@ -7,7 +7,6 @@ from candidatos.models import (
     Candidato,
     ConcursoCandidato,
     ConcursoCandidatoEliminacao,
-    ConcursoCandidatosLote,
 )
 from django.urls import reverse
 from rest_framework.test import APIClient
@@ -39,11 +38,12 @@ def _candidato(**kwargs):
     )
 
 
-def _cc(lote, candidato=None, **kwargs):
+def _cc(concurso_uuid, candidato=None, **kwargs):
     """ConcursoCandidato de exemplo para os testes."""
     return ConcursoCandidato.objects.create(
         candidato=candidato or _candidato(),
-        lote=lote,
+        concurso_uuid=concurso_uuid,
+        concurso_nome="Concurso Teste",
         codigo_inscricao=kwargs.get("codigo_inscricao", uuid4().hex[:8]),
         eliminado=kwargs.get("eliminado", True),
         classificacao=kwargs.get("classificacao"),
@@ -72,8 +72,8 @@ def test_parametros_obrigatorios(api_client):
     )
 
 
-def test_sem_lote_retorna_listas_vazias(api_client):
-    """Verifica sem lote retorna listas vazias."""
+def test_sem_candidatos_retorna_listas_vazias(api_client):
+    """Verifica sem candidatos retorna listas vazias."""
     url = reverse("eliminados-list")
     concurso_uuid = uuid4()
     processo_uuid = uuid4()
@@ -94,39 +94,36 @@ def test_retorna_eliminados_separados_e_filtra_classificacao(api_client):
     """Verifica retorna eliminados separados e filtra classificacao."""
     concurso_uuid = uuid4()
     processo_uuid = uuid4()
-    lote = ConcursoCandidatosLote.objects.create(
-        concurso_uuid=concurso_uuid, concurso_nome="X"
-    )
     cc_geral = _cc(
-        lote,
+        concurso_uuid,
         eliminado=True,
         classificacao=5,
         classificacao_nna=None,
         classificacao_pcd=None,
     )
     cc_nna = _cc(
-        lote,
+        concurso_uuid,
         eliminado=True,
         classificacao=3,
         classificacao_nna=1,
         classificacao_pcd=None,
     )
     cc_pcd = _cc(
-        lote,
+        concurso_uuid,
         eliminado=True,
         classificacao=2,
         classificacao_nna=None,
         classificacao_pcd=1,
     )
     cc_max_out = _cc(
-        lote,
+        concurso_uuid,
         eliminado=True,
         classificacao=15,
         classificacao_nna=None,
         classificacao_pcd=None,
     )
     _cc(
-        lote,
+        concurso_uuid,
         eliminado=False,
         classificacao=1,
         classificacao_nna=None,
@@ -173,23 +170,18 @@ def test_retorna_eliminados_separados_e_filtra_classificacao(api_client):
     assert len(resp2.data["pcd"]) == 1
 
 
-def test_usa_ultimo_lote(api_client):
-    """Verifica usa ultimo lote."""
+def test_filtra_por_concurso_uuid(api_client):
+    """Verifica filtro por concurso_uuid retorna apenas do concurso."""
     concurso_uuid = uuid4()
+    outro_concurso_uuid = uuid4()
     processo_uuid = uuid4()
-    lote_antigo = ConcursoCandidatosLote.objects.create(
-        concurso_uuid=concurso_uuid, concurso_nome="A"
-    )
-    lote_novo = ConcursoCandidatosLote.objects.create(
-        concurso_uuid=concurso_uuid, concurso_nome="B"
-    )
-    cc_antigo = _cc(lote_antigo, eliminado=True, classificacao=1)
-    cc_novo = _cc(lote_novo, eliminado=True, classificacao=1)
+    cc_concurso = _cc(concurso_uuid, eliminado=True, classificacao=1)
+    cc_outro = _cc(outro_concurso_uuid, eliminado=True, classificacao=1)
     ConcursoCandidatoEliminacao.objects.create(
-        concurso_candidato=cc_antigo, processo_uuid=processo_uuid
+        concurso_candidato=cc_concurso, processo_uuid=processo_uuid
     )
     ConcursoCandidatoEliminacao.objects.create(
-        concurso_candidato=cc_novo, processo_uuid=processo_uuid
+        concurso_candidato=cc_outro, processo_uuid=processo_uuid
     )
     url = reverse("eliminados-list")
     resp = api_client.get(
@@ -203,4 +195,4 @@ def test_usa_ultimo_lote(api_client):
     )
     assert resp.status_code == 200
     assert len(resp.data["geral"]) == 1
-    assert resp.data["geral"][0]["id"] == cc_novo.id
+    assert resp.data["geral"][0]["id"] == cc_concurso.id

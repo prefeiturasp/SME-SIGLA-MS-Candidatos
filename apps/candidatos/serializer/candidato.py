@@ -63,4 +63,7 @@ class CandidatosLoteCreateSerializer(serializers.Serializer):
 
     concurso_uuid = serializers.UUIDField()
     concurso_nome = serializers.CharField(allow_blank=True, required=False)
+    mandado_judicial = serializers.BooleanField(
+        required=False, allow_null=True, default=False
+    )
     candidatos = CandidatoConcursoCreateSerializer(many=True)
