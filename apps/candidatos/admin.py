@@ -9,7 +9,6 @@ from django.contrib import admin, messages
 from .models import (
     Candidato,
     ConcursoCandidato,
-    ConcursoCandidatosLote,
 )
 
 
@@ -83,11 +82,11 @@ class ConcursoCandidatoAdmin(admin.ModelAdmin):
         "classificacao_nna",
         "foi_convocado",
         "data_convocacao",
-        "lote__concurso_uuid",
+        "concurso_uuid",
         "criado_em",
     ]
     list_filter = [
-        "lote__concurso_uuid",
+        "concurso_uuid",
         "criado_em",
         "foi_convocado",
         "data_convocacao",
@@ -96,7 +95,7 @@ class ConcursoCandidatoAdmin(admin.ModelAdmin):
     ]
     search_fields = [
         "candidato__nome",
-        "lote",
+        "concurso_uuid",
         "candidato__cpf",
         "candidato__email",
         "candidato__telefone",
@@ -125,15 +124,3 @@ class ConcursoCandidatoAdmin(admin.ModelAdmin):
     marcar_nao_convocados.short_description = (  # type: ignore[attr-defined]
         "Marcar como NÃO convocados (foi_convocado=False)"
     )
-
-
-@admin.register(ConcursoCandidatosLote)
-class ConcursoCandidatosLoteAdmin(admin.ModelAdmin):
-    """Configuração do admin para ConcursoCandidatosLote."""
-
-    list_display = ["concurso_nome", "concurso_uuid", "criado_em"]
-    list_filter = ["criado_em"]
-    search_fields = ["concurso_nome"]
-    readonly_fields = ["criado_em", "atualizado_em", "esta_ativo"]
-    date_hierarchy = "criado_em"
-    list_per_page = 25

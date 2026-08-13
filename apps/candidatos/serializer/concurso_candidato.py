@@ -27,8 +27,7 @@ class ConcursoCandidatoSerializer(DynamicFieldsSerializer):
 
     candidato = serializers.SerializerMethodField(read_only=True)
     reclassificacoes = serializers.SerializerMethodField(read_only=True)
-    concurso_uuid = serializers.SerializerMethodField(read_only=True)
-    concurso_nome = serializers.SerializerMethodField(read_only=True)
+    historico_classificacao = serializers.SerializerMethodField(read_only=True)
     concurso_candidato_uuid = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
@@ -41,22 +40,6 @@ class ConcursoCandidatoSerializer(DynamicFieldsSerializer):
     def get_concurso_candidato_uuid(self, obj: Any) -> Any:
         """Retorna concurso candidato uuid."""
         return str(obj.uuid) if getattr(obj, "uuid", None) else None
-
-    def get_concurso_uuid(self, obj: Any) -> Any:
-        """Retorna concurso uuid."""
-        if getattr(obj, "concurso_uuid", None):
-            return str(obj.concurso_uuid)
-        lote = getattr(obj, "lote", None)
-        if lote and getattr(lote, "concurso_uuid", None):
-            return str(lote.concurso_uuid)
-        return None
-
-    def get_concurso_nome(self, obj: Any) -> Any:
-        """Retorna concurso nome."""
-        lote = getattr(obj, "lote", None)
-        if lote and getattr(lote, "concurso_nome", None):
-            return lote.concurso_nome
-        return None
 
     def get_candidato(self, obj: Any) -> Any:
         """Retorna candidato."""
@@ -92,6 +75,16 @@ class ConcursoCandidatoSerializer(DynamicFieldsSerializer):
         )
 
         return ConcursoCandidatoReclassificacaoRepository.listar_serializado_por_concurso_candidato(  # noqa: E501
+            obj
+        )
+
+    def get_historico_classificacao(self, obj: Any) -> Any:
+        """Retorna histórico de deslocamento de classificação."""
+        from candidatos.repository import (
+            ConcursoCandidatoHistoricoClassificacaoRepository,
+        )
+
+        return ConcursoCandidatoHistoricoClassificacaoRepository.listar_serializado_por_concurso_candidato(  # noqa: E501
             obj
         )
 
@@ -200,9 +193,7 @@ class ReclassificarSerializer(serializers.Serializer):
     motivo = serializers.CharField(
         required=False, allow_blank=True, default=""
     )
-    mandado_judicial = serializers.BooleanField(
-        required=False, default=False
-    )
+    mandado_judicial = serializers.BooleanField(required=False, default=False)
 
     def validate(self, attrs: Any) -> Any:
         """Valida payload de reclassificação sem alterações adicionais."""

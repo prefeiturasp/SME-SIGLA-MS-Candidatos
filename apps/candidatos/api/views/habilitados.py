@@ -6,10 +6,7 @@ import logging
 from typing import Any
 
 from candidatos.models import ConcursoCandidato
-from candidatos.repository import (
-    ConcursoCandidatoRepository,
-    ConcursoCandidatosLoteRepository,
-)
+from candidatos.repository import ConcursoCandidatoRepository
 from candidatos.serializers import (
     BuscarPorCpfsSerializer,
     BuscarPorUuidsSerializer,
@@ -22,20 +19,15 @@ from candidatos.serializers import (
 )
 from candidatos.service.agendas_api_service import AgendasApiService
 from candidatos.service.calculo_habilitados_service import (
-    gerar_sequencia_convocados,
+    CalculoHabilitadosService,
 )
-from candidatos.service.eliminacao_service import aplicar_eliminacao
+from candidatos.service.eliminacao_service import EliminacaoService
 from candidatos.service.escolhas_api_service import EscolhasApiService
 from candidatos.service.exceptions import SalvarLotesError
-from candidatos.service.extracao_dados_service import montar_extracao_dados
-from candidatos.service.lotes_service import (
-    salvar_lotes as salvar_lotes_service,
-)
-from candidatos.service.ranking_service import (
-    atualizar_ranking,
-    atualizar_ranking_escolha,
-)
-from candidatos.service.reclassificacao_service import aplicar_reclassificacao
+from candidatos.service.extracao_dados_service import ExtracaoDadosService
+from candidatos.service.lotes_service import LotesService
+from candidatos.service.ranking_service import RankingService
+from candidatos.service.reclassificacao_service import ReclassificacaoService
 from django.core.exceptions import FieldError
 from django.db import models
 from django.utils import timezone
@@ -50,16 +42,13 @@ logger = logging.getLogger(__name__)
 class HabilitadosViewSet(viewsets.ModelViewSet):
     """ViewSet baseado em ConcursoCandidato."""
 
-    queryset = ConcursoCandidato.objects.select_related(
-        "candidato", "lote"
-    ).all()
+    queryset = ConcursoCandidato.objects.select_related("candidato").all()
     serializer_class = ConcursoCandidatoSerializer
     pagination_class = None
     filterset_fields = {
         "processo_uuid": ["exact", "in"],
         "codigo_cargo": ["exact", "in"],
-        "lote__concurso_uuid": ["exact", "in"],
-        "lote__uuid": ["exact"],
+        "concurso_uuid": ["exact", "in"],
         "candidato__cpf": ["exact", "in"],
         "candidato__registro_funcional": ["exact", "in"],
         "candidato__nome": ["exact", "in"],
@@ -82,12 +71,9 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             "concurso_uuid"
         )
         if concurso_uuid:
-            lote = ConcursoCandidatosLoteRepository.obter_ultimo_por_concurso(
-                concurso_uuid
+            qs = ConcursoCandidatoRepository.filtrar_por_concurso_uuid(
+                qs, concurso_uuid
             )
-            if not lote:
-                return ConcursoCandidatoRepository.queryset_vazio()
-            qs = ConcursoCandidatoRepository.filtrar_por_lote(qs, lote)
         return qs
 
     def get_serializer(self, *args: Any, **kwargs: Any) -> Any:
@@ -112,7 +98,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         serializer = ExtracaoDadosSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         dados = serializer.validated_data
-        resultado = montar_extracao_dados(
+        resultado = ExtracaoDadosService.montar_extracao_dados(
             concurso_uuid=dados.get("concurso_uuid"),
             filtros=dados["filtros"],
         )
@@ -184,15 +170,9 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
                 {"detail": "quantidade deve ser um número válido"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        lote = ConcursoCandidatosLoteRepository.obter_ultimo_por_concurso(
-            concurso_uuid
-        )
-        if not lote:
-            serializer = self.get_serializer([], many=True)
-            return Response(serializer.data)
         codigo_cargo = request.query_params.get("codigo_cargo")
         qs = ConcursoCandidatoRepository.filtrar_reconvocacao(
-            lote=lote,
+            concurso_uuid=concurso_uuid,
             candidato_uuids=candidato_uuids,
             codigo_cargo=codigo_cargo,
         )
@@ -209,8 +189,8 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             "classificacao",
             "id",
         )[:quantidade]
-        atualizar_ranking(list(qs_final))
-        atualizar_ranking_escolha(list(qs_final))
+        RankingService.atualizar_ranking(list(qs_final))
+        RankingService.atualizar_ranking_escolha(list(qs_final))
         serializer = self.get_serializer(qs_final, many=True)
         logger.info(
             "Reconvocações encontradas",
@@ -225,8 +205,8 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
     def mandado_judicial(self, request: Any) -> Any:
         """Busca candidatos com reclassificação por mandado judicial.
 
-        Retorna os candidatos do último lote do concurso que possuem ao
-        menos uma reclassificação revertida por determinação judicial,
+        Retorna os candidatos do concurso que possuem ao menos uma
+        reclassificação revertida por determinação judicial,
         opcionalmente filtrados por cargo.
 
         Args:
@@ -251,19 +231,15 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
                 {"detail": "concurso_uuid é obrigatório"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        lote = ConcursoCandidatosLoteRepository.obter_ultimo_por_concurso(
-            concurso_uuid
-        )
-        if not lote:
-            return Response([], status=status.HTTP_200_OK)
-        qs_candidatos_mandado_judicial = ConcursoCandidatoRepository.\
-            filtrar_mandado_judicial(
-                lote=lote,
+        qs_candidatos_mandado_judicial = (
+            ConcursoCandidatoRepository.filtrar_mandado_judicial(
+                concurso_uuid=concurso_uuid,
                 codigo_cargo=request.query_params.get("codigo_cargo"),
+            )
         )
         serializer = self.get_serializer(
-            qs_candidatos_mandado_judicial,
-            many=True)
+            qs_candidatos_mandado_judicial, many=True
+        )
         logger.info(
             "Candidatos por mandado judicial encontrados",
             extra={
@@ -307,7 +283,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         except Exception:
             username = ""
         try:
-            cc, hist = aplicar_reclassificacao(
+            cc, hist = ReclassificacaoService.aplicar_reclassificacao(
                 candidato_uuid=str(data["candidato_uuid"]),
                 desclassificar_de=str(data["desclassificar_de"]),
                 motivo=data.get("motivo") or "",
@@ -369,7 +345,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         except Exception:
             username = ""
         try:
-            cc, hist = aplicar_eliminacao(
+            cc, hist = EliminacaoService.aplicar_eliminacao(
                 candidato_uuid=str(data["candidato_uuid"]),
                 motivo=data.get("motivo") or "",
                 executado_por=username,
@@ -421,15 +397,9 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
                 {"detail": "concurso_uuid é obrigatório"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        lote = ConcursoCandidatosLoteRepository.obter_ultimo_por_concurso(
-            concurso_uuid
-        )
-        if not lote:
-            serializer = self.get_serializer([], many=True)
-            return Response(serializer.data)
         codigo_cargo = request.query_params.get("codigo_cargo")
-        qs = ConcursoCandidatoRepository.filtrar_nao_convocados_por_lote(
-            lote=lote, codigo_cargo=codigo_cargo
+        qs = ConcursoCandidatoRepository.filtrar_nao_convocados_por_concurso(
+            concurso_uuid=concurso_uuid, codigo_cargo=codigo_cargo
         )
         geral = request.query_params.get("geral")
         pcd = request.query_params.get("pcd")
@@ -481,8 +451,8 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
                     ids_incluidos.add(obj.id)
                     resultados.append(obj.id)
         qs_final = qs.filter(id__in=resultados).order_by("classificacao")
-        atualizar_ranking(list(qs_final))
-        atualizar_ranking_escolha(list(qs_final))
+        RankingService.atualizar_ranking(list(qs_final))
+        RankingService.atualizar_ranking_escolha(list(qs_final))
         serializer = self.get_serializer(qs_final, many=True)
         return Response(serializer.data)
 
@@ -510,23 +480,18 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         concurso_uuid = request.data.get("concurso_uuid")
         processo_uuid = request.data.get("processo_uuid")
         candidatos = request.data.get("candidatos", [])
-        if not (concurso_uuid or processo_uuid) or not isinstance(
-            candidatos, list
-        ):
+        if not concurso_uuid:
+            return Response(
+                {"detail": "concurso_uuid é obrigatório"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not isinstance(candidatos, list):
             return Response(
                 {"detail": "Payload inválido"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        lote = ConcursoCandidatosLoteRepository.obter_ultimo_por_concurso(
-            concurso_uuid
-        )
-        if not lote:
-            return Response(
-                {"detail": "Lote não encontrado para o concurso informado"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        qs = ConcursoCandidatoRepository.filtrar_por_lote_e_uuids(
-            lote=lote, uuids=candidatos
+        qs = ConcursoCandidatoRepository.filtrar_por_concurso_e_uuids(
+            concurso_uuid=concurso_uuid, uuids=candidatos
         )
         atualizados = list(ConcursoCandidatoRepository.listar_uuids(qs))
         ConcursoCandidatoRepository.marcar_convocados(
@@ -711,16 +676,6 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         concurso_uuid = str(params.validated_data["concurso_uuid"])
         processo_uuid = str(params.validated_data["processo_uuid"])
         codigo_cargo = params.validated_data["codigo_cargo"]
-        lote = ConcursoCandidatosLoteRepository.obter_ultimo_por_concurso(
-            concurso_uuid
-        )
-        if not lote:
-            return Response(
-                {
-                    "detail": "Lote não encontrado para o concurso_uuid informado"  # noqa: E501
-                },
-                status=status.HTTP_404_NOT_FOUND,
-            )
         try:
             escolhas = EscolhasApiService.buscar_escolhas(
                 concurso_uuid=concurso_uuid
@@ -733,19 +688,20 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         except Exception as exc:
             logger.error(f"Erro ao buscar escolhas: {exc}")
             escolhas_candidato_uuids = []
-        itens, porcentagem_nna, porcentagem_pcd = gerar_sequencia_convocados(
-            quantidade,
-            lote,
-            escolhas_candidato_uuids,
-            codigo_cargo,
-            processo_uuid,
+        itens, porcentagem_nna, porcentagem_pcd = (
+            CalculoHabilitadosService.gerar_sequencia_convocados(
+                quantidade,
+                concurso_uuid,
+                escolhas_candidato_uuids,
+                codigo_cargo,
+                processo_uuid,
+            )
         )
         serializer = self.get_serializer(itens, many=True)
         return Response(
             {
                 "quantidade": quantidade,
                 "concurso_uuid": str(concurso_uuid),
-                "lote_uuid": str(lote.uuid),
                 "results": serializer.data,
                 "porcentagem_nna": porcentagem_nna,
                 "porcentagem_pcd": porcentagem_pcd,
@@ -768,18 +724,11 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
                 {"detail": "concurso_uuid é obrigatório"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        lote = ConcursoCandidatosLoteRepository.obter_ultimo_por_concurso(
-            concurso_uuid
-        )
-        if not lote:
-            return Response([], status=status.HTTP_200_OK)
         codigo_cargo = request.query_params.get("codigo_cargo")
         numeros = ConcursoCandidatoRepository.listar_numeros_lote(
-            lote=lote, codigo_cargo=codigo_cargo
+            concurso_uuid=concurso_uuid, codigo_cargo=codigo_cargo
         )
-        return Response(
-            [{"numero_lote": n, "lote_uuid": lote.uuid} for n in numeros]
-        )
+        return Response([{"numero_lote": n} for n in numeros])
 
     @action(detail=False, methods=["get"], url_path="cargos")
     def cargos(self, request: Any) -> Any:
@@ -797,12 +746,9 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
                 {"detail": "concurso_uuid é obrigatório"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        lote = ConcursoCandidatosLoteRepository.obter_ultimo_por_concurso(
-            concurso_uuid
+        cargos = ConcursoCandidatoRepository.listar_cargos_sigpec(
+            concurso_uuid=concurso_uuid
         )
-        if not lote:
-            return Response([], status=status.HTTP_200_OK)
-        cargos = ConcursoCandidatoRepository.listar_cargos_sigpec(lote=lote)
         return Response(list(cargos))
 
     @action(detail=False, methods=["post"], url_path="salvar-lotes")
@@ -820,7 +766,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         concurso_uuid = str(serializer.validated_data["concurso_uuid"])
         lotes = serializer.validated_data["lotes"]
         try:
-            total = salvar_lotes_service(
+            total = LotesService.salvar_lotes(
                 concurso_uuid=concurso_uuid, lotes=lotes
             )
         except SalvarLotesError as exc:
