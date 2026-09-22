@@ -33,7 +33,8 @@ class ExtracaoDadosService:
 
         Returns:
             Dicionário com ``habilitados`` e, por ano (ou na raiz), os
-            ``convocados`` e ``nao-convocados`` do escopo.
+            ``convocados`` e ``nao-convocados`` do escopo — cada um no
+            formato ``{total, geral, pcd, nna}``.
         """
         habilitados = cls._contar_habilitados(concurso_uuid)
         resultado: dict[str, Any] = {"habilitados": habilitados}
@@ -51,14 +52,18 @@ class ExtracaoDadosService:
                 resultado[ano] = {
                     "habilitados": habilitados_ano,
                     "convocados": convocados,
-                    "nao-convocados": habilitados["total"] - convocados,
+                    "nao-convocados": cls._subtrair_por_categoria(
+                        habilitados, convocados
+                    ),
                 }
         else:
             convocados = cls._contar_convocados(concurso_uuid)
             resultado.update(
                 {
                     "convocados": convocados,
-                    "nao-convocados": habilitados["total"] - convocados,
+                    "nao-convocados": cls._subtrair_por_categoria(
+                        habilitados, convocados
+                    ),
                 }
             )
 
@@ -142,8 +147,8 @@ class ExtracaoDadosService:
         cls,
         concurso_uuid: UUID | str | None = None,
         processo_uuids: list[UUID | str] | None = None,
-    ) -> int:
-        """Conta ``foi_convocado=True`` no escopo informado.
+    ) -> dict[str, int]:
+        """Conta quantos candidatos já foram convocados, separados por tipo de vaga.
 
         Args:
             concurso_uuid: Concurso a restringir; ausente → todos os concursos.
@@ -152,7 +157,7 @@ class ExtracaoDadosService:
                 pelos processos do ano.
 
         Returns:
-            Quantidade de convocados no escopo informado.
+            Totais no formato ``{total, geral, pcd, nna}``.
         """
         qs = ConcursoCandidatoRepository.filtrar_convocados(
             cls._queryset_base(concurso_uuid)
@@ -161,4 +166,23 @@ class ExtracaoDadosService:
             qs = ConcursoCandidatoRepository.filtrar_por_processos(
                 qs, processo_uuids
             )
-        return ConcursoCandidatoRepository.contar(qs)
+        return cls._agregar_por_categoria(qs)
+
+    @staticmethod
+    def _subtrair_por_categoria(
+        minuendo: dict[str, int],
+        subtraendo: dict[str, int],
+    ) -> dict[str, int]:
+        """Subtrai contagens por categoria (não negativa).
+
+        Args:
+            minuendo: Totais de referência (ex.: habilitados).
+            subtraendo: Totais a descontar (ex.: convocados).
+
+        Returns:
+            Diferença por ``total`` / ``geral`` / ``pcd`` / ``nna``.
+        """
+        return {
+            chave: max(0, minuendo.get(chave, 0) - subtraendo.get(chave, 0))
+            for chave in ("total", "geral", "pcd", "nna")
+        }
