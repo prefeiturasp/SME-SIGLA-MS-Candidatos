@@ -25,6 +25,9 @@ from candidatos.service.eliminacao_service import EliminacaoService
 from candidatos.service.escolhas_api_service import EscolhasApiService
 from candidatos.service.exceptions import SalvarLotesError
 from candidatos.service.extracao_dados_service import ExtracaoDadosService
+from candidatos.service.habilitados_por_processo_service import (
+    HabilitadosPorProcessoService,
+)
 from candidatos.service.lotes_service import LotesService
 from candidatos.service.ranking_service import RankingService
 from candidatos.service.reclassificacao_service import ReclassificacaoService
@@ -101,6 +104,40 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         resultado = ExtracaoDadosService.montar_extracao_dados(
             concurso_uuid=dados.get("concurso_uuid"),
             filtros=dados["filtros"],
+        )
+        return Response(resultado)
+
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path="por-processos-e-tipo-vaga",
+    )
+    def por_processos_e_tipo_vaga(self, request: Any) -> Any:
+        """Agrega convocados por processo e categoria efetiva.
+
+        Body::
+
+            {"processo_uuids": ["<uuid>", ...]}
+
+        Returns:
+            Estrutura com total e candidatos_uuids por GERAL/NNA/PCD.
+        """
+        processo_uuids = request.data.get("processo_uuids")
+        if not isinstance(processo_uuids, list) or not processo_uuids:
+            return Response(
+                {
+                    "detail": "processo_uuids é obrigatório e deve ser uma lista"  # noqa: E501
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        logger.info(
+            f"Agregando habilitados por processos e tipo de vaga | "
+            f"processo_uuids={processo_uuids}"
+        )
+        resultado = (
+            HabilitadosPorProcessoService.montar_por_processos_e_tipo_vaga(
+                processo_uuids
+            )
         )
         return Response(resultado)
 
