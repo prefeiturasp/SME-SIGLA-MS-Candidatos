@@ -531,6 +531,31 @@ class ConcursoCandidatoRepository:
         return queryset
 
     @classmethod
+    def listar_convocados_por_processos(
+        cls,
+        processo_uuids: list[UUID | str],
+    ) -> list[dict[str, Any]]:
+        """Busca convocados pelos processos informados.
+
+        Args:
+            processo_uuids: Lista de UUIDs de processos de convocação.
+
+        Returns:
+            Lista de ``{processo_uuid, categoria_efetiva, uuid}``.
+        """
+        if not processo_uuids:
+            return []
+        return list(
+            ConcursoCandidato.objects.filter(
+                processo_uuid__in=processo_uuids,
+                foi_convocado=True,
+                processo_uuid__isnull=False,
+            )
+            .exclude(candidato__isnull=True)
+            .values("processo_uuid", "categoria_efetiva", "uuid")
+        )
+
+    @classmethod
     def desmarcar_convocados(
         cls, queryset: QuerySet[ConcursoCandidato]
     ) -> int:
