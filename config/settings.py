@@ -175,6 +175,10 @@ CORS_ALLOWED_ORIGINS = (
     else []
 )
 
+CORS_ALLOWED_ORIGINS=[
+    "https://qa-sigla.sme.prefeitura.sp.gov.br",
+    "https://hom-sigla.sme.prefeitura.sp.gov.br"]
+
 # Audit Log settings
 AUDITLOG_INCLUDE_ALL_MODELS = True
 
