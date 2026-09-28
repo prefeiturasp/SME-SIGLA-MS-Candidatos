@@ -6,7 +6,6 @@ from typing import Any
 import requests
 from django.conf import settings
 from rest_framework import status
-from sigla_sdk.context import get_correlation_id
 from sigla_sdk.http.api_client import http_client
 
 logger = logging.getLogger(__name__)
@@ -47,15 +46,9 @@ class AgendasApiService:
             "cargo": codigo_cargo,
         }
         logger.info(
-            "Removendo agendas por processo e cargo no MS-Agendas",
-            extra={
-                "method": "DELETE",
-                "correlation_id": get_correlation_id(),
-                "url": url,
-                "params": parametros,
-                "processo_uuid": processo_uuid,
-                "codigo_cargo": codigo_cargo,
-            },
+            f"Removendo agendas por processo e cargo no MS-Agendas | "
+            f"method=DELETE url={url} params={parametros} "
+            f"processo_uuid={processo_uuid} codigo_cargo={codigo_cargo}"
         )
         try:
             response = http_client.delete(
@@ -66,30 +59,25 @@ class AgendasApiService:
             )
         except requests.RequestException as exc:
             logger.exception(
-                "Erro ao conectar com o microserviço de Agendas: %s", exc
+                f"Erro ao conectar com o microserviço de Agendas | erro={exc}"
             )
             raise requests.RequestException(
                 f"Erro ao conectar com o microserviço de Agendas: {exc}"
             ) from exc
 
         if response.status_code == status.HTTP_200_OK:
+            corpo_resposta = response.json() if response.content else {}
             logger.info(
-                "Agendas removidas por processo e cargo no MS-Agendas",
-                extra={
-                    "method": "DELETE",
-                    "correlation_id": get_correlation_id(),
-                    "url": url,
-                    "params": parametros,
-                    "status_code": response.status_code,
-                    "response": response.json() if response.content else {},
-                },
+                f"Agendas removidas por processo e cargo no MS-Agendas | "
+                f"method=DELETE url={url} params={parametros} "
+                f"status_code={response.status_code} "
+                f"response={corpo_resposta}"
             )
-            return response.json() if response.content else {}
+            return corpo_resposta
 
         logger.error(
-            "Erro ao remover agendas por processo e cargo: %s - %s",
-            response.status_code,
-            response.text,
+            f"Erro ao remover agendas por processo e cargo | "
+            f"status_code={response.status_code} response={response.text}"
         )
         response.raise_for_status()
         return {}

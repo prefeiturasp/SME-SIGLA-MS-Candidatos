@@ -6,7 +6,6 @@ from typing import Any
 import requests
 from django.conf import settings
 from rest_framework import status
-from sigla_sdk.context import get_correlation_id
 from sigla_sdk.http.api_client import http_client
 
 logger = logging.getLogger(__name__)
@@ -38,15 +37,11 @@ class EscolhasApiService:
         }
         url = f"{base_url}{path}"
         logger.info(
-            "Buscando reconvocações no microserviço de Escolhas",
-            extra={
-                "method": "GET",
-                "correlation_id": get_correlation_id(),
-                "url": url,
-            },
+            f"Buscando reconvocações no microserviço de Escolhas | "
+            f"method=GET url={url}"
         )
         try:
-            logger.info(f"Buscando reconvocações em: {url}")
+            logger.info(f"Buscando reconvocações | url={url}")
             response = http_client.get(
                 url,
                 timeout=cls.DEFAULT_TIMEOUT,
@@ -55,7 +50,8 @@ class EscolhasApiService:
 
         except requests.RequestException as exc:
             logger.exception(
-                f"Erro ao buscar reconvocações no microserviço de Escolhas: {exc}"  # noqa: E501
+                f"Erro ao buscar reconvocações no microserviço de Escolhas | "
+                f"erro={exc}"
             )
             raise requests.RequestException(
                 f"Erro ao buscar reconvocações no microserviço de Escolhas: {exc}"  # noqa: E501
@@ -63,13 +59,8 @@ class EscolhasApiService:
 
         if response.status_code == status.HTTP_200_OK:
             logger.info(
-                "Reconvocações encontradas no microserviço de Escolhas",
-                extra={
-                    "method": "GET",
-                    "correlation_id": get_correlation_id(),
-                    "url": url,
-                    "status_code": response.status_code,
-                },
+                f"Reconvocações encontradas no microserviço de Escolhas | "
+                f"method=GET url={url} status_code={response.status_code}"
             )
             data = response.json()
             # Garante que retorna uma lista
@@ -84,7 +75,8 @@ class EscolhasApiService:
             return []
         else:
             logger.error(
-                f"Erro ao buscar reconvocações: {response.status_code} - {response.text}"  # noqa: E501
+                f"Erro ao buscar reconvocações | "
+                f"status_code={response.status_code} response={response.text}"
             )
             response.raise_for_status()
             return []
@@ -113,13 +105,8 @@ class EscolhasApiService:
         }
         url = f"{base_url}{path}&concurso_uuid={concurso_uuid}&page_size=10000"  # noqa: E501
         logger.info(
-            "Buscando escolhas",
-            extra={
-                "correlation_id": get_correlation_id(),
-                "concurso_uuid": concurso_uuid,
-                "path": path,
-                "url": url,
-            },
+            f"Buscando escolhas | concurso_uuid={concurso_uuid} "
+            f"path={path} url={url}"
         )
         try:
             response = http_client.get(
@@ -129,7 +116,8 @@ class EscolhasApiService:
             )
         except requests.RequestException as exc:
             logger.exception(
-                f"Erro ao buscar escolhas no microserviço de Escolhas: {exc}"  # noqa: E501
+                f"Erro ao buscar escolhas no microserviço de Escolhas | "
+                f"erro={exc}"
             )
             raise requests.RequestException(
                 f"Erro ao buscar escolhas no microserviço de Escolhas: {exc}"  # noqa: E501
@@ -149,7 +137,8 @@ class EscolhasApiService:
             return []
         else:
             logger.error(
-                f"Erro ao buscar escolhas: {response.status_code} - {response.text}"  # noqa: E501
+                f"Erro ao buscar escolhas | "
+                f"status_code={response.status_code} response={response.text}"
             )
             response.raise_for_status()
             return []

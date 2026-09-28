@@ -65,10 +65,9 @@ class LotesService:
 
             if not cc:
                 logger.warning(
-                    "Candidato não encontrado para identificacao=%s no concurso=%s linha=%s",  # noqa: E501
-                    identificacao,
-                    concurso_uuid,
-                    linha,
+                    f"Candidato não encontrado | "
+                    f"identificacao={identificacao} "
+                    f"concurso_uuid={concurso_uuid} linha={linha}"
                 )
                 erros.append(
                     f"Linha: {linha} - Candidato com codigo_inscricao: {identificacao} não encontrado"  # noqa: E501
@@ -107,8 +106,7 @@ class LotesService:
             )
 
         logger.info(
-            "salvar_lotes: %d candidatos atualizados para concurso=%s",
-            total_atualizados,
-            concurso_uuid,
+            f"Candidatos atualizados ao salvar lotes | "
+            f"total={total_atualizados} concurso_uuid={concurso_uuid}"
         )
         return total_atualizados
