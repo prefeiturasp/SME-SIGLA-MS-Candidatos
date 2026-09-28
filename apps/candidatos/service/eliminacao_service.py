@@ -12,7 +12,6 @@ from candidatos.repository import (
 )
 from django.db import transaction
 from django.utils import timezone
-from sigla_sdk.context import get_correlation_id
 
 logger = logging.getLogger(__name__)
 
@@ -39,13 +38,8 @@ class EliminacaoService:
             ValueError: Se o candidato já estiver eliminado.
         """
         logger.info(
-            "Aplicando eliminação",
-            extra={
-                "correlation_id": get_correlation_id(),
-                "candidato_uuid": candidato_uuid,
-                "motivo": motivo,
-                "executado_por": executado_por,
-            },
+            f"Aplicando eliminação | candidato_uuid={candidato_uuid} "
+            f"motivo={motivo} executado_por={executado_por}"
         )
         cc = ConcursoCandidatoRepository.obter_por_uuid_for_update(
             candidato_uuid

@@ -13,6 +13,7 @@ load_dotenv()
 
 DJANGO_ENVIRONMENT = os.environ.get("DJANGO_ENVIRONMENT", "local")
 MS_PATH = os.environ.get("MS_PATH", "/ms-candidatos")
+AMBIENTE_APLICACAO = os.environ.get("AMBIENTE_APLICACAO", DJANGO_ENVIRONMENT)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 # Adiciona a pasta 'apps' ao sys.path do Python
@@ -35,6 +36,7 @@ CSRF_TRUSTED_ORIGINS = [
 
 # Application definition
 INSTALLED_APPS = [
+    "elasticapm.contrib.django",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -50,6 +52,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "elasticapm.contrib.django.middleware.TracingMiddleware",
     "candidatos.middleware.CorrelationIdMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
@@ -202,24 +205,83 @@ LOGGING = {
             "class": "logging.StreamHandler",
             "formatter": "json",
         },
+        "elasticapm": {
+            "level": "DEBUG",
+            "class": "elasticapm.contrib.django.handlers.LoggingHandler",
+        },
     },
     "loggers": {
         "django": {
-            "handlers": ["console"],
+            "handlers": ["console", "elasticapm"],
             "level": "INFO",
             "propagate": False,
         },
         "candidatos": {
-            "handlers": ["console"],
+            "handlers": ["console", "elasticapm"],
             "level": "DEBUG",
             "propagate": False,
         },
         "django.server": {
-            "handlers": ["console"],
+            "handlers": ["console", "elasticapm"],
             "level": "ERROR",
             "propagate": False,
         },
+        "elasticapm.errors": {
+            "level": "ERROR",
+            "handlers": ["console"],
+            "propagate": False,
+        },
+        "elasticapm.logging": {
+            "level": "INFO",
+            "handlers": ["console"],
+            "propagate": False,
+        },
     },
+}
+
+ELASTIC_APM = {
+    "SERVICE_NAME": os.environ.get(
+        "ELASTIC_APM_SERVICE_NAME", "SME-SIGLA-MS-Candidatos"
+    ),
+    "SECRET_TOKEN": os.environ.get("ELASTIC_APM_SECRET_TOKEN", ""),
+    "SERVER_URL": os.environ.get(
+        "ELASTIC_APM_SERVER_URL", "http://localhost:8200"
+    ),
+    "SERVER_TIMEOUT": os.environ.get("ELASTIC_APM_SERVER_TIMEOUT", "35s"),
+    "ENVIRONMENT": os.environ.get(
+        "ELASTIC_APM_ENVIRONMENT", AMBIENTE_APLICACAO
+    ),
+    "ENABLED": os.environ.get("ELASTIC_APM_ENABLED", "0") == "1",
+    "CAPTURE_BODY": os.environ.get("ELASTIC_APM_CAPTURE_BODY", "all"),
+    "CAPTURE_HEADERS": os.environ.get("ELASTIC_APM_CAPTURE_HEADERS", "1")
+    == "1",
+    "TRANSACTION_SAMPLE_RATE": float(
+        os.environ.get("ELASTIC_APM_TRANSACTION_SAMPLE_RATE", "0.3")
+    ),
+    "METRICS_INTERVAL": os.environ.get("ELASTIC_APM_METRICS_INTERVAL", "10s"),
+    "FLUSH_INTERVAL": os.environ.get("ELASTIC_APM_FLUSH_INTERVAL", "10s"),
+    "MAX_BATCH_EVENT_COUNT": int(
+        os.environ.get("ELASTIC_APM_MAX_BATCH_EVENT_COUNT", "1000")
+    ),
+    "MAX_QUEUE_EVENT_COUNT": int(
+        os.environ.get("ELASTIC_APM_MAX_QUEUE_EVENT_COUNT", "1000")
+    ),
+    "TRANSACTION_MAX_SPANS": int(
+        os.environ.get("ELASTIC_APM_TRANSACTION_MAX_SPANS", "500")
+    ),
+    "DJANGO_TRANSACTION_NAME_FROM_ROUTE": True,
+    "LOG_LEVEL": os.environ.get("ELASTIC_APM_LOG_LEVEL", "INFO"),
+    "LOG_ECS_REFORMATTING": os.environ.get(
+        "ELASTIC_APM_LOG_ECS_REFORMATTING", "off"
+    ),
+    "RECORDING": True,
+    "TRANSACTIONS_ROOT_UNNAMED": True,
+    "CAPTURE_ERRORS": True,
+    "CAPTURE_PERFORMANCE": True,
+    "CAPTURE_TRANSACTIONS": True,
+    "CAPTURE_SPANS": True,
+    "CAPTURE_TRANSACTION_STACKTRACES": True,
+    "CAPTURE_TRANSACTION_STACKTRACES_LIMIT": 10,
 }
 
 SPECTACULAR_SETTINGS = {
