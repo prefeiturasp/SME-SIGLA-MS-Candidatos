@@ -25,6 +25,9 @@ from candidatos.service.eliminacao_service import EliminacaoService
 from candidatos.service.escolhas_api_service import EscolhasApiService
 from candidatos.service.exceptions import SalvarLotesError
 from candidatos.service.extracao_dados_service import ExtracaoDadosService
+from candidatos.service.habilitados_por_processo_service import (
+    HabilitadosPorProcessoService,
+)
 from candidatos.service.lotes_service import LotesService
 from candidatos.service.ranking_service import RankingService
 from candidatos.service.reclassificacao_service import ReclassificacaoService
@@ -34,7 +37,6 @@ from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from sigla_sdk.context import get_correlation_id
 
 logger = logging.getLogger(__name__)
 
@@ -104,6 +106,40 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         )
         return Response(resultado)
 
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path="por-processos-e-tipo-vaga",
+    )
+    def por_processos_e_tipo_vaga(self, request: Any) -> Any:
+        """Agrega convocados por processo e categoria efetiva.
+
+        Body::
+
+            {"processo_uuids": ["<uuid>", ...]}
+
+        Returns:
+            Estrutura com total e candidatos_uuids por GERAL/NNA/PCD.
+        """
+        processo_uuids = request.data.get("processo_uuids")
+        if not isinstance(processo_uuids, list) or not processo_uuids:
+            return Response(
+                {
+                    "detail": "processo_uuids é obrigatório e deve ser uma lista"  # noqa: E501
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        logger.info(
+            f"Agregando habilitados por processos e tipo de vaga | "
+            f"processo_uuids={processo_uuids}"
+        )
+        resultado = (
+            HabilitadosPorProcessoService.montar_por_processos_e_tipo_vaga(
+                processo_uuids
+            )
+        )
+        return Response(resultado)
+
     @action(detail=False, methods=["get"], url_path="reconvocacao")
     def reconvocacao(self, request: Any) -> Any:
         """Busca candidatos habilitados para reconvocação.
@@ -115,20 +151,16 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             Resposta HTTP com os dados solicitados.
         """
         logger.info(
-            "Buscando reconvocações",
-            extra={
-                "correlation_id": get_correlation_id(),
-                "params": request.query_params,
-                "user": request.user,
-                "path": request.path,
-                "method": request.method,
-            },
+            f"Buscando reconvocações | method={request.method} "
+            f"path={request.path} params={request.query_params} "
+            f"user={request.user}"
         )
         try:
             reconvocoes = EscolhasApiService.buscar_reconvocacoes()
         except Exception as exc:
             logger.error(
-                f"Erro ao buscar reconvocações no microserviço de Escolhas: {exc}"  # noqa: E501
+                f"Erro ao buscar reconvocações no microserviço de Escolhas | "
+                f"erro={exc}"
             )
             return Response(
                 {
@@ -142,10 +174,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             if item.get("candidato_uuid") is not None
         ]
         if not candidato_uuids:
-            logger.info(
-                "Não houver candidatos para reconvocação",
-                extra={"correlation_id": get_correlation_id()},
-            )
+            logger.info("Não houve candidatos para reconvocação")
             serializer = self.get_serializer([], many=True)
             return Response(serializer.data)
         concurso_uuid = request.query_params.get("concurso_uuid")
@@ -192,13 +221,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         RankingService.atualizar_ranking(list(qs_final))
         RankingService.atualizar_ranking_escolha(list(qs_final))
         serializer = self.get_serializer(qs_final, many=True)
-        logger.info(
-            "Reconvocações encontradas",
-            extra={
-                "correlation_id": get_correlation_id(),
-                "quantidade": len(qs_final),
-            },
-        )
+        logger.info(f"Reconvocações encontradas | quantidade={len(qs_final)}")
         return Response(serializer.data)
 
     @action(detail=False, methods=["get"], url_path="mandado-judicial")
@@ -216,14 +239,9 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             Resposta HTTP com os dados solicitados.
         """
         logger.info(
-            "Buscar candidatos por mandado judicial",
-            extra={
-                "correlation_id": get_correlation_id(),
-                "method": request.method,
-                "path": request.path,
-                "params": request.query_params,
-                "user": request.user,
-            },
+            f"Buscar candidatos por mandado judicial | "
+            f"method={request.method} path={request.path} "
+            f"params={request.query_params} user={request.user}"
         )
         concurso_uuid = request.query_params.get("concurso_uuid")
         if not concurso_uuid:
@@ -241,11 +259,8 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             qs_candidatos_mandado_judicial, many=True
         )
         logger.info(
-            "Candidatos por mandado judicial encontrados",
-            extra={
-                "correlation_id": get_correlation_id(),
-                "quantidade": len(serializer.data),
-            },
+            f"Candidatos por mandado judicial encontrados | "
+            f"quantidade={len(serializer.data)}"
         )
         return Response(serializer.data)
 
@@ -260,14 +275,8 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             Resposta HTTP com os dados solicitados.
         """
         logger.info(
-            "Reclassificar candidato",
-            extra={
-                "correlation_id": get_correlation_id(),
-                "method": request.method,
-                "path": request.path,
-                "params": request.data,
-                "user": request.user,
-            },
+            f"Reclassificar candidato | method={request.method} "
+            f"path={request.path} params={request.data} user={request.user}"
         )
         input_ser = ReclassificarSerializer(data=request.data)
         input_ser.is_valid(raise_exception=True)
@@ -295,7 +304,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
                 {"detail": str(ve)}, status=status.HTTP_400_BAD_REQUEST
             )
         except Exception as exc:
-            logger.error("Falha ao reclassificar: %s", exc, exc_info=True)
+            logger.exception(f"Falha ao reclassificar | erro={exc}")
             return Response(
                 {"detail": "Erro ao reclassificar"},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -322,14 +331,8 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             Resposta HTTP com os dados solicitados.
         """
         logger.info(
-            "Eliminar candidato",
-            extra={
-                "correlation_id": get_correlation_id(),
-                "method": request.method,
-                "path": request.path,
-                "params": request.data,
-                "user": request.user,
-            },
+            f"Eliminar candidato | method={request.method} "
+            f"path={request.path} params={request.data} user={request.user}"
         )
         input_ser = EliminarSerializer(data=request.data)
         input_ser.is_valid(raise_exception=True)
@@ -355,7 +358,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
                 {"detail": str(ve)}, status=status.HTTP_400_BAD_REQUEST
             )
         except Exception as exc:
-            logger.error("Falha ao eliminar: %s", exc, exc_info=True)
+            logger.exception(f"Falha ao eliminar | erro={exc}")
             return Response(
                 {"detail": "Erro ao eliminar"},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -382,14 +385,9 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             Resposta HTTP com os dados solicitados.
         """
         logger.info(
-            "Buscar candidatos para reposição",
-            extra={
-                "correlation_id": get_correlation_id(),
-                "method": request.method,
-                "path": request.path,
-                "params": request.query_params,
-                "user": request.user,
-            },
+            f"Buscar candidatos para reposição | method={request.method} "
+            f"path={request.path} params={request.query_params} "
+            f"user={request.user}"
         )
         concurso_uuid = request.query_params.get("concurso_uuid")
         if not concurso_uuid:
@@ -467,15 +465,9 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             Resposta HTTP com os dados solicitados.
         """
         logger.info(
-            "Convocar candidatos",
-            extra={
-                "correlation_id": get_correlation_id(),
-                "method": request.method,
-                "path": request.path,
-                "params": request.query_params,
-                "data": request.data,
-                "user": request.user,
-            },
+            f"Convocar candidatos | method={request.method} "
+            f"path={request.path} params={request.query_params} "
+            f"data={request.data} user={request.user}"
         )
         concurso_uuid = request.data.get("concurso_uuid")
         processo_uuid = request.data.get("processo_uuid")
@@ -517,15 +509,9 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             Resposta HTTP com os dados solicitados.
         """
         logger.info(
-            "Desconvocar candidatos",
-            extra={
-                "correlation_id": get_correlation_id(),
-                "method": request.method,
-                "path": request.path,
-                "params": request.query_params,
-                "data": request.data,
-                "user": request.user,
-            },
+            f"Desconvocar candidatos | method={request.method} "
+            f"path={request.path} params={request.query_params} "
+            f"data={request.data} user={request.user}"
         )
         processo_uuid = request.data.get("processo_uuid") or request.data.get(
             "concurso_uuid"
@@ -549,13 +535,9 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
                 )
             except Exception as exc:
                 logger.error(
-                    "Erro ao remover agendas no MS-Agendas: %s",
-                    exc,
-                    extra={
-                        "correlation_id": get_correlation_id(),
-                        "processo_uuid": processo_uuid,
-                        "codigo_cargo": codigo_cargo,
-                    },
+                    f"Erro ao remover agendas no MS-Agendas | "
+                    f"processo_uuid={processo_uuid} "
+                    f"codigo_cargo={codigo_cargo} erro={exc}"
                 )
         return Response(
             {
@@ -577,15 +559,9 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             Resposta HTTP com os dados solicitados.
         """
         logger.info(
-            "Buscar candidatos por UUIDs",
-            extra={
-                "correlation_id": get_correlation_id(),
-                "method": request.method,
-                "path": request.path,
-                "params": request.query_params,
-                "data": request.data,
-                "user": request.user,
-            },
+            f"Buscar candidatos por UUIDs | method={request.method} "
+            f"path={request.path} params={request.query_params} "
+            f"data={request.data} user={request.user}"
         )
         input_serializer = BuscarPorUuidsSerializer(data=request.data)
         input_serializer.is_valid(raise_exception=True)
@@ -616,15 +592,9 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             Resposta HTTP com os dados solicitados.
         """
         logger.info(
-            "Buscar candidatos por CPFs",
-            extra={
-                "correlation_id": get_correlation_id(),
-                "method": request.method,
-                "path": request.path,
-                "params": request.query_params,
-                "data": request.data,
-                "user": request.user,
-            },
+            f"Buscar candidatos por CPFs | method={request.method} "
+            f"path={request.path} params={request.query_params} "
+            f"data={request.data} user={request.user}"
         )
         input_serializer = BuscarPorCpfsSerializer(data=request.data)
         input_serializer.is_valid(raise_exception=True)
@@ -659,14 +629,9 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             Resposta HTTP com os dados solicitados.
         """
         logger.info(
-            "Buscar candidatos calculados",
-            extra={
-                "correlation_id": get_correlation_id(),
-                "method": request.method,
-                "path": request.path,
-                "params": request.query_params,
-                "user": request.user,
-            },
+            f"Buscar candidatos calculados | method={request.method} "
+            f"path={request.path} params={request.query_params} "
+            f"user={request.user}"
         )
         params = HabilitadosCalculadosParamsSerializer(
             data=request.query_params
@@ -686,7 +651,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
                 if item.get("candidato_uuid") is not None
             ]
         except Exception as exc:
-            logger.error(f"Erro ao buscar escolhas: {exc}")
+            logger.error(f"Erro ao buscar escolhas | erro={exc}")
             escolhas_candidato_uuids = []
         itens, porcentagem_nna, porcentagem_pcd = (
             CalculoHabilitadosService.gerar_sequencia_convocados(
@@ -770,13 +735,13 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
                 concurso_uuid=concurso_uuid, lotes=lotes
             )
         except SalvarLotesError as exc:
-            logger.warning("Erro de negocio ao salvar lotes: %s", exc)
+            logger.warning(f"Erro de negócio ao salvar lotes | erro={exc}")
             return Response(
                 {"mensagem": exc.mensagem, "detail": exc.detalhes},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         except Exception as exc:
-            logger.error("Erro ao salvar lotes: %s", exc, exc_info=True)
+            logger.exception(f"Erro ao salvar lotes | erro={exc}")
             return Response(
                 {"mensagem": "Erro ao salvar lotes.", "detail": str(exc)},
                 status=status.HTTP_400_BAD_REQUEST,

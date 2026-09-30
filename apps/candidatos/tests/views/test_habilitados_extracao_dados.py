@@ -83,13 +83,13 @@ def test_extracao_dados_agrega_habilitados_e_convocados_por_ano(api_client):
     assert data["habilitados"] == {"total": 7, "geral": 4, "pcd": 2, "nna": 1}
     assert data["2026"] == {
         "habilitados": {"total": 2, "geral": 2, "pcd": 0, "nna": 0},
-        "convocados": 2,
-        "nao-convocados": 5,
+        "convocados": {"total": 2, "geral": 2, "pcd": 0, "nna": 0},
+        "nao-convocados": {"total": 5, "geral": 2, "pcd": 2, "nna": 1},
     }
     assert data["2025"] == {
         "habilitados": {"total": 2, "geral": 1, "pcd": 1, "nna": 0},
-        "convocados": 2,
-        "nao-convocados": 5,
+        "convocados": {"total": 2, "geral": 1, "pcd": 1, "nna": 0},
+        "nao-convocados": {"total": 5, "geral": 3, "pcd": 1, "nna": 1},
     }
 
 
@@ -109,8 +109,13 @@ def test_extracao_dados_sem_filtros_retorna_total(api_client):
     assert resp.status_code == 200, resp.content
     data = resp.json()
     assert data["habilitados"] == {"total": 4, "geral": 2, "pcd": 1, "nna": 1}
-    assert data["convocados"] == 2
-    assert data["nao-convocados"] == 2
+    assert data["convocados"] == {"total": 2, "geral": 1, "pcd": 1, "nna": 0}
+    assert data["nao-convocados"] == {
+        "total": 2,
+        "geral": 1,
+        "pcd": 0,
+        "nna": 1,
+    }
     assert set(data.keys()) == {"habilitados", "convocados", "nao-convocados"}
 
 
@@ -127,8 +132,13 @@ def test_extracao_dados_filtros_vazio_lista(api_client):
     )
     assert resp.status_code == 200, resp.content
     data = resp.json()
-    assert data["convocados"] == 1
-    assert data["nao-convocados"] == 1
+    assert data["convocados"] == {"total": 1, "geral": 1, "pcd": 0, "nna": 0}
+    assert data["nao-convocados"] == {
+        "total": 1,
+        "geral": 1,
+        "pcd": 0,
+        "nna": 0,
+    }
     assert set(data.keys()) == {"habilitados", "convocados", "nao-convocados"}
 
 
@@ -144,8 +154,13 @@ def test_extracao_dados_sem_concurso_agrega_todos(api_client):
     assert resp.status_code == 200, resp.content
     data = resp.json()
     assert data["habilitados"] == {"total": 3, "geral": 2, "pcd": 1, "nna": 0}
-    assert data["convocados"] == 2
-    assert data["nao-convocados"] == 1
+    assert data["convocados"] == {"total": 2, "geral": 2, "pcd": 0, "nna": 0}
+    assert data["nao-convocados"] == {
+        "total": 1,
+        "geral": 0,
+        "pcd": 1,
+        "nna": 0,
+    }
     assert set(data.keys()) == {"habilitados", "convocados", "nao-convocados"}
 
 
@@ -165,6 +180,11 @@ def test_extracao_dados_sem_concurso_agrega_todos_os_concursos(api_client):
     assert resp.status_code == 200, resp.content
     data = resp.json()
     assert data["habilitados"] == {"total": 7, "geral": 4, "pcd": 2, "nna": 1}
-    assert data["convocados"] == 5
-    assert data["nao-convocados"] == 2
+    assert data["convocados"] == {"total": 5, "geral": 3, "pcd": 2, "nna": 0}
+    assert data["nao-convocados"] == {
+        "total": 2,
+        "geral": 1,
+        "pcd": 0,
+        "nna": 1,
+    }
     assert set(data.keys()) == {"habilitados", "convocados", "nao-convocados"}

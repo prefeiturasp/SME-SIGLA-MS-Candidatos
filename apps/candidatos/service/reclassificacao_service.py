@@ -14,7 +14,6 @@ from candidatos.repository import (
     ConcursoCandidatoRepository,
 )
 from django.db import transaction
-from sigla_sdk.context import get_correlation_id
 
 logger = logging.getLogger(__name__)
 
@@ -141,15 +140,10 @@ class ReclassificacaoService:
             ValueError: Se parâmetros forem inválidos ou operação negada.
         """
         logger.info(
-            "Aplicando reclassificação",
-            extra={
-                "correlation_id": get_correlation_id(),
-                "candidato_uuid": candidato_uuid,
-                "desclassificar_de": desclassificar_de,
-                "motivo": motivo,
-                "executado_por": executado_por,
-                "mandado_judicial": mandado_judicial,
-            },
+            f"Aplicando reclassificação | candidato_uuid={candidato_uuid} "
+            f"desclassificar_de={desclassificar_de} motivo={motivo} "
+            f"executado_por={executado_por} "
+            f"mandado_judicial={mandado_judicial}"
         )
         cc = ConcursoCandidatoRepository.obter_com_candidato_for_update(
             candidato_uuid
