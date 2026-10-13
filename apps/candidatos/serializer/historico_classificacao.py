@@ -3,11 +3,13 @@
 from candidatos.models import ConcursoCandidatoHistoricoClassificacao
 from rest_framework import serializers
 
+from .descricoes import DESCRICOES_HISTORICO_CLASSIFICACAO
+
 
 class ConcursoCandidatoHistoricoClassificacaoSerializer(
     serializers.ModelSerializer
 ):
-    """Serializer do histórico de deslocamento de classificação."""
+    """Piora de classificação de um habilitado após nova carga da lista."""
 
     class Meta:
         """Representa Meta."""
@@ -26,3 +28,4 @@ class ConcursoCandidatoHistoricoClassificacaoSerializer(
             "criado_em",
         ]
         read_only_fields = fields
+        extra_kwargs = DESCRICOES_HISTORICO_CLASSIFICACAO

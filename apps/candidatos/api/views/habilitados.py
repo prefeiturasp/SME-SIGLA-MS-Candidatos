@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from candidatos.api.schemas import OPERACOES_HABILITADOS
 from candidatos.models import ConcursoCandidato
 from candidatos.repository import ConcursoCandidatoRepository
 from candidatos.serializers import (
@@ -34,6 +35,7 @@ from candidatos.service.reclassificacao_service import ReclassificacaoService
 from django.core.exceptions import FieldError
 from django.db import models
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema_view
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -41,6 +43,7 @@ from rest_framework.response import Response
 logger = logging.getLogger(__name__)
 
 
+@extend_schema_view(**OPERACOES_HABILITADOS)
 class HabilitadosViewSet(viewsets.ModelViewSet):
     """ViewSet baseado em ConcursoCandidato."""
 

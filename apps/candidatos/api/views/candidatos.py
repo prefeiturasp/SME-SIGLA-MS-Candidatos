@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from candidatos.api.schemas import OPERACOES_CANDIDATOS, TAG_CANDIDATOS
 from candidatos.models import Candidato
 from candidatos.repository import (
     CandidatoRepository,
@@ -16,11 +17,14 @@ from candidatos.serializers import (
 from candidatos.service.candidato_lote_service import CandidatoLoteService
 from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 
+@extend_schema(tags=[TAG_CANDIDATOS])
+@extend_schema_view(**OPERACOES_CANDIDATOS)
 class CandidatoViewSet(viewsets.ModelViewSet):
     """ViewSet para o recurso Candidato."""
 
@@ -56,7 +60,12 @@ class CandidatoViewSet(viewsets.ModelViewSet):
         )
         return Response(resp_data, status=status_code)
 
-    @action(methods=["get"], detail=False, url_path="buscar")
+    @action(
+        methods=["get"],
+        detail=False,
+        url_path="buscar",
+        pagination_class=None,
+    )
     def buscar(self, request: Any) -> Any:
         """Busca por nome, CPF, RG e/ou registro funcional na tabela."""
         nome = request.query_params.get("nome", "").strip()
