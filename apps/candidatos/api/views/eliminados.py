@@ -5,13 +5,17 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from candidatos.api.schemas import OPERACOES_ELIMINADOS, TAG_RECLASSIFICACAO
 from candidatos.repository import ConcursoCandidatoRepository
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 
 logger = logging.getLogger(__name__)
 
 
+@extend_schema(tags=[TAG_RECLASSIFICACAO])
+@extend_schema_view(**OPERACOES_ELIMINADOS)
 class EliminadosViewSet(viewsets.ViewSet):
     """Endpoint para listar candidatos eliminados por concurso_uuid e."""
 

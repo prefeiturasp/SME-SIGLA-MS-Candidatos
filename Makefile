@@ -3,7 +3,7 @@
 
 .PHONY: help pep257 pep484 pep-check makemigrations migrate runserver coverage test clean install format lint check docs
 
-PEP_APP_DIRS = apps/candidatos apps/parametrizacao
+PEP_APP_DIRS = apps/candidatos apps/parametrizacao apps/core
 
 # Comando padrão - mostra ajuda
 help:
