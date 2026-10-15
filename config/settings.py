@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "auditlog",
     "drf_spectacular",
+    "core",
     "candidatos",
     "parametrizacao",
 ]
@@ -167,7 +168,7 @@ REST_FRAMEWORK = {
         # 'rest_framework.permissions.IsAuthenticated',
         "rest_framework.permissions.AllowAny",
     ],
-    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_SCHEMA_CLASS": "core.openapi.EsquemaAutomatico",
 }
 
 # CORS settings
@@ -178,9 +179,10 @@ CORS_ALLOWED_ORIGINS = (
     else []
 )
 
-CORS_ALLOWED_ORIGINS=[
+CORS_ALLOWED_ORIGINS = [
     "https://qa-sigla.sme.prefeitura.sp.gov.br",
-    "https://hom-sigla.sme.prefeitura.sp.gov.br"]
+    "https://hom-sigla.sme.prefeitura.sp.gov.br",
+]
 
 # Audit Log settings
 AUDITLOG_INCLUDE_ALL_MODELS = True
@@ -284,20 +286,134 @@ ELASTIC_APM = {
     "CAPTURE_TRANSACTION_STACKTRACES_LIMIT": 10,
 }
 
+DESCRICAO_API = """
+API do microsserviço de **candidatos** do SIGLA (SME-SP). Mantém o cadastro
+dos candidatos e os seus **habilitados**: a inscrição de cada candidato em
+um concurso, com as classificações, a situação de convocação, as
+reclassificações, as eliminações e os dados de lote do SIGPEC.
+
+## Conceitos
+
+- **Candidato**: a pessoa, identificada pelo CPF.
+- **Habilitado**: a inscrição de um candidato em um cargo de um concurso.
+  O mesmo candidato tem um habilitado para cada concurso e cargo.
+- **Categorias**: `GERAL` (ampla concorrência), `NNA` (negros, negras ou
+  afrodescendentes) e `PCD` (pessoas com deficiência). Cada habilitado tem
+  uma classificação por lista em que concorre e uma **categoria efetiva**,
+  que é a lista pela qual ele é convocado.
+
+## Autenticação
+
+Envie o token **JWT** emitido pelo microsserviço de usuários no header
+`Authorization: Bearer <token>`. Também são aceitos HTTP Basic e a sessão
+do Django Admin. As rotas atendem chamadas sem credencial, mas uma
+credencial **inválida** é recusada com **403**: o serviço não responde 401.
+
+## Erros
+
+- **400** com `{"detail": "..."}`: regra de negócio violada ou parâmetro
+  obrigatório ausente.
+- **400** com `{"<campo>": ["..."]}`: dados enviados inválidos.
+- **400** com `{"mensagem": "...", "detail": "..."}`: falha ao salvar
+  lotes do SIGPEC.
+- **403** com `{"detail": "...", "code": "..."}`: credencial recusada.
+- **404** com `{"detail": "..."}`: registro não encontrado.
+- **500**: erro inesperado, sem corpo JSON padronizado.
+- **503** com `{"detail": "..."}`: o MS-Escolhas não respondeu à consulta
+  de reconvocações.
+
+## Paginação
+
+Só a listagem de candidatos é paginada, com `page` e 20 itens por página.
+A resposta traz `count`, `next`, `previous` e `results`. As demais
+listagens retornam um array simples.
+
+## Seleção de campos
+
+As consultas de habilitados aceitam `fields`, com os nomes dos campos
+desejados separados por vírgula. Os campos não pedidos são omitidos da
+resposta, o que reduz bastante o volume em listagens grandes.
+
+## Rotas legadas
+
+As operações marcadas como obsoletas vêm do CRUD genérico e não são usadas
+pelos demais serviços do SIGLA. Estão documentadas porque continuam
+expostas, mas não devem ser adotadas por novos consumidores.
+"""
+
 SPECTACULAR_SETTINGS = {
     "TITLE": "Candidatos Sigla API",
-    "DESCRIPTION": "API para o sistema de candidatos de sigla",
+    "DESCRIPTION": DESCRICAO_API,
     "VERSION": "1.0.0",
-    "SERVE_INCLUDE_SCHEMA": True,
-    # "APPEND_COMPONENTS": {
-    #     "securitySchemes": {
-    #         "ApiKeyAuth": {
-    #             "type": "apiKey",
-    #             "in": "header",
-    #             "name": "X-API-Key",
-    #         }
-    #     }
-    # },
+    "SERVE_INCLUDE_SCHEMA": False,
+    "TAGS": [
+        {
+            "name": "Candidatos",
+            "description": (
+                "Cadastro de candidatos e carga em lote das listas de "
+                "habilitados de um concurso."
+            ),
+        },
+        {
+            "name": "Habilitados",
+            "description": (
+                "Consulta dos habilitados por concurso, processo, cargo e "
+                "classificação, e totais para relatórios."
+            ),
+        },
+        {
+            "name": "Convocação de habilitados",
+            "description": (
+                "Seleção dos habilitados a convocar e registro da "
+                "convocação em um processo."
+            ),
+        },
+        {
+            "name": "Reclassificação e eliminação",
+            "description": (
+                "Mudança de lista e eliminação de habilitados, e consulta "
+                "dos atingidos em cada processo."
+            ),
+        },
+        {
+            "name": "Lotes SIGPEC",
+            "description": (
+                "Dados de lote, empresa e vaga devolvidos pelo SIGPEC para "
+                "os habilitados."
+            ),
+        },
+        {
+            "name": "Parametrização",
+            "description": (
+                "Percentuais de reserva de vagas usados no cálculo da "
+                "convocação."
+            ),
+        },
+    ],
+    "ENUM_NAME_OVERRIDES": {
+        "CategoriaEnum": (
+            "candidatos.models.concurso_candidato.CATEGORIA_CHOICES"
+        ),
+        "CotaEnum": "candidatos.constants.COTA_CHOICES",
+    },
+    "APPEND_COMPONENTS": {
+        "securitySchemes": {
+            "jwtAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+                "description": (
+                    "Token JWT emitido pelo microsserviço de usuários do "
+                    "SIGLA, enviado em `Authorization: Bearer <token>`."
+                ),
+            },
+            # "ApiKeyAuth": {
+            #     "type": "apiKey",
+            #     "in": "header",
+            #     "name": "X-API-Key",
+            # },
+        }
+    },
     # "SECURITY": [{"ApiKeyAuth": []}],
     "SERVE_AUTHENTICATION": [
         "rest_framework.authentication.SessionAuthentication",

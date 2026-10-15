@@ -1,0 +1,28 @@
+"""Documentação OpenAPI das operações do app candidatos."""
+
+from .candidatos import OPERACOES_CANDIDATOS
+from .comuns import TAG_CANDIDATOS, TAG_RECLASSIFICACAO
+from .convocacao import OPERACOES_CONVOCACAO
+from .habilitados import OPERACOES_CONSULTA
+from .lotes import OPERACOES_LOTES
+from .reclassificacao_eliminacao import (
+    OPERACOES_ELIMINADOS,
+    OPERACOES_RECLASSIFICACAO,
+    OPERACOES_RECLASSIFICADOS,
+)
+
+OPERACOES_HABILITADOS = {
+    **OPERACOES_CONSULTA,
+    **OPERACOES_CONVOCACAO,
+    **OPERACOES_RECLASSIFICACAO,
+    **OPERACOES_LOTES,
+}
+
+__all__ = [
+    "OPERACOES_CANDIDATOS",
+    "OPERACOES_ELIMINADOS",
+    "OPERACOES_HABILITADOS",
+    "OPERACOES_RECLASSIFICADOS",
+    "TAG_CANDIDATOS",
+    "TAG_RECLASSIFICACAO",
+]

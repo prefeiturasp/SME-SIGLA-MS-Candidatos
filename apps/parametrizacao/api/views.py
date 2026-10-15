@@ -4,6 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
+from drf_spectacular.utils import extend_schema, extend_schema_view
+from parametrizacao.api.schemas import (
+    OPERACOES_PARAMETRIZACAO,
+    TAG_PARAMETRIZACAO,
+)
 from parametrizacao.models import Parametrizacao
 from parametrizacao.serializer import ParametrizacaoSerializer
 from rest_framework import mixins, status, viewsets
@@ -11,6 +16,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 
+@extend_schema(tags=[TAG_PARAMETRIZACAO])
+@extend_schema_view(**OPERACOES_PARAMETRIZACAO)
 class ParametrizacaoViewSet(
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
