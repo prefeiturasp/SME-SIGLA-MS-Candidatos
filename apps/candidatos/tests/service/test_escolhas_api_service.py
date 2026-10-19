@@ -7,6 +7,17 @@ import requests as _requests
 from candidatos.service.escolhas_api_service import EscolhasApiService
 
 
+def test_init_define_base_url_headers_e_timeout(settings):
+    """Verifica init define base_url, headers e timeout."""
+    settings.ESCOLHAS_API_URL = "http://escolhas"
+    settings.ESCOLHAS_API_KEY = "api-key-escolhas"
+    settings.API_KEY_HEADER = "X-API-Key"
+    service = EscolhasApiService()
+    assert service.base_url == "http://escolhas"
+    assert service.headers == {"X-API-Key": "api-key-escolhas"}
+    assert service.timeout_seconds == EscolhasApiService.DEFAULT_TIMEOUT
+
+
 def _mock_response(status_code=200, json_data=None):
     """Resposta simulada da API externa."""
     resp = Mock()
@@ -27,7 +38,7 @@ def test_buscar_reconvocacoes_200_retorna_lista_direta(mock_get, settings):
     mock_get.return_value.json.return_value = [
         {"uuid": "a", "candidato_uuid": "b"}
     ]
-    result = EscolhasApiService.buscar_reconvocacoes()
+    result = EscolhasApiService().buscar_reconvocacoes()
     assert result == [{"uuid": "a", "candidato_uuid": "b"}]
 
 
@@ -41,7 +52,7 @@ def test_buscar_reconvocacoes_200_dict_com_results(mock_get, settings):
     mock_get.return_value.json.return_value = {
         "results": [{"candidato_uuid": "x"}]
     }
-    result = EscolhasApiService.buscar_reconvocacoes()
+    result = EscolhasApiService().buscar_reconvocacoes()
     assert result == [{"candidato_uuid": "x"}]
 
 
@@ -58,7 +69,7 @@ def test_buscar_reconvocacoes_200_dict_sem_results_retorna_lista_unitaria(
         "uuid": "um",
         "candidato_uuid": "c1",
     }
-    result = EscolhasApiService.buscar_reconvocacoes()
+    result = EscolhasApiService().buscar_reconvocacoes()
     assert result == [{"uuid": "um", "candidato_uuid": "c1"}]
 
 
@@ -72,7 +83,7 @@ def test_buscar_reconvocacoes_200_outro_formato_retorna_lista_vazia(
     settings.API_KEY_HEADER = "X-API-Key"
     mock_get.return_value.status_code = 200
     mock_get.return_value.json.return_value = "não é list nem dict"
-    result = EscolhasApiService.buscar_reconvocacoes()
+    result = EscolhasApiService().buscar_reconvocacoes()
     assert result == []
 
 
@@ -91,7 +102,7 @@ def test_buscar_reconvocacoes_nao_200_levanta_request_exception(
     mock_resp.raise_for_status.side_effect = Exception("404")
     mock_get.return_value = mock_resp
     with pytest.raises(Exception, match="404"):
-        EscolhasApiService.buscar_reconvocacoes()
+        EscolhasApiService().buscar_reconvocacoes()
 
 
 @patch("candidatos.service.escolhas_api_service.http_client.get")
@@ -105,7 +116,7 @@ def test_buscar_reconvocacoes_request_exception_propaga(mock_get, settings):
         _requests.RequestException,
         match="Erro ao buscar reconvocações no microserviço de Escolhas",
     ):
-        EscolhasApiService.buscar_reconvocacoes()
+        EscolhasApiService().buscar_reconvocacoes()
 
 
 @patch("candidatos.service.escolhas_api_service.http_client.get")
@@ -116,7 +127,7 @@ def test_buscar_escolhas_200_retorna_lista_direta(mock_get, settings):
     settings.API_KEY_HEADER = "X-API-Key"
     mock_get.return_value.status_code = 200
     mock_get.return_value.json.return_value = [{"candidato_uuid": "e1"}]
-    result = EscolhasApiService.buscar_escolhas(concurso_uuid="concurso-123")
+    result = EscolhasApiService().buscar_escolhas(concurso_uuid="concurso-123")
     assert result == [{"candidato_uuid": "e1"}]
     call_url = mock_get.call_args[0][0]
     assert "concurso_uuid=concurso-123" in call_url
@@ -132,7 +143,7 @@ def test_buscar_escolhas_200_dict_com_results(mock_get, settings):
     mock_get.return_value.json.return_value = {
         "results": [{"candidato_uuid": "e2"}]
     }
-    result = EscolhasApiService.buscar_escolhas(concurso_uuid="uu")
+    result = EscolhasApiService().buscar_escolhas(concurso_uuid="uu")
     assert result == [{"candidato_uuid": "e2"}]
 
 
@@ -146,7 +157,7 @@ def test_buscar_escolhas_200_dict_sem_results_retorna_lista_unitaria(
     settings.API_KEY_HEADER = "X-API-Key"
     mock_get.return_value.status_code = 200
     mock_get.return_value.json.return_value = {"candidato_uuid": "e3"}
-    result = EscolhasApiService.buscar_escolhas(concurso_uuid="uu")
+    result = EscolhasApiService().buscar_escolhas(concurso_uuid="uu")
     assert result == [{"candidato_uuid": "e3"}]
 
 
@@ -162,7 +173,7 @@ def test_buscar_escolhas_nao_200_levanta(mock_get, settings):
     mock_resp.raise_for_status.side_effect = Exception("500")
     mock_get.return_value = mock_resp
     with pytest.raises(Exception, match="500"):
-        EscolhasApiService.buscar_escolhas(concurso_uuid="uu")
+        EscolhasApiService().buscar_escolhas(concurso_uuid="uu")
 
 
 @patch("candidatos.service.escolhas_api_service.http_client.get")
@@ -176,7 +187,7 @@ def test_buscar_escolhas_request_exception_propaga(mock_get, settings):
         _requests.RequestException,
         match="Erro ao buscar escolhas no microserviço de Escolhas",
     ):
-        EscolhasApiService.buscar_escolhas(concurso_uuid="uu")
+        EscolhasApiService().buscar_escolhas(concurso_uuid="uu")
 
 
 def test_buscar_reconvocacoes_retorna_lista(settings):
@@ -192,7 +203,7 @@ def test_buscar_reconvocacoes_retorna_lista(settings):
         "candidatos.service.escolhas_api_service.http_client.get",
         return_value=_mock_response(200, payload),
     ):
-        result = EscolhasApiService.buscar_reconvocacoes()
+        result = EscolhasApiService().buscar_reconvocacoes()
     assert result == payload
 
 
@@ -207,7 +218,7 @@ def test_buscar_reconvocacoes_resposta_dict_com_results(settings):
         "candidatos.service.escolhas_api_service.http_client.get",
         return_value=_mock_response(200, payload),
     ):
-        result = EscolhasApiService.buscar_reconvocacoes()
+        result = EscolhasApiService().buscar_reconvocacoes()
     assert result == items
 
 
@@ -221,7 +232,7 @@ def test_buscar_reconvocacoes_resposta_dict_sem_results(settings):
         "candidatos.service.escolhas_api_service.http_client.get",
         return_value=_mock_response(200, payload),
     ):
-        result = EscolhasApiService.buscar_reconvocacoes()
+        result = EscolhasApiService().buscar_reconvocacoes()
     assert result == [payload]
 
 
@@ -234,7 +245,7 @@ def test_buscar_reconvocacoes_resposta_vazia(settings):
         "candidatos.service.escolhas_api_service.http_client.get",
         return_value=_mock_response(200, []),
     ):
-        result = EscolhasApiService.buscar_reconvocacoes()
+        result = EscolhasApiService().buscar_reconvocacoes()
     assert result == []
 
 
@@ -254,7 +265,7 @@ def test_buscar_reconvocacoes_erro_http_levanta_excecao(settings):
         ),
         pytest.raises(_requests.RequestException),
     ):
-        EscolhasApiService.buscar_reconvocacoes()
+        EscolhasApiService().buscar_reconvocacoes()
 
 
 def test_buscar_reconvocacoes_connection_error_levanta_request_exception(
@@ -274,7 +285,7 @@ def test_buscar_reconvocacoes_connection_error_levanta_request_exception(
             match="Erro ao buscar reconvocações no microserviço de Escolhas",
         ),
     ):
-        EscolhasApiService.buscar_reconvocacoes()
+        EscolhasApiService().buscar_reconvocacoes()
 
 
 def test_buscar_reconvocacoes_timeout_levanta_request_exception(settings):
@@ -289,7 +300,7 @@ def test_buscar_reconvocacoes_timeout_levanta_request_exception(settings):
         ),
         pytest.raises(_requests.RequestException),
     ):
-        EscolhasApiService.buscar_reconvocacoes()
+        EscolhasApiService().buscar_reconvocacoes()
 
 
 def test_buscar_reconvocacoes_usa_path_customizado(settings):
@@ -301,7 +312,7 @@ def test_buscar_reconvocacoes_usa_path_customizado(settings):
         "candidatos.service.escolhas_api_service.http_client.get",
         return_value=_mock_response(200, []),
     ) as mock_get:
-        EscolhasApiService.buscar_reconvocacoes(path="/api/v2/reconvocacao/")
+        EscolhasApiService().buscar_reconvocacoes(path="/api/v2/reconvocacao/")
     called_url = mock_get.call_args[0][0]
     assert "/api/v2/reconvocacao/" in called_url
 
@@ -316,7 +327,7 @@ def test_buscar_escolhas_retorna_lista(settings):
         "candidatos.service.escolhas_api_service.http_client.get",
         return_value=_mock_response(200, payload),
     ):
-        result = EscolhasApiService.buscar_escolhas(
+        result = EscolhasApiService().buscar_escolhas(
             concurso_uuid="conc-uuid-1"
         )
     assert result == payload
@@ -333,7 +344,7 @@ def test_buscar_escolhas_resposta_dict_com_results(settings):
         "candidatos.service.escolhas_api_service.http_client.get",
         return_value=_mock_response(200, payload),
     ):
-        result = EscolhasApiService.buscar_escolhas(
+        result = EscolhasApiService().buscar_escolhas(
             concurso_uuid="conc-uuid-1"
         )
     assert result == items
@@ -349,7 +360,7 @@ def test_buscar_escolhas_resposta_dict_sem_results(settings):
         "candidatos.service.escolhas_api_service.http_client.get",
         return_value=_mock_response(200, payload),
     ):
-        result = EscolhasApiService.buscar_escolhas(
+        result = EscolhasApiService().buscar_escolhas(
             concurso_uuid="conc-uuid-1"
         )
     assert result == [payload]
@@ -364,7 +375,7 @@ def test_buscar_escolhas_resposta_vazia(settings):
         "candidatos.service.escolhas_api_service.http_client.get",
         return_value=_mock_response(200, []),
     ):
-        result = EscolhasApiService.buscar_escolhas(
+        result = EscolhasApiService().buscar_escolhas(
             concurso_uuid="conc-uuid-1"
         )
     assert result == []
@@ -379,7 +390,7 @@ def test_buscar_escolhas_url_inclui_concurso_uuid(settings):
         "candidatos.service.escolhas_api_service.http_client.get",
         return_value=_mock_response(200, []),
     ) as mock_get:
-        EscolhasApiService.buscar_escolhas(concurso_uuid="meu-uuid-123")
+        EscolhasApiService().buscar_escolhas(concurso_uuid="meu-uuid-123")
     called_url = mock_get.call_args[0][0]
     assert "meu-uuid-123" in called_url
 
@@ -393,7 +404,7 @@ def test_buscar_escolhas_url_inclui_page_size(settings):
         "candidatos.service.escolhas_api_service.http_client.get",
         return_value=_mock_response(200, []),
     ) as mock_get:
-        EscolhasApiService.buscar_escolhas(concurso_uuid="uuid-x")
+        EscolhasApiService().buscar_escolhas(concurso_uuid="uuid-x")
     called_url = mock_get.call_args[0][0]
     assert "page_size=10000" in called_url
 
@@ -414,7 +425,7 @@ def test_buscar_escolhas_erro_http_levanta_excecao(settings):
         ),
         pytest.raises(_requests.RequestException),
     ):
-        EscolhasApiService.buscar_escolhas(concurso_uuid="uuid-x")
+        EscolhasApiService().buscar_escolhas(concurso_uuid="uuid-x")
 
 
 def test_buscar_escolhas_connection_error_levanta_request_exception(settings):
@@ -432,7 +443,7 @@ def test_buscar_escolhas_connection_error_levanta_request_exception(settings):
             match="Erro ao buscar escolhas no microserviço de Escolhas",
         ),
     ):
-        EscolhasApiService.buscar_escolhas(concurso_uuid="uuid-x")
+        EscolhasApiService().buscar_escolhas(concurso_uuid="uuid-x")
 
 
 def test_buscar_escolhas_timeout_levanta_request_exception(settings):
@@ -447,7 +458,7 @@ def test_buscar_escolhas_timeout_levanta_request_exception(settings):
         ),
         pytest.raises(_requests.RequestException),
     ):
-        EscolhasApiService.buscar_escolhas(concurso_uuid="uuid-x")
+        EscolhasApiService().buscar_escolhas(concurso_uuid="uuid-x")
 
 
 def test_buscar_escolhas_usa_path_customizado(settings):
@@ -459,7 +470,7 @@ def test_buscar_escolhas_usa_path_customizado(settings):
         "candidatos.service.escolhas_api_service.http_client.get",
         return_value=_mock_response(200, []),
     ) as mock_get:
-        EscolhasApiService.buscar_escolhas(
+        EscolhasApiService().buscar_escolhas(
             concurso_uuid="uuid-x", path="/api/v2/escolhas/?situacao=escolha"
         )
     called_url = mock_get.call_args[0][0]
@@ -475,7 +486,7 @@ def test_buscar_reconvocacoes_usa_timeout_padrao(settings):
         "candidatos.service.escolhas_api_service.http_client.get",
         return_value=_mock_response(200, []),
     ) as mock_get:
-        EscolhasApiService.buscar_reconvocacoes()
+        EscolhasApiService().buscar_reconvocacoes()
     _, kwargs = mock_get.call_args
     assert kwargs.get("timeout") == EscolhasApiService.DEFAULT_TIMEOUT
 
@@ -489,7 +500,7 @@ def test_buscar_escolhas_usa_timeout_padrao(settings):
         "candidatos.service.escolhas_api_service.http_client.get",
         return_value=_mock_response(200, []),
     ) as mock_get:
-        EscolhasApiService.buscar_escolhas(concurso_uuid="uuid-x")
+        EscolhasApiService().buscar_escolhas(concurso_uuid="uuid-x")
     _, kwargs = mock_get.call_args
     assert kwargs.get("timeout") == EscolhasApiService.DEFAULT_TIMEOUT
 
@@ -503,6 +514,6 @@ def test_buscar_reconvocacoes_envia_headers_com_api_key(settings):
         "candidatos.service.escolhas_api_service.http_client.get",
         return_value=_mock_response(200, []),
     ) as mock_get:
-        EscolhasApiService.buscar_reconvocacoes()
+        EscolhasApiService().buscar_reconvocacoes()
     _, kwargs = mock_get.call_args
     assert kwargs.get("headers") == {"X-API-Key": "api-key-escolhas"}
