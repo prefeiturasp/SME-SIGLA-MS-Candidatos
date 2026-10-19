@@ -4,6 +4,7 @@ import logging
 from typing import Any
 
 import requests
+from candidatos.service.http_log import mascarar_headers
 from django.conf import settings
 from rest_framework import status
 from sigla_sdk.http.api_client import http_client
@@ -16,9 +17,16 @@ class EscolhasApiService:
 
     DEFAULT_TIMEOUT = 60
 
-    @classmethod
+    def __init__(self) -> None:
+        """Inicializa URL base, headers e timeout do MS-Escolhas."""
+        self.base_url = settings.ESCOLHAS_API_URL
+        self.timeout_seconds = self.DEFAULT_TIMEOUT
+        self.headers: dict[str, str] = {
+            settings.API_KEY_HEADER: settings.ESCOLHAS_API_KEY,
+        }
+
     def buscar_reconvocacoes(
-        cls, path: str = "/api/v1/escolhas/reconvocacao/"
+        self, path: str = "/api/v1/escolhas/reconvocacao/"
     ) -> list[dict[str, Any]]:
         """Busca reconvocacoes.
 
@@ -31,27 +39,30 @@ class EscolhasApiService:
         Raises:
             RequestException: Se a chamada HTTP falhar.
         """
-        base_url = settings.ESCOLHAS_API_URL
-        headers = {
-            settings.API_KEY_HEADER: settings.ESCOLHAS_API_KEY,
-        }
-        url = f"{base_url}{path}"
+        url = f"{self.base_url}{path}"
         logger.info(
-            f"Buscando reconvocações no microserviço de Escolhas | "
-            f"method=GET url={url}"
+            "Buscando reconvocações no microserviço de Escolhas | "
+            f"method=GET url={url} "
+            f"headers={mascarar_headers(self.headers)} "
+            f"timeout_seconds={self.timeout_seconds}"
         )
         try:
-            logger.info(f"Buscando reconvocações | url={url}")
+            logger.info(
+                f"Buscando reconvocações | url={url} "
+                f"headers={mascarar_headers(self.headers)} "
+                f"timeout_seconds={self.timeout_seconds}"
+            )
             response = http_client.get(
                 url,
-                timeout=cls.DEFAULT_TIMEOUT,
-                headers=headers,
+                timeout=self.timeout_seconds,
+                headers=self.headers,
             )
 
         except requests.RequestException as exc:
             logger.exception(
-                f"Erro ao buscar reconvocações no microserviço de Escolhas | "
-                f"erro={exc}"
+                "Erro ao buscar reconvocações no microserviço de Escolhas | "
+                f"erro={exc} headers={mascarar_headers(self.headers)} "
+                f"timeout_seconds={self.timeout_seconds}"
             )
             raise requests.RequestException(
                 f"Erro ao buscar reconvocações no microserviço de Escolhas: {exc}"  # noqa: E501
@@ -59,8 +70,10 @@ class EscolhasApiService:
 
         if response.status_code == status.HTTP_200_OK:
             logger.info(
-                f"Reconvocações encontradas no microserviço de Escolhas | "
-                f"method=GET url={url} status_code={response.status_code}"
+                "Reconvocações encontradas no microserviço de Escolhas | "
+                f"method=GET url={url} status_code={response.status_code} "
+                f"headers={mascarar_headers(self.headers)} "
+                f"timeout_seconds={self.timeout_seconds}"
             )
             data = response.json()
             # Garante que retorna uma lista
@@ -75,15 +88,16 @@ class EscolhasApiService:
             return []
         else:
             logger.error(
-                f"Erro ao buscar reconvocações | "
-                f"status_code={response.status_code} response={response.text}"
+                "Erro ao buscar reconvocações | "
+                f"status_code={response.status_code} response={response.text} "
+                f"headers={mascarar_headers(self.headers)} "
+                f"timeout_seconds={self.timeout_seconds}"
             )
             response.raise_for_status()
             return []
 
-    @classmethod
     def buscar_escolhas(
-        cls,
+        self,
         concurso_uuid: str,
         path: str = "/api/v1/escolhas/?situacao__in=escolha,reconvocacao",
     ) -> list[dict[str, Any]]:
@@ -99,25 +113,27 @@ class EscolhasApiService:
         Raises:
             RequestException: Se a chamada HTTP falhar.
         """
-        base_url = settings.ESCOLHAS_API_URL
-        headers = {
-            settings.API_KEY_HEADER: settings.ESCOLHAS_API_KEY,
-        }
-        url = f"{base_url}{path}&concurso_uuid={concurso_uuid}&page_size=10000"  # noqa: E501
+        url = (
+            f"{self.base_url}{path}&concurso_uuid={concurso_uuid}"
+            f"&page_size=10000"
+        )
         logger.info(
             f"Buscando escolhas | concurso_uuid={concurso_uuid} "
-            f"path={path} url={url}"
+            f"path={path} url={url} "
+            f"headers={mascarar_headers(self.headers)} "
+            f"timeout_seconds={self.timeout_seconds}"
         )
         try:
             response = http_client.get(
                 url,
-                timeout=cls.DEFAULT_TIMEOUT,
-                headers=headers,
+                timeout=self.timeout_seconds,
+                headers=self.headers,
             )
         except requests.RequestException as exc:
             logger.exception(
-                f"Erro ao buscar escolhas no microserviço de Escolhas | "
-                f"erro={exc}"
+                "Erro ao buscar escolhas no microserviço de Escolhas | "
+                f"erro={exc} headers={mascarar_headers(self.headers)} "
+                f"timeout_seconds={self.timeout_seconds}"
             )
             raise requests.RequestException(
                 f"Erro ao buscar escolhas no microserviço de Escolhas: {exc}"  # noqa: E501
@@ -137,8 +153,10 @@ class EscolhasApiService:
             return []
         else:
             logger.error(
-                f"Erro ao buscar escolhas | "
-                f"status_code={response.status_code} response={response.text}"
+                "Erro ao buscar escolhas | "
+                f"status_code={response.status_code} response={response.text} "
+                f"headers={mascarar_headers(self.headers)} "
+                f"timeout_seconds={self.timeout_seconds}"
             )
             response.raise_for_status()
             return []

@@ -4,6 +4,7 @@ import logging
 from typing import Any
 
 import requests
+from candidatos.service.http_log import mascarar_headers
 from django.conf import settings
 from rest_framework import status
 from sigla_sdk.http.api_client import http_client
@@ -16,9 +17,16 @@ class AgendasApiService:
 
     DEFAULT_TIMEOUT = 10
 
-    @classmethod
+    def __init__(self) -> None:
+        """Inicializa URL base, headers e timeout do MS-Agendas."""
+        self.base_url = settings.AGENDAS_API_URL
+        self.timeout_seconds = self.DEFAULT_TIMEOUT
+        self.headers: dict[str, str] = {
+            settings.API_KEY_HEADER: settings.AGENDAS_API_KEY,
+        }
+
     def remover_agendas_por_processo_uuid_e_cargo(
-        cls,
+        self,
         processo_uuid: str,
         codigo_cargo: str,
         path: str = "/api/v1/agendas/por-processo-e-cargo/",
@@ -36,30 +44,30 @@ class AgendasApiService:
         Raises:
             RequestException: Se a chamada HTTP falhar.
         """
-        base_url = settings.AGENDAS_API_URL
-        url = f"{base_url}{path}"
-        headers = {
-            settings.API_KEY_HEADER: settings.AGENDAS_API_KEY,
-        }
+        url = f"{self.base_url}{path}"
         parametros = {
             "processo_uuid": processo_uuid,
             "cargo": codigo_cargo,
         }
         logger.info(
-            f"Removendo agendas por processo e cargo no MS-Agendas | "
+            "Removendo agendas por processo e cargo no MS-Agendas | "
             f"method=DELETE url={url} params={parametros} "
-            f"processo_uuid={processo_uuid} codigo_cargo={codigo_cargo}"
+            f"processo_uuid={processo_uuid} codigo_cargo={codigo_cargo} "
+            f"headers={mascarar_headers(self.headers)} "
+            f"timeout_seconds={self.timeout_seconds}"
         )
         try:
             response = http_client.delete(
                 url,
-                headers=headers,
+                headers=self.headers,
                 params=parametros,
-                timeout=cls.DEFAULT_TIMEOUT,
+                timeout=self.timeout_seconds,
             )
         except requests.RequestException as exc:
             logger.exception(
-                f"Erro ao conectar com o microserviço de Agendas | erro={exc}"
+                "Erro ao conectar com o microserviço de Agendas | "
+                f"erro={exc} headers={mascarar_headers(self.headers)} "
+                f"timeout_seconds={self.timeout_seconds}"
             )
             raise requests.RequestException(
                 f"Erro ao conectar com o microserviço de Agendas: {exc}"
@@ -68,16 +76,20 @@ class AgendasApiService:
         if response.status_code == status.HTTP_200_OK:
             corpo_resposta = response.json() if response.content else {}
             logger.info(
-                f"Agendas removidas por processo e cargo no MS-Agendas | "
+                "Agendas removidas por processo e cargo no MS-Agendas | "
                 f"method=DELETE url={url} params={parametros} "
                 f"status_code={response.status_code} "
-                f"response={corpo_resposta}"
+                f"response={corpo_resposta} "
+                f"headers={mascarar_headers(self.headers)} "
+                f"timeout_seconds={self.timeout_seconds}"
             )
             return corpo_resposta
 
         logger.error(
-            f"Erro ao remover agendas por processo e cargo | "
-            f"status_code={response.status_code} response={response.text}"
+            "Erro ao remover agendas por processo e cargo | "
+            f"status_code={response.status_code} response={response.text} "
+            f"headers={mascarar_headers(self.headers)} "
+            f"timeout_seconds={self.timeout_seconds}"
         )
         response.raise_for_status()
         return {}
