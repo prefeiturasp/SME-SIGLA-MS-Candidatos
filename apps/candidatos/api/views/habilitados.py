@@ -159,7 +159,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
             f"user={request.user}"
         )
         try:
-            reconvocoes = EscolhasApiService.buscar_reconvocacoes()
+            reconvocoes = EscolhasApiService().buscar_reconvocacoes()
         except Exception as exc:
             logger.error(
                 f"Erro ao buscar reconvocações no microserviço de Escolhas | "
@@ -532,7 +532,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         ConcursoCandidatoRepository.desmarcar_convocados(qs)
         if codigo_cargo:
             try:
-                AgendasApiService.remover_agendas_por_processo_uuid_e_cargo(
+                AgendasApiService().remover_agendas_por_processo_uuid_e_cargo(
                     processo_uuid=str(processo_uuid),
                     codigo_cargo=str(codigo_cargo),
                 )
@@ -645,7 +645,7 @@ class HabilitadosViewSet(viewsets.ModelViewSet):
         processo_uuid = str(params.validated_data["processo_uuid"])
         codigo_cargo = params.validated_data["codigo_cargo"]
         try:
-            escolhas = EscolhasApiService.buscar_escolhas(
+            escolhas = EscolhasApiService().buscar_escolhas(
                 concurso_uuid=concurso_uuid
             )
             escolhas_candidato_uuids = [

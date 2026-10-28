@@ -7,6 +7,17 @@ import requests
 from candidatos.service.agendas_api_service import AgendasApiService
 
 
+def test_init_define_base_url_headers_e_timeout(settings):
+    """Verifica init define base_url, headers e timeout."""
+    settings.AGENDAS_API_URL = "https://agendas"
+    settings.AGENDAS_API_KEY = "api-key-agenda"
+    settings.API_KEY_HEADER = "X-API-Key"
+    service = AgendasApiService()
+    assert service.base_url == "https://agendas"
+    assert service.headers == {"X-API-Key": "api-key-agenda"}
+    assert service.timeout_seconds == AgendasApiService.DEFAULT_TIMEOUT
+
+
 @patch("candidatos.service.agendas_api_service.http_client.delete")
 def test_remover_agendas_200_retorna_json(mock_delete, settings):
     """Verifica remoção com status 200 retorna o JSON da resposta."""
@@ -16,7 +27,7 @@ def test_remover_agendas_200_retorna_json(mock_delete, settings):
     mock_delete.return_value.status_code = 200
     mock_delete.return_value.content = b'{"excluidas": 2}'
     mock_delete.return_value.json.return_value = {"excluidas": 2}
-    resultado = AgendasApiService.remover_agendas_por_processo_uuid_e_cargo(
+    resultado = AgendasApiService().remover_agendas_por_processo_uuid_e_cargo(
         processo_uuid="proc-uuid", codigo_cargo="cargo-uuid"
     )
     assert resultado == {"excluidas": 2}
@@ -32,7 +43,7 @@ def test_remover_agendas_200_sem_body_retorna_dict_vazio(
     settings.API_KEY_HEADER = "X-API-Key"
     mock_delete.return_value.status_code = 200
     mock_delete.return_value.content = b""
-    resultado = AgendasApiService.remover_agendas_por_processo_uuid_e_cargo(
+    resultado = AgendasApiService().remover_agendas_por_processo_uuid_e_cargo(
         processo_uuid="proc-uuid", codigo_cargo="cargo-uuid"
     )
     assert resultado == {}
@@ -49,7 +60,7 @@ def test_remover_agendas_envia_delete_com_url_e_params_corretos(
     mock_delete.return_value.status_code = 200
     mock_delete.return_value.content = b'{"excluidas": 1}'
     mock_delete.return_value.json.return_value = {"excluidas": 1}
-    AgendasApiService.remover_agendas_por_processo_uuid_e_cargo(
+    AgendasApiService().remover_agendas_por_processo_uuid_e_cargo(
         processo_uuid="proc-uuid",
         codigo_cargo="cargo-uuid",
         path="/api/v1/agendas/por-processo-e-cargo/",
@@ -74,7 +85,7 @@ def test_remover_agendas_nao_200_levanta_erro(mock_delete, settings):
     mock_resp.raise_for_status.side_effect = requests.HTTPError("500")
     mock_delete.return_value = mock_resp
     with pytest.raises(requests.HTTPError, match="500"):
-        AgendasApiService.remover_agendas_por_processo_uuid_e_cargo(
+        AgendasApiService().remover_agendas_por_processo_uuid_e_cargo(
             processo_uuid="proc-uuid", codigo_cargo="cargo-uuid"
         )
 
@@ -90,6 +101,6 @@ def test_remover_agendas_request_exception_propaga(mock_delete, settings):
         requests.RequestException,
         match="Erro ao conectar com o microserviço de Agendas",
     ):
-        AgendasApiService.remover_agendas_por_processo_uuid_e_cargo(
+        AgendasApiService().remover_agendas_por_processo_uuid_e_cargo(
             processo_uuid="proc-uuid", codigo_cargo="cargo-uuid"
         )
